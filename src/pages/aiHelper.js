@@ -483,36 +483,19 @@ function App() {
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh',
-      background: '#ffffff',
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-    }}>
+    <div className="min-h-screen bg-white font-sans">
       {/* Header */}
-      <header style={{ 
-        borderBottom: '2px solid #e5e7eb',
-        background: '#ffffff',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{
-              width: '60px',
-              height: '60px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-            }}>
-              <Wind style={{ width: '32px', height: '32px', color: 'white' }} />
+      <header className="border-b-2 border-gray-200 bg-white shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-5">
+          <div className="flex items-center gap-3 lg:gap-4">
+            <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 flex-shrink-0">
+              <Wind className="w-6 h-6 lg:w-8 lg:h-8 text-white" />
             </div>
-            <div>
-              <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
                 JONIX Device Finder
               </h1>
-              <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
+              <p className="text-xs lg:text-sm text-gray-600 hidden sm:block">
                 Find Your Perfect Air Sanitization Solution
               </p>
             </div>
@@ -520,11 +503,11 @@ function App() {
         </div>
       </header>
 
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '48px 24px' }}>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-12">
         {/* Progress Bar */}
         {step < 6 && (
-          <div style={{ marginBottom: '48px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+          <div className="mb-8 lg:mb-12">
+            <div className="flex items-center justify-center gap-2 lg:gap-3 overflow-x-auto pb-2">
               {[1, 2, 3, 4, 5].map((s) => {
                 if (s === 4 && formData.applicationType !== 'coldRoom') return null;
                 
@@ -534,29 +517,17 @@ function App() {
                 
                 return (
                   <React.Fragment key={s}>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 'bold',
-                      fontSize: '18px',
-                      background: isActive || isComplete ? '#3b82f6' : '#e5e7eb',
-                      color: isActive || isComplete ? 'white' : '#9ca3af',
-                      boxShadow: isActive ? '0 4px 12px rgba(59, 130, 246, 0.4)' : 'none',
-                      transition: 'all 0.3s'
-                    }}>
-                      {isComplete ? <CheckCircle2 style={{ width: '24px', height: '24px' }} /> : displayStep}
+                    <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-lg flex items-center justify-center font-bold text-sm lg:text-base transition-all flex-shrink-0 ${
+                      isActive || isComplete 
+                        ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/40' 
+                        : 'bg-gray-200 text-gray-400'
+                    }`}>
+                      {isComplete ? <CheckCircle2 className="w-5 h-5 lg:w-6 lg:h-6" /> : displayStep}
                     </div>
                     {s < 5 && (s !== 4 || formData.applicationType === 'coldRoom') && (
-                      <div style={{
-                        height: '4px',
-                        width: '80px',
-                        borderRadius: '2px',
-                        background: s < step ? '#3b82f6' : '#e5e7eb'
-                      }} />
+                      <div className={`h-1 w-12 lg:w-20 rounded transition-all flex-shrink-0 ${
+                        s < step ? 'bg-blue-500' : 'bg-gray-200'
+                      }`} />
                     )}
                   </React.Fragment>
                 );
@@ -567,15 +538,15 @@ function App() {
 
         {/* Step 1: Business Sector */}
         {step === 1 && (
-          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '42px', fontWeight: 'bold', color: '#1f2937', marginBottom: '12px', textAlign: 'center' }}>
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 text-center">
               What's your business sector?
             </h2>
-            <p style={{ fontSize: '18px', color: '#6b7280', marginBottom: '48px', textAlign: 'center' }}>
+            <p className="text-base lg:text-lg text-gray-600 mb-8 lg:mb-12 text-center">
               This helps us recommend the best device for your needs
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
               {[
                 { id: 'healthcare', icon: Users, label: 'Healthcare', desc: 'Hospitals, clinics, medical facilities', color: '#10b981' },
                 { id: 'food', icon: Snowflake, label: 'Food Industry', desc: 'Restaurants, food processing, storage', color: '#f59e0b' },
@@ -585,22 +556,20 @@ function App() {
                 <button
                   key={id}
                   onClick={() => setFormData({ ...formData, sector: id })}
+                  className={`p-6 lg:p-8 rounded-2xl text-left cursor-pointer transition-all ${
+                    formData.sector === id
+                      ? 'bg-blue-50 shadow-lg scale-[1.02]'
+                      : 'bg-white shadow-md hover:shadow-lg'
+                  }`}
                   style={{
-                    padding: '32px',
-                    borderRadius: '16px',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
-                    background: formData.sector === id ? '#f0f9ff' : '#ffffff',
-                    border: formData.sector === id ? `3px solid ${color}` : '2px solid #e5e7eb',
-                    boxShadow: formData.sector === id ? '0 8px 24px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.05)'
+                    border: formData.sector === id ? `3px solid ${color}` : '2px solid #e5e7eb'
                   }}
                 >
-                  <Icon style={{ width: '48px', height: '48px', color, marginBottom: '16px' }} />
-                  <h3 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+                  <Icon style={{ color }} className="w-10 h-10 lg:w-12 lg:h-12 mb-4" />
+                  <h3 className="text-lg lg:text-xl font-bold text-gray-900 mb-2">
                     {label}
                   </h3>
-                  <p style={{ fontSize: '16px', color: '#6b7280' }}>{desc}</p>
+                  <p className="text-sm lg:text-base text-gray-600">{desc}</p>
                 </button>
               ))}
             </div>
@@ -609,15 +578,15 @@ function App() {
 
         {/* Step 2: Application Type */}
         {step === 2 && (
-          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '42px', fontWeight: 'bold', color: '#1f2937', marginBottom: '12px', textAlign: 'center' }}>
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 text-center">
               What type of space?
             </h2>
-            <p style={{ fontSize: '18px', color: '#6b7280', marginBottom: '48px', textAlign: 'center' }}>
+            <p className="text-base lg:text-lg text-gray-600 mb-8 lg:mb-12 text-center">
               Choose the application type
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6">
               {[
                 { id: 'coldRoom', icon: Snowflake, label: 'Cold Rooms', desc: 'Refrigerated storage', color: '#06b6d4' },
                 { id: 'room', icon: Building2, label: 'Regular Rooms', desc: 'Offices, clinics, spaces', color: '#8b5cf6' },
@@ -626,22 +595,20 @@ function App() {
                 <button
                   key={id}
                   onClick={() => setFormData({ ...formData, applicationType: id })}
+                  className={`p-6 lg:p-8 rounded-2xl text-center cursor-pointer transition-all ${
+                    formData.applicationType === id
+                      ? 'bg-blue-50 shadow-lg scale-[1.02]'
+                      : 'bg-white shadow-md hover:shadow-lg'
+                  }`}
                   style={{
-                    padding: '32px',
-                    borderRadius: '16px',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
-                    background: formData.applicationType === id ? '#f0f9ff' : '#ffffff',
-                    border: formData.applicationType === id ? `3px solid ${color}` : '2px solid #e5e7eb',
-                    boxShadow: formData.applicationType === id ? '0 8px 24px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.05)'
+                    border: formData.applicationType === id ? `3px solid ${color}` : '2px solid #e5e7eb'
                   }}
                 >
-                  <Icon style={{ width: '48px', height: '48px', color, marginBottom: '16px', marginLeft: 'auto', marginRight: 'auto' }} />
-                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+                  <Icon style={{ color }} className="w-10 h-10 lg:w-12 lg:h-12 mb-4 mx-auto" />
+                  <h3 className="text-base lg:text-lg font-bold text-gray-900 mb-2">
                     {label}
                   </h3>
-                  <p style={{ fontSize: '14px', color: '#6b7280' }}>{desc}</p>
+                  <p className="text-sm text-gray-600">{desc}</p>
                 </button>
               ))}
             </div>
@@ -650,37 +617,21 @@ function App() {
 
         {/* Step 3: Number of Rooms */}
         {step === 3 && (
-          <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '42px', fontWeight: 'bold', color: '#1f2937', marginBottom: '12px', textAlign: 'center' }}>
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 text-center">
               How many {formData.applicationType === 'coldRoom' ? 'cold rooms' : formData.applicationType === 'hvac' ? 'zones' : 'rooms'}?
             </h2>
-            <p style={{ fontSize: '18px', color: '#6b7280', marginBottom: '48px', textAlign: 'center' }}>
+            <p className="text-base lg:text-lg text-gray-600 mb-8 lg:mb-12 text-center">
               Enter the number of spaces you need to protect
             </p>
 
-            <div style={{ 
-              padding: '48px', 
-              borderRadius: '16px', 
-              background: '#f9fafb',
-              border: '2px solid #e5e7eb'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <div className="p-8 lg:p-12 rounded-2xl bg-gray-50 border-2 border-gray-200">
+              <div className="flex items-center gap-4 lg:gap-6">
                 <button
                   onClick={() => setFormData({ ...formData, numberOfRooms: Math.max(1, formData.numberOfRooms - 1) })}
-                  style={{
-                    width: '64px',
-                    height: '64px',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: '#3b82f6',
-                    border: 'none',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-                  }}
+                  className="w-14 h-14 lg:w-16 lg:h-16 rounded-xl flex items-center justify-center bg-blue-500 border-none cursor-pointer shadow-lg shadow-blue-500/30 hover:bg-blue-600 transition-colors flex-shrink-0"
                 >
-                  <Minus style={{ width: '32px', height: '32px', color: 'white' }} />
+                  <Minus className="w-6 h-6 lg:w-8 lg:h-8 text-white" />
                 </button>
 
                 <input
@@ -688,35 +639,14 @@ function App() {
                   min="1"
                   value={formData.numberOfRooms}
                   onChange={(e) => setFormData({ ...formData, numberOfRooms: Math.max(1, parseInt(e.target.value) || 1) })}
-                  style={{
-                    flex: 1,
-                    padding: '24px',
-                    borderRadius: '12px',
-                    fontSize: '64px',
-                    fontWeight: 'bold',
-                    textAlign: 'center',
-                    background: 'white',
-                    border: '2px solid #d1d5db',
-                    color: '#1f2937'
-                  }}
+                  className="flex-1 p-4 lg:p-6 rounded-xl text-4xl lg:text-6xl font-bold text-center bg-white border-2 border-gray-300 text-gray-900 focus:outline-none focus:border-blue-500"
                 />
 
                 <button
                   onClick={() => setFormData({ ...formData, numberOfRooms: formData.numberOfRooms + 1 })}
-                  style={{
-                    width: '64px',
-                    height: '64px',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: '#3b82f6',
-                    border: 'none',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-                  }}
+                  className="w-14 h-14 lg:w-16 lg:h-16 rounded-xl flex items-center justify-center bg-blue-500 border-none cursor-pointer shadow-lg shadow-blue-500/30 hover:bg-blue-600 transition-colors flex-shrink-0"
                 >
-                  <Plus style={{ width: '32px', height: '32px', color: 'white' }} />
+                  <Plus className="w-6 h-6 lg:w-8 lg:h-8 text-white" />
                 </button>
               </div>
             </div>
@@ -725,54 +655,35 @@ function App() {
 
         {/* Step 4: Cold Room Products */}
         {step === 4 && formData.applicationType === 'coldRoom' && (
-          <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '42px', fontWeight: 'bold', color: '#1f2937', marginBottom: '12px', textAlign: 'center' }}>
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 text-center">
               What will you store?
             </h2>
-            <p style={{ fontSize: '18px', color: '#6b7280', marginBottom: '48px', textAlign: 'center' }}>
+            <p className="text-base lg:text-lg text-gray-600 mb-8 lg:mb-12 text-center">
               Select products to determine the best operating cycle
             </p>
 
-            <div style={{ display: 'grid', gap: '24px' }}>
+            <div className="space-y-4 lg:space-y-6">
               {Object.entries(COLD_ROOM_PRODUCTS).map(([key, category]) => (
-                <div key={key} style={{ 
-                  padding: '24px', 
-                  borderRadius: '16px', 
-                  background: '#f9fafb',
-                  border: '2px solid #e5e7eb'
-                }}>
-                  <h3 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ fontSize: '36px' }}>{category.icon}</span>
+                <div key={key} className="p-4 lg:p-6 rounded-2xl bg-gray-50 border-2 border-gray-200">
+                  <h3 className="text-xl lg:text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                    <span className="text-2xl lg:text-3xl">{category.icon}</span>
                     {category.name}
                   </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {category.items.map((item) => (
                       <button
                         key={item.id}
                         onClick={() => toggleProduct(item.id)}
-                        style={{
-                          padding: '16px',
-                          borderRadius: '8px',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          background: formData.coldRoomProducts?.includes(item.id) ? '#dbeafe' : 'white',
-                          border: formData.coldRoomProducts?.includes(item.id) ? '2px solid #3b82f6' : '1px solid #d1d5db',
-                          color: '#1f2937'
-                        }}
+                        className={`p-3 lg:p-4 rounded-lg text-left cursor-pointer flex justify-between items-center transition-all ${
+                          formData.coldRoomProducts?.includes(item.id)
+                            ? 'bg-blue-100 border-2 border-blue-500'
+                            : 'bg-white border border-gray-300 hover:border-gray-400'
+                        }`}
                       >
-                        <span style={{ fontSize: '14px', fontWeight: '500' }}>{item.name}</span>
+                        <span className="text-sm lg:text-base font-medium text-gray-900">{item.name}</span>
                         {item.timing !== "none" && (
-                          <span style={{
-                            fontSize: '12px',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            background: '#fef3c7',
-                            color: '#92400e',
-                            fontWeight: 'bold'
-                          }}>
+                          <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800 font-bold flex-shrink-0 ml-2">
                             {item.timing}
                           </span>
                         )}
@@ -783,14 +694,14 @@ function App() {
               ))}
             </div>
 
-            <div style={{ marginTop: '32px', padding: '24px', borderRadius: '12px', background: '#eff6ff', border: '2px solid #3b82f6' }}>
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <Info style={{ width: '24px', height: '24px', color: '#3b82f6', flexShrink: 0, marginTop: '4px' }} />
+            <div className="mt-6 lg:mt-8 p-4 lg:p-6 rounded-xl bg-blue-50 border-2 border-blue-500">
+              <div className="flex gap-4">
+                <Info className="w-5 h-5 lg:w-6 lg:h-6 text-blue-500 flex-shrink-0 mt-1" />
                 <div>
-                  <h4 style={{ fontWeight: 'bold', color: '#1f2937', marginBottom: '8px', fontSize: '16px' }}>
+                  <h4 className="font-bold text-gray-900 mb-2 text-sm lg:text-base">
                     Operating Cycles
                   </h4>
-                  <p style={{ fontSize: '14px', color: '#4b5563', lineHeight: '1.6' }}>
+                  <p className="text-xs lg:text-sm text-gray-700 leading-relaxed">
                     <strong>Always ON:</strong> Continuous for meat, fish, frozen<br/>
                     <strong>T1:</strong> 1h ON, 1h OFF - For dairy, eggs, leafy vegetables<br/>
                     <strong>T2:</strong> 1h ON, 2h OFF - For yogurt, vegetables, fruits
@@ -803,32 +714,27 @@ function App() {
 
         {/* Step 5: Room Sizes */}
         {step === 5 && (
-          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '42px', fontWeight: 'bold', color: '#1f2937', marginBottom: '12px', textAlign: 'center' }}>
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 text-center">
               Enter {formData.applicationType === 'coldRoom' ? 'volume' : 'area'} for each space
             </h2>
-            <p style={{ fontSize: '18px', color: '#6b7280', marginBottom: '48px', textAlign: 'center' }}>
+            <p className="text-base lg:text-lg text-gray-600 mb-8 lg:mb-12 text-center">
               {formData.applicationType === 'coldRoom' 
                 ? 'Volume (m³) = Length × Width × Height'
                 : 'Area (m²) = Length × Width'
               }
             </p>
 
-            <div style={{ display: 'grid', gap: '24px' }}>
+            <div className="space-y-4 lg:space-y-6">
               {formData.rooms.map((room, idx) => (
-                <div key={idx} style={{ 
-                  padding: '32px', 
-                  borderRadius: '16px', 
-                  background: '#f9fafb',
-                  border: '2px solid #e5e7eb'
-                }}>
-                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '24px' }}>
+                <div key={idx} className="p-6 lg:p-8 rounded-2xl bg-gray-50 border-2 border-gray-200">
+                  <h3 className="text-lg lg:text-xl font-bold text-gray-900 mb-4 lg:mb-6">
                     {formData.applicationType === 'coldRoom' ? 'Cold Room' : 'Room'} {idx + 1}
                   </h3>
                   
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
                     <div>
-                      <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '8px', fontSize: '14px' }}>
+                      <label className="block font-semibold text-gray-700 mb-2 text-sm lg:text-base">
                         Name (Optional)
                       </label>
                       <input
@@ -836,22 +742,13 @@ function App() {
                         value={room.name}
                         onChange={(e) => updateRoom(idx, 'name', e.target.value)}
                         placeholder="e.g. Main Storage"
-                        style={{
-                          width: '100%',
-                          padding: '12px 16px',
-                          borderRadius: '8px',
-                          background: 'white',
-                          border: '1px solid #d1d5db',
-                          fontSize: '16px',
-                          color: '#1f2937',
-                          boxSizing: 'border-box'
-                        }}
+                        className="w-full p-3 lg:p-4 rounded-lg bg-white border border-gray-300 text-base text-gray-900 focus:outline-none focus:border-blue-500"
                       />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '8px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Calculator style={{ width: '16px', height: '16px', color: '#3b82f6' }} />
+                      <label className="block font-semibold text-gray-700 mb-2 text-sm lg:text-base flex items-center gap-2">
+                        <Calculator className="w-4 h-4 text-blue-500" />
                         {formData.applicationType === 'coldRoom' ? 'Volume (m³)' : 'Area (m²)'} *
                       </label>
                       <input
@@ -859,17 +756,7 @@ function App() {
                         value={room.size}
                         onChange={(e) => updateRoom(idx, 'size', e.target.value)}
                         placeholder="Enter size"
-                        style={{
-                          width: '100%',
-                          padding: '12px 16px',
-                          borderRadius: '8px',
-                          background: 'white',
-                          border: '2px solid #3b82f6',
-                          fontSize: '16px',
-                          fontWeight: 'bold',
-                          color: '#1f2937',
-                          boxSizing: 'border-box'
-                        }}
+                        className="w-full p-3 lg:p-4 rounded-lg bg-white border-2 border-blue-500 text-base font-bold text-gray-900 focus:outline-none focus:border-blue-600"
                       />
                     </div>
                   </div>
@@ -882,45 +769,28 @@ function App() {
         {/* Step 6: Results */}
         {step === 6 && recommendations && (
           <div>
-            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-              <div style={{
-                width: '96px',
-                height: '96px',
-                borderRadius: '24px',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: '24px',
-                boxShadow: '0 8px 24px rgba(16, 185, 129, 0.3)'
-              }}>
-                <CheckCircle2 style={{ width: '48px', height: '48px', color: 'white' }} />
+            <div className="text-center mb-8 lg:mb-12">
+              <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 inline-flex items-center justify-center mb-6 shadow-lg shadow-green-500/30">
+                <CheckCircle2 className="w-10 h-10 lg:w-12 lg:h-12 text-white" />
               </div>
-              <h2 style={{ fontSize: '48px', fontWeight: 'bold', color: '#1f2937', marginBottom: '12px' }}>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3">
                 We Found {recommendations.length} Perfect Solution{recommendations.length > 1 ? 's' : ''}!
               </h2>
-              <p style={{ fontSize: '20px', color: '#6b7280' }}>
+              <p className="text-base lg:text-xl text-gray-600">
                 Compare options and choose what works best
               </p>
             </div>
 
             {/* Best Option Badge */}
             {recommendations[0] && (
-              <div style={{ 
-                maxWidth: '900px', 
-                margin: '0 auto 32px', 
-                padding: '24px', 
-                borderRadius: '16px', 
-                background: '#d1fae5',
-                border: '2px solid #10b981'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <CheckCircle2 style={{ width: '32px', height: '32px', color: '#10b981' }} />
+              <div className="max-w-5xl mx-auto mb-6 lg:mb-8 p-4 lg:p-6 rounded-2xl bg-green-100 border-2 border-green-500">
+                <div className="flex items-start gap-4">
+                  <CheckCircle2 className="w-6 h-6 lg:w-8 lg:h-8 text-green-500 flex-shrink-0 mt-1" />
                   <div>
-                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#065f46', marginBottom: '4px' }}>
+                    <h3 className="text-base lg:text-lg font-bold text-green-800 mb-1">
                       ⭐ BEST RECOMMENDATION
                     </h3>
-                    <p style={{ fontSize: '16px', color: '#047857', margin: 0 }}>
+                    <p className="text-sm lg:text-base text-green-700">
                       <strong>{recommendations[0].name}</strong> - {recommendations[0].reason}
                     </p>
                   </div>
@@ -929,7 +799,7 @@ function App() {
             )}
 
             {/* All Recommendations */}
-            <div style={{ display: 'grid', gap: '24px', maxWidth: '900px', margin: '0 auto' }}>
+            <div className="space-y-6 max-w-5xl mx-auto">
               {recommendations.map((rec, idx) => {
                 const isBest = idx === 0;
                 const generatorCost = rec.device 
@@ -945,80 +815,61 @@ function App() {
                 return (
                   <div
                     key={rec.id}
-                    style={{
-                      padding: '32px',
-                      borderRadius: '16px',
-                      background: isBest ? '#f0fdf4' : '#ffffff',
-                      border: isBest ? '3px solid #10b981' : '2px solid #e5e7eb',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                    }}
+                    className={`p-6 lg:p-8 rounded-2xl shadow-lg transition-all ${
+                      isBest 
+                        ? 'bg-green-50 border-3 border-green-500' 
+                        : 'bg-white border-2 border-gray-200'
+                    }`}
                   >
                     {/* Header */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '24px' }}>
-                      <div style={{ flex: 1 }}>
+                    <div className="flex flex-col lg:flex-row justify-between lg:items-start gap-4 mb-6">
+                      <div className="flex-1">
                         {isBest && (
-                          <div style={{
-                            display: 'inline-block',
-                            padding: '8px 16px',
-                            borderRadius: '8px',
-                            background: '#d1fae5',
-                            color: '#065f46',
-                            fontSize: '12px',
-                            fontWeight: 'bold',
-                            marginBottom: '12px',
-                            border: '1px solid #10b981'
-                          }}>
+                          <div className="inline-block px-4 py-2 rounded-lg bg-green-200 text-green-800 text-xs font-bold mb-3 border border-green-500">
                             ⭐ BEST OPTION
                           </div>
                         )}
-                        <h3 style={{ fontSize: '28px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+                        <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
                           {rec.name}
                         </h3>
-                        <p style={{ fontSize: '16px', color: '#4b5563', lineHeight: '1.6' }}>
+                        <p className="text-sm lg:text-base text-gray-600 leading-relaxed">
                           {rec.reason}
                         </p>
                         
                         {rec.timingCycle && rec.timingCycle !== "none" && (
-                          <div style={{
-                            marginTop: '16px',
-                            display: 'inline-block',
-                            padding: '8px 16px',
-                            borderRadius: '8px',
-                            background: '#fef3c7',
-                            border: '1px solid #f59e0b'
-                          }}>
-                            <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#92400e' }}>
+                          <div className="mt-4 inline-block px-4 py-2 rounded-lg bg-yellow-100 border border-yellow-500">
+                            <span className="text-xs lg:text-sm font-bold text-yellow-800">
                               Cycle: {rec.timingCycle} ({rec.timingCycle === "T1" ? "1h ON, 1h OFF" : "1h ON, 2h OFF"})
                             </span>
                           </div>
                         )}
                       </div>
 
-                      <div style={{ textAlign: 'right', marginLeft: '32px' }}>
-                        <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>Total Price</div>
-                        <div style={{ fontSize: '48px', fontWeight: 'bold', color: '#1f2937' }}>
+                      <div className="text-left lg:text-right lg:ml-8 flex-shrink-0">
+                        <div className="text-xs lg:text-sm text-gray-600 mb-1">Total Price</div>
+                        <div className="text-3xl lg:text-5xl font-bold text-gray-900">
                           €{rec.totalCost.toLocaleString()}
                         </div>
-                        <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                        <div className="text-xs lg:text-sm text-gray-600 mt-1">
                           {rec.totalUnits} unit{rec.totalUnits > 1 ? 's' : ''}
                         </div>
                       </div>
                     </div>
 
                     {/* Room Coverage */}
-                    <div style={{ marginBottom: '24px', padding: '20px', borderRadius: '12px', background: '#f9fafb' }}>
-                      <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1f2937', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Home style={{ width: '20px', height: '20px', color: '#3b82f6' }} />
+                    <div className="mb-6 p-4 lg:p-5 rounded-xl bg-gray-50">
+                      <h4 className="text-sm lg:text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <Home className="w-5 h-5 text-blue-500" />
                         Coverage Details
                       </h4>
-                      <div style={{ display: 'grid', gap: '8px' }}>
+                      <div className="space-y-2">
                         {rec.rooms.map((r, ridx) => (
-                          <div key={ridx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                            <span style={{ color: '#4b5563' }}>
+                          <div key={ridx} className="flex flex-col sm:flex-row sm:justify-between text-xs lg:text-sm gap-1">
+                            <span className="text-gray-600">
                               {r.name || `Room ${ridx + 1}`}: {r.size} {formData.applicationType === 'coldRoom' ? 'm³' : 'm²'}
                             </span>
                             {r.device && (
-                              <span style={{ color: '#3b82f6', fontWeight: '600' }}>
+                              <span className="text-blue-500 font-semibold">
                                 {r.qty > 1 ? `${r.qty}× ` : ''}{r.device}
                               </span>
                             )}
@@ -1029,52 +880,52 @@ function App() {
 
                     {/* Technical Specs */}
                     {rec.device && (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-                        <div style={{ padding: '16px', borderRadius: '8px', background: '#f9fafb' }}>
-                          <Package style={{ width: '20px', height: '20px', color: '#3b82f6', marginBottom: '8px' }} />
-                          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Max Coverage</div>
-                          <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
+                        <div className="p-3 lg:p-4 rounded-lg bg-gray-50">
+                          <Package className="w-5 h-5 text-blue-500 mb-2" />
+                          <div className="text-xs text-gray-600 mb-1">Max Coverage</div>
+                          <div className="text-base lg:text-lg font-bold text-gray-900">
                             {rec.device.maxCoverage || rec.device.maxVolume} {rec.device.maxVolume ? 'm³' : 'm²'}
                           </div>
                         </div>
-                        <div style={{ padding: '16px', borderRadius: '8px', background: '#f9fafb' }}>
-                          <Wind style={{ width: '20px', height: '20px', color: '#3b82f6', marginBottom: '8px' }} />
-                          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Air Flow</div>
-                          <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>
+                        <div className="p-3 lg:p-4 rounded-lg bg-gray-50">
+                          <Wind className="w-5 h-5 text-blue-500 mb-2" />
+                          <div className="text-xs text-gray-600 mb-1">Air Flow</div>
+                          <div className="text-base lg:text-lg font-bold text-gray-900">
                             {rec.device.airflow} m³/h
                           </div>
                         </div>
-                        <div style={{ padding: '16px', borderRadius: '8px', background: '#f9fafb' }}>
-                          <Info style={{ width: '20px', height: '20px', color: '#3b82f6', marginBottom: '8px' }} />
-                          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Power</div>
-                          <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>
+                        <div className="p-3 lg:p-4 rounded-lg bg-gray-50">
+                          <Info className="w-5 h-5 text-blue-500 mb-2" />
+                          <div className="text-xs text-gray-600 mb-1">Power</div>
+                          <div className="text-base lg:text-lg font-bold text-gray-900">
                             {rec.device.power}W
                           </div>
                         </div>
-                        <div style={{ padding: '16px', borderRadius: '8px', background: '#f9fafb' }}>
-                          <Wrench style={{ width: '20px', height: '20px', color: '#3b82f6', marginBottom: '8px' }} />
-                          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Generators</div>
-                          <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>
+                        <div className="p-3 lg:p-4 rounded-lg bg-gray-50">
+                          <Wrench className="w-5 h-5 text-blue-500 mb-2" />
+                          <div className="text-xs text-gray-600 mb-1">Generators</div>
+                          <div className="text-base lg:text-lg font-bold text-gray-900">
                             {rec.device.generatorCount}x
                           </div>
-                          <div style={{ fontSize: '11px', color: '#9ca3af' }}>{rec.device.generatorType}</div>
+                          <div className="text-xs text-gray-400">{rec.device.generatorType}</div>
                         </div>
                       </div>
                     )}
 
                     {/* Generator Cost */}
-                    <div style={{ padding: '20px', borderRadius: '12px', background: '#fef3c7', border: '1px solid #f59e0b' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="p-4 lg:p-5 rounded-xl bg-yellow-100 border border-yellow-500">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                         <div>
-                          <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: '#92400e', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Shield style={{ width: '20px', height: '20px' }} />
+                          <h4 className="text-sm lg:text-base font-bold text-yellow-800 mb-1 flex items-center gap-2">
+                            <Shield className="w-5 h-5" />
                             Generator Replacement Cost
                           </h4>
-                          <p style={{ fontSize: '14px', color: '#78350f', margin: 0 }}>
+                          <p className="text-xs lg:text-sm text-yellow-700">
                             After 5 years (€100 per generator)
                           </p>
                         </div>
-                        <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#92400e' }}>
+                        <div className="text-2xl lg:text-3xl font-bold text-yellow-800">
                           €{generatorCost.toLocaleString()}
                         </div>
                       </div>
@@ -1085,44 +936,44 @@ function App() {
             </div>
 
             {/* Why JONIX */}
-            <div style={{ maxWidth: '900px', margin: '48px auto 0', padding: '32px', borderRadius: '16px', background: '#f9fafb', border: '2px solid #e5e7eb' }}>
-              <h4 style={{ fontSize: '28px', fontWeight: 'bold', color: '#1f2937', marginBottom: '32px', textAlign: 'center' }}>
+            <div className="max-w-5xl mx-auto mt-8 lg:mt-12 p-6 lg:p-8 rounded-2xl bg-gray-50 border-2 border-gray-200">
+              <h4 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-6 lg:mb-8 text-center">
                 Why Choose JONIX?
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '32px' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '12px' }}>🦠</div>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+                <div className="text-center">
+                  <div className="text-4xl lg:text-5xl mb-3">🦠</div>
+                  <div className="text-sm lg:text-base font-bold text-gray-900 mb-2">
                     99.99% Efficacy
                   </div>
-                  <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                  <div className="text-xs lg:text-sm text-gray-600">
                     Eliminates bacteria, viruses, molds
                   </div>
                 </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '12px' }}>🌿</div>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+                <div className="text-center">
+                  <div className="text-4xl lg:text-5xl mb-3">🌿</div>
+                  <div className="text-sm lg:text-base font-bold text-gray-900 mb-2">
                     Chemical-Free
                   </div>
-                  <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                  <div className="text-xs lg:text-sm text-gray-600">
                     Safe with people present
                   </div>
                 </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '12px' }}>⚡</div>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+                <div className="text-center">
+                  <div className="text-4xl lg:text-5xl mb-3">⚡</div>
+                  <div className="text-sm lg:text-base font-bold text-gray-900 mb-2">
                     Energy Efficient
                   </div>
-                  <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                  <div className="text-xs lg:text-sm text-gray-600">
                     Low power consumption
                   </div>
                 </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '12px' }}>🇮🇹</div>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+                <div className="text-center">
+                  <div className="text-4xl lg:text-5xl mb-3">🇮🇹</div>
+                  <div className="text-sm lg:text-base font-bold text-gray-900 mb-2">
                     Made in Italy
                   </div>
-                  <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                  <div className="text-xs lg:text-sm text-gray-600">
                     Patented technology
                   </div>
                 </div>
@@ -1133,90 +984,44 @@ function App() {
 
         {/* Navigation Buttons */}
         {step > 0 && step < 6 && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '48px' }}>
+          <div className="flex justify-center gap-3 lg:gap-4 mt-8 lg:mt-12">
             {step > 1 && (
               <button
                 onClick={handleBack}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '16px 32px',
-                  borderRadius: '12px',
-                  fontSize: '18px',
-                  fontWeight: 'bold',
-                  background: '#f3f4f6',
-                  color: '#1f2937',
-                  border: '2px solid #d1d5db',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s'
-                }}
+                className="flex items-center gap-2 lg:gap-3 px-6 lg:px-8 py-3 lg:py-4 rounded-xl text-base lg:text-lg font-bold bg-gray-100 text-gray-900 border-2 border-gray-300 cursor-pointer transition-all hover:bg-gray-200"
               >
-                <ChevronLeft style={{ width: '24px', height: '24px' }} />
+                <ChevronLeft className="w-5 h-5 lg:w-6 lg:h-6" />
                 Back
               </button>
             )}
             <button
               onClick={handleNext}
               disabled={!canProceed()}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px 48px',
-                borderRadius: '12px',
-                fontSize: '18px',
-                fontWeight: 'bold',
-                background: canProceed() ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : '#e5e7eb',
-                color: 'white',
-                border: 'none',
-                cursor: canProceed() ? 'pointer' : 'not-allowed',
-                boxShadow: canProceed() ? '0 4px 12px rgba(59, 130, 246, 0.4)' : 'none',
-                transition: 'all 0.3s',
-                opacity: canProceed() ? 1 : 0.5
-              }}
+              className={`flex items-center gap-2 lg:gap-3 px-8 lg:px-12 py-3 lg:py-4 rounded-xl text-base lg:text-lg font-bold border-none transition-all ${
+                canProceed()
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white cursor-pointer shadow-lg shadow-blue-500/40 hover:from-blue-600 hover:to-blue-700'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
+              }`}
             >
               {step === 5 ? 'Find Solutions' : 'Continue'}
-              <ChevronRight style={{ width: '24px', height: '24px' }} />
+              <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6" />
             </button>
           </div>
         )}
 
         {step === 6 && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '48px' }}>
+          <div className="flex flex-col sm:flex-row justify-center gap-3 lg:gap-4 mt-8 lg:mt-12">
             <button
               onClick={handleReset}
-              style={{
-                padding: '16px 32px',
-                borderRadius: '12px',
-                fontSize: '18px',
-                fontWeight: 'bold',
-                background: '#f3f4f6',
-                color: '#1f2937',
-                border: '2px solid #d1d5db',
-                cursor: 'pointer'
-              }}
+              className="px-6 lg:px-8 py-3 lg:py-4 rounded-xl text-base lg:text-lg font-bold bg-gray-100 text-gray-900 border-2 border-gray-300 cursor-pointer hover:bg-gray-200 transition-all"
             >
               Start New Search
             </button>
             <button
               onClick={() => window.print()}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '16px 32px',
-                borderRadius: '12px',
-                fontSize: '18px',
-                fontWeight: 'bold',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: 'white',
-                border: 'none',
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)'
-              }}
+              className="flex items-center justify-center gap-2 lg:gap-3 px-6 lg:px-8 py-3 lg:py-4 rounded-xl text-base lg:text-lg font-bold bg-gradient-to-r from-green-500 to-green-600 text-white border-none cursor-pointer shadow-lg shadow-green-500/40 hover:from-green-600 hover:to-green-700 transition-all"
             >
-              <Download style={{ width: '24px', height: '24px' }} />
+              <Download className="w-5 h-5 lg:w-6 lg:h-6" />
               Download PDF
             </button>
           </div>
@@ -1224,17 +1029,11 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer style={{ 
-        marginTop: '96px', 
-        padding: '32px 24px', 
-        textAlign: 'center', 
-        borderTop: '2px solid #e5e7eb',
-        color: '#6b7280'
-      }}>
-        <p style={{ fontSize: '14px', marginBottom: '8px' }}>
+      <footer className="mt-16 lg:mt-24 py-6 lg:py-8 text-center border-t-2 border-gray-200 text-gray-600 px-4">
+        <p className="text-xs lg:text-sm mb-2">
           JONIX S.p.A. Benefit Corporation | Via Dell'Artigianato 1, 35020 S.Pietro Viminario (PD), Italy
         </p>
-        <p style={{ fontSize: '12px' }}>
+        <p className="text-xs">
           Tel: +39 0429 760311 | info@jonixair.com | www.jonixair.com
         </p>
       </footer>
