@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronRight, ChevronLeft, Download, CheckCircle2, Info, Building2, Snowflake, Wind, Users, Calculator, Package, Wrench, Shield, Plus, Minus, Home, DollarSign } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Download, CheckCircle2, Info, Building2, Snowflake, Wind, Users, Calculator, Package, Wrench, Shield, Plus, Minus, Home, DollarSign, Calendar, Phone, Mail, Globe } from 'lucide-react';
 
 // Complete Device Database
 const DEVICES = {
@@ -482,10 +482,13 @@ function App() {
     }
   };
 
+  // Quick selection buttons for number of rooms
+  const quickSelectRooms = [1, 2, 3, 4, 5, 10];
+
   return (
     <div className="min-h-screen bg-white font-sans">
       {/* Header */}
-      <header className="border-b-2 border-gray-200 bg-white shadow-sm sticky top-0 z-50">
+      <header className="no-print border-b-2 border-gray-200 bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-5">
           <div className="flex items-center gap-3 lg:gap-4">
             <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 flex-shrink-0">
@@ -506,7 +509,7 @@ function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-12">
         {/* Progress Bar */}
         {step < 6 && (
-          <div className="mb-8 lg:mb-12">
+          <div className="no-print mb-8 lg:mb-12">
             <div className="flex items-center justify-center gap-2 lg:gap-3 overflow-x-auto pb-2">
               {[1, 2, 3, 4, 5].map((s) => {
                 if (s === 4 && formData.applicationType !== 'coldRoom') return null;
@@ -615,39 +618,87 @@ function App() {
           </div>
         )}
 
-        {/* Step 3: Number of Rooms */}
+        {/* Step 3: Number of Rooms - REDESIGNED */}
         {step === 3 && (
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 text-center">
               How many {formData.applicationType === 'coldRoom' ? 'cold rooms' : formData.applicationType === 'hvac' ? 'zones' : 'rooms'}?
             </h2>
             <p className="text-base lg:text-lg text-gray-600 mb-8 lg:mb-12 text-center">
-              Enter the number of spaces you need to protect
+              Select or enter the number of spaces you need to protect
             </p>
 
-            <div className="p-8 lg:p-12 rounded-2xl bg-gray-50 border-2 border-gray-200">
-              <div className="flex items-center gap-4 lg:gap-6">
+            {/* Main Counter Display */}
+            <div className="mb-8 p-8 lg:p-12 rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 shadow-xl">
+              <div className="flex items-center justify-center gap-4 lg:gap-8">
                 <button
                   onClick={() => setFormData({ ...formData, numberOfRooms: Math.max(1, formData.numberOfRooms - 1) })}
-                  className="w-14 h-14 lg:w-16 lg:h-16 rounded-xl flex items-center justify-center bg-blue-500 border-none cursor-pointer shadow-lg shadow-blue-500/30 hover:bg-blue-600 transition-colors flex-shrink-0"
+                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 border-none cursor-pointer shadow-lg shadow-blue-500/40 hover:shadow-blue-500/60 hover:scale-105 transition-all flex-shrink-0 group"
                 >
-                  <Minus className="w-6 h-6 lg:w-8 lg:h-8 text-white" />
+                  <Minus className="w-8 h-8 lg:w-10 lg:h-10 text-white group-hover:scale-110 transition-transform" />
                 </button>
 
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.numberOfRooms}
-                  onChange={(e) => setFormData({ ...formData, numberOfRooms: Math.max(1, parseInt(e.target.value) || 1) })}
-                  className="flex-1 p-4 lg:p-6 rounded-xl text-4xl lg:text-6xl font-bold text-center bg-white border-2 border-gray-300 text-gray-900 focus:outline-none focus:border-blue-500"
-                />
+                <div className="flex-1 max-w-xs">
+                  <div className="text-center mb-2">
+                    <span className="text-sm lg:text-base font-semibold text-blue-700 uppercase tracking-wider">
+                      Number of Spaces
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.numberOfRooms}
+                    onChange={(e) => setFormData({ ...formData, numberOfRooms: Math.max(1, parseInt(e.target.value) || 1) })}
+                    className="w-full p-6 lg:p-8 rounded-2xl text-5xl lg:text-7xl font-bold text-center bg-white border-3 border-blue-300 text-blue-600 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-200 shadow-inner transition-all"
+                  />
+                </div>
 
                 <button
                   onClick={() => setFormData({ ...formData, numberOfRooms: formData.numberOfRooms + 1 })}
-                  className="w-14 h-14 lg:w-16 lg:h-16 rounded-xl flex items-center justify-center bg-blue-500 border-none cursor-pointer shadow-lg shadow-blue-500/30 hover:bg-blue-600 transition-colors flex-shrink-0"
+                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 border-none cursor-pointer shadow-lg shadow-blue-500/40 hover:shadow-blue-500/60 hover:scale-105 transition-all flex-shrink-0 group"
                 >
-                  <Plus className="w-6 h-6 lg:w-8 lg:h-8 text-white" />
+                  <Plus className="w-8 h-8 lg:w-10 lg:h-10 text-white group-hover:scale-110 transition-transform" />
                 </button>
+              </div>
+            </div>
+
+            {/* Quick Selection Buttons */}
+            <div className="mb-6">
+              <p className="text-center text-sm lg:text-base font-semibold text-gray-700 mb-4">
+                Quick Select:
+              </p>
+              <div className="flex flex-wrap justify-center gap-3">
+                {quickSelectRooms.map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setFormData({ ...formData, numberOfRooms: num })}
+                    className={`px-6 py-3 rounded-xl font-bold text-base transition-all ${
+                      formData.numberOfRooms === num
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/40 scale-105'
+                        : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-400 hover:text-blue-600 hover:shadow-md'
+                    }`}
+                  >
+                    {num} {num === 1 ? 'Space' : 'Spaces'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Info Card */}
+            <div className="p-6 rounded-2xl bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-200">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-cyan-500 flex items-center justify-center flex-shrink-0">
+                  <Info className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">
+                    💡 Pro Tip
+                  </h3>
+                  <p className="text-sm lg:text-base text-gray-700 leading-relaxed">
+                    Include all spaces that need air sanitization - even if they're different sizes. 
+                    You'll specify individual dimensions in the next step for accurate recommendations.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -769,7 +820,48 @@ function App() {
         {/* Step 6: Results */}
         {step === 6 && recommendations && (
           <div>
-            <div className="text-center mb-8 lg:mb-12">
+            {/* Print Header - Only visible in print */}
+            <div className="print-only print-header">
+              <div className="flex items-center justify-between mb-8 pb-6 border-b-2 border-gray-300">
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                    <Wind className="w-12 h-12 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900">JONIX Air Sanitization</h1>
+                    <p className="text-lg text-gray-600">Device Recommendation Report</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-600">Generated: {new Date().toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-600">Report ID: {Date.now().toString().slice(-8)}</p>
+                </div>
+              </div>
+
+              {/* Print Summary */}
+              <div className="mb-8 p-6 bg-blue-50 rounded-xl border-2 border-blue-200">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Project Summary</h2>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Business Sector</p>
+                    <p className="font-bold text-gray-900 capitalize">{formData.sector?.replace('_', ' ')}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Application Type</p>
+                    <p className="font-bold text-gray-900">
+                      {formData.applicationType === 'coldRoom' ? 'Cold Rooms' : 
+                       formData.applicationType === 'hvac' ? 'HVAC System' : 'Regular Rooms'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Number of Spaces</p>
+                    <p className="font-bold text-gray-900">{formData.rooms.length}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center mb-8 lg:mb-12 no-print">
               <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 inline-flex items-center justify-center mb-6 shadow-lg shadow-green-500/30">
                 <CheckCircle2 className="w-10 h-10 lg:w-12 lg:h-12 text-white" />
               </div>
@@ -783,7 +875,7 @@ function App() {
 
             {/* Best Option Badge */}
             {recommendations[0] && (
-              <div className="max-w-5xl mx-auto mb-6 lg:mb-8 p-4 lg:p-6 rounded-2xl bg-green-100 border-2 border-green-500">
+              <div className="max-w-5xl mx-auto mb-6 lg:mb-8 p-4 lg:p-6 rounded-2xl bg-green-100 border-2 border-green-500 no-print">
                 <div className="flex items-start gap-4">
                   <CheckCircle2 className="w-6 h-6 lg:w-8 lg:h-8 text-green-500 flex-shrink-0 mt-1" />
                   <div>
@@ -815,7 +907,7 @@ function App() {
                 return (
                   <div
                     key={rec.id}
-                    className={`p-6 lg:p-8 rounded-2xl shadow-lg transition-all ${
+                    className={`print-recommendation p-6 lg:p-8 rounded-2xl shadow-lg transition-all ${
                       isBest 
                         ? 'bg-green-50 border-3 border-green-500' 
                         : 'bg-white border-2 border-gray-200'
@@ -936,7 +1028,7 @@ function App() {
             </div>
 
             {/* Why JONIX */}
-            <div className="max-w-5xl mx-auto mt-8 lg:mt-12 p-6 lg:p-8 rounded-2xl bg-gray-50 border-2 border-gray-200">
+            <div className="max-w-5xl mx-auto mt-8 lg:mt-12 p-6 lg:p-8 rounded-2xl bg-gray-50 border-2 border-gray-200 print-section">
               <h4 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-6 lg:mb-8 text-center">
                 Why Choose JONIX?
               </h4>
@@ -979,12 +1071,59 @@ function App() {
                 </div>
               </div>
             </div>
+
+            {/* Print Footer - Only visible in print */}
+            <div className="print-only print-footer">
+              <div className="mt-12 pt-8 border-t-2 border-gray-300">
+                <div className="grid grid-cols-2 gap-8">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">Contact Information</h3>
+                    <div className="space-y-2 text-sm text-gray-700">
+                      <p className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4" />
+                        JONIX S.p.A. Benefit Corporation
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <Home className="w-4 h-4" />
+                        Via Dell'Artigianato 1, 35020 S.Pietro Viminario (PD), Italy
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        Tel: +39 0429 760311
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        info@jonixair.com
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        www.jonixair.com
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">Important Notes</h3>
+                    <ul className="space-y-2 text-sm text-gray-700 list-disc list-inside">
+                      <li>All prices are in EUR and exclude VAT</li>
+                      <li>Installation costs not included</li>
+                      <li>Recommendations based on provided specifications</li>
+                      <li>Contact us for detailed technical specifications</li>
+                      <li>Custom solutions available upon request</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="mt-6 text-center text-xs text-gray-500">
+                  <p>This is an automated recommendation. For final quotation, please contact our sales team.</p>
+                  <p className="mt-1">© {new Date().getFullYear()} JONIX S.p.A. All rights reserved.</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
         {/* Navigation Buttons */}
         {step > 0 && step < 6 && (
-          <div className="flex justify-center gap-3 lg:gap-4 mt-8 lg:mt-12">
+          <div className="no-print flex justify-center gap-3 lg:gap-4 mt-8 lg:mt-12">
             {step > 1 && (
               <button
                 onClick={handleBack}
@@ -1010,7 +1149,7 @@ function App() {
         )}
 
         {step === 6 && (
-          <div className="flex flex-col sm:flex-row justify-center gap-3 lg:gap-4 mt-8 lg:mt-12">
+          <div className="no-print flex flex-col sm:flex-row justify-center gap-3 lg:gap-4 mt-8 lg:mt-12">
             <button
               onClick={handleReset}
               className="px-6 lg:px-8 py-3 lg:py-4 rounded-xl text-base lg:text-lg font-bold bg-gray-100 text-gray-900 border-2 border-gray-300 cursor-pointer hover:bg-gray-200 transition-all"
@@ -1029,7 +1168,7 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-16 lg:mt-24 py-6 lg:py-8 text-center border-t-2 border-gray-200 text-gray-600 px-4">
+      <footer className="no-print mt-16 lg:mt-24 py-6 lg:py-8 text-center border-t-2 border-gray-200 text-gray-600 px-4">
         <p className="text-xs lg:text-sm mb-2">
           JONIX S.p.A. Benefit Corporation | Via Dell'Artigianato 1, 35020 S.Pietro Viminario (PD), Italy
         </p>
@@ -1038,12 +1177,77 @@ function App() {
         </p>
       </footer>
 
-      {/* Print Styles */}
+      {/* Enhanced Print Styles */}
       <style>{`
         @media print {
-          header, footer, button {
+          /* Hide non-print elements */
+          .no-print {
             display: none !important;
           }
+
+          /* Show print-only elements */
+          .print-only {
+            display: block !important;
+          }
+
+          /* Page setup */
+          @page {
+            size: A4;
+            margin: 20mm;
+          }
+
+          body {
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+          }
+
+          /* Print header styling */
+          .print-header {
+            margin-bottom: 30px;
+          }
+
+          /* Prevent page breaks inside recommendations */
+          .print-recommendation {
+            page-break-inside: avoid;
+            margin-bottom: 30px;
+          }
+
+          /* Print section page break handling */
+          .print-section {
+            page-break-inside: avoid;
+          }
+
+          /* Footer on last page */
+          .print-footer {
+            page-break-before: auto;
+          }
+
+          /* Ensure colors print */
+          * {
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+          }
+
+          /* Better table rendering */
+          table {
+            page-break-inside: avoid;
+          }
+
+          /* Improve text readability */
+          body {
+            font-size: 11pt;
+            line-height: 1.4;
+          }
+
+          h1 { font-size: 24pt; }
+          h2 { font-size: 20pt; }
+          h3 { font-size: 16pt; }
+          h4 { font-size: 14pt; }
+        }
+
+        /* Hide print-only elements by default */
+        .print-only {
+          display: none;
         }
       `}</style>
     </div>
