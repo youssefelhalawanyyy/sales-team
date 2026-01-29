@@ -1,7 +1,6 @@
 [build]
+  command = "npm run build"
   publish = "build"
-  functions = "netlify/functions"
 
 [functions]
-  node_bundler = "esbuild"
-  external_node_modules = ["@google/generative-ai"]
+  directory = "netlify/functions"
