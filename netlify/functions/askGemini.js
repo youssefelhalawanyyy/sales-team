@@ -1,44 +1,54 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export default async (req, context) => {
+export default async function handler(req) {
   try {
-    // Allow only POST
+    // Only allow POST
     if (req.method !== "POST") {
-      return {
-        statusCode: 405,
-        body: "Method Not Allowed",
-      };
+      return new Response("Method Not Allowed", {
+        status: 405
+      });
     }
 
-    const { prompt } = JSON.parse(req.body || "{}");
+    const body = await req.json();
+
+    const { prompt } = body;
 
     if (!prompt) {
-      return {
-        statusCode: 400,
-        body: "Prompt required",
-      };
+      return new Response("Prompt is required", {
+        status: 400
+      });
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(
+      process.env.GEMINI_API_KEY
+    );
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-1.5-flash"
     });
 
     const result = await model.generateContent(prompt);
 
     const text = result.response.text();
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ reply: text }),
-    };
-  } catch (err) {
-    console.error("Gemini error:", err);
+    return new Response(
+      JSON.stringify({ reply: text }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    );
 
-    return {
-      statusCode: 500,
-      body: "Gemini server error",
-    };
+  } catch (error) {
+    console.error("Gemini error:", error);
+
+    return new Response(
+      "Gemini server error",
+      {
+        status: 500
+      }
+    );
   }
-};
+}
