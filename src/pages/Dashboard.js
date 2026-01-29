@@ -13,7 +13,11 @@ import {
   Star,
   Trophy,
   Flame,
-  Target
+  Target,
+  Sparkles,
+  Activity,
+  Zap,
+  Crown
 } from 'lucide-react';
 
 import { formatCurrency } from '../utils/currency';
@@ -163,7 +167,8 @@ export const Dashboard = () => {
       list.push({
         title: 'Rising Seller',
         desc: 'Closed 5+ deals',
-        icon: Target
+        icon: Target,
+        color: 'from-blue-500 to-cyan-500'
       });
     }
 
@@ -171,7 +176,8 @@ export const Dashboard = () => {
       list.push({
         title: 'Deal Maker',
         desc: 'Closed 15+ deals',
-        icon: Trophy
+        icon: Trophy,
+        color: 'from-purple-500 to-pink-500'
       });
     }
 
@@ -179,7 +185,8 @@ export const Dashboard = () => {
       list.push({
         title: 'Master Closer',
         desc: 'Closed 30+ deals',
-        icon: Flame
+        icon: Flame,
+        color: 'from-orange-500 to-red-500'
       });
     }
 
@@ -190,7 +197,8 @@ export const Dashboard = () => {
       list.push({
         title: 'Big Earner',
         desc: 'Generated 50K+ EGP (Commission)',
-        icon: DollarSign
+        icon: DollarSign,
+        color: 'from-green-500 to-emerald-500'
       });
     }
 
@@ -198,7 +206,8 @@ export const Dashboard = () => {
       list.push({
         title: 'High Roller',
         desc: 'Generated 200K+ EGP (Commission)',
-        icon: TrendingUp
+        icon: TrendingUp,
+        color: 'from-yellow-500 to-orange-500'
       });
     }
 
@@ -212,7 +221,8 @@ export const Dashboard = () => {
         list.push({
           title: 'Consistent',
           desc: 'Active for 3+ months',
-          icon: CalendarDays
+          icon: CalendarDays,
+          color: 'from-indigo-500 to-blue-500'
         });
       }
 
@@ -220,7 +230,8 @@ export const Dashboard = () => {
         list.push({
           title: 'Loyal Member',
           desc: 'Active for 1+ year',
-          icon: Award
+          icon: Award,
+          color: 'from-amber-500 to-yellow-500'
         });
       }
     }
@@ -232,7 +243,8 @@ export const Dashboard = () => {
       list.push({
         title: 'Top Performer',
         desc: '20+ personal deals',
-        icon: Star
+        icon: Star,
+        color: 'from-pink-500 to-rose-500'
       });
     }
 
@@ -272,19 +284,38 @@ export const Dashboard = () => {
   };
 
 
-  const StatCard = ({ title, value, icon: Icon, color }) => (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition">
-      <div className="flex items-center justify-between">
+  const StatCard = ({ title, value, icon: Icon, gradient, trend }) => (
+    <div className="group relative bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden animate-fadeInUp">
+      
+      {/* Background Gradient on Hover */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
+      
+      {/* Content */}
+      <div className="relative p-6">
+        <div className="flex items-start justify-between">
 
-        <div>
-          <p className="text-sm text-gray-500 font-medium">{title}</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
+          <div className="flex-1">
+            <p className="text-sm text-gray-500 font-semibold uppercase tracking-wide mb-2">{title}</p>
+            <p className="text-3xl lg:text-4xl font-bold bg-gradient-to-br from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              {value}
+            </p>
+            
+            {trend && (
+              <div className="flex items-center gap-1 mt-2">
+                <TrendingUp className="w-4 h-4 text-green-500" />
+                <span className="text-xs font-semibold text-green-600">{trend}</span>
+              </div>
+            )}
+          </div>
+
+          <div className={`p-4 rounded-2xl bg-gradient-to-br ${gradient} shadow-lg transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+            <Icon className="w-7 h-7 text-white" strokeWidth={2.5} />
+          </div>
+
         </div>
 
-        <div className={`p-3 rounded-xl ${color}`}>
-          <Icon className="w-7 h-7" />
-        </div>
-
+        {/* Decorative Element */}
+        <div className={`absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r ${gradient} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`}></div>
       </div>
     </div>
   );
@@ -292,8 +323,12 @@ export const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-indigo-400 rounded-full animate-spin animation-delay-150"></div>
+        </div>
+        <p className="mt-4 text-gray-600 font-medium animate-pulse">Loading your dashboard...</p>
       </div>
     );
   }
@@ -304,189 +339,358 @@ export const Dashboard = () => {
   =================================== */
 
   return (
-    <div className="space-y-10">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 pb-10">
+      
+      <div className="space-y-8">
 
-      {/* HEADER */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8 text-white shadow">
-
-        <h1 className="text-3xl font-bold">
-          Welcome, {currentUser?.firstName || currentUser?.email}
-        </h1>
-
-        <p className="mt-2 text-blue-100 capitalize">
-          {userRole?.replace('_', ' ')} • Member for {getWorkDuration()}
-        </p>
-
-      </div>
-
-
-      {/* ADMIN STATS */}
-      {userRole === 'admin' && (
-        <>
-          <h2 className="text-xl font-bold text-gray-900">
-            System Overview
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-
-            <StatCard
-              title="Total Deals"
-              value={stats.totalDeals}
-              icon={Briefcase}
-              color="bg-blue-100 text-blue-600"
-            />
-
-            <StatCard
-              title="Total Income"
-              value={formatCurrency(stats.totalIncome)}
-              icon={DollarSign}
-              color="bg-purple-100 text-purple-600"
-            />
-
-            <StatCard
-              title="Active Users"
-              value={stats.activeUsers}
-              icon={Users}
-              color="bg-orange-100 text-orange-600"
-            />
-
-            <StatCard
-              title="Closed Deals"
-              value={stats.closedDeals}
-              icon={Trophy}
-              color="bg-green-100 text-green-600"
-            />
-
+        {/* HEADER */}
+        <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-8 lg:p-10 text-white shadow-2xl overflow-hidden animate-fadeInDown">
+          
+          {/* Background Pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
           </div>
-        </>
-      )}
 
-
-      {/* USER STATS */}
-      {userRole !== 'admin' && (
-        <>
-          <h2 className="text-xl font-bold text-gray-900">
-            Your Performance (Commission)
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
-            <StatCard
-              title="My Deals"
-              value={stats.myDeals}
-              icon={Briefcase}
-              color="bg-blue-100 text-blue-600"
-            />
-
-            <StatCard
-              title="My Commission"
-              value={formatCurrency(stats.myIncome)}
-              icon={DollarSign}
-              color="bg-purple-100 text-purple-600"
-            />
-
-            <StatCard
-              title="Closed Deals"
-              value={stats.closedDeals}
-              icon={Trophy}
-              color="bg-green-100 text-green-600"
-            />
-
-          </div>
-        </>
-      )}
-
-
-      {/* PROFILE */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-
-        <h2 className="text-xl font-bold text-gray-900 mb-4">
-          Your Profile
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-          <div className="flex items-center gap-4">
-            <CalendarDays className="w-8 h-8 text-blue-600" />
-
+          {/* Content */}
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <p className="text-sm text-gray-500">Member Since</p>
-              <p className="font-semibold text-gray-900">
-                {joinedDate?.toLocaleDateString() || '—'}
-              </p>
+              <div className="flex items-center gap-3 mb-2">
+                <Sparkles className="w-8 h-8 text-yellow-300 animate-pulse" />
+                <h1 className="text-3xl lg:text-4xl font-bold">
+                  Welcome back, {currentUser?.firstName || currentUser?.email?.split('@')[0]}!
+                </h1>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 mt-3">
+                <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold border border-white/30">
+                  <Crown className="w-4 h-4" />
+                  {userRole?.replace('_', ' ').toUpperCase()}
+                </span>
+                
+                <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold border border-white/30">
+                  <CalendarDays className="w-4 h-4" />
+                  Member for {getWorkDuration()}
+                </span>
+
+                <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold border border-white/30">
+                  <Activity className="w-4 h-4" />
+                  Active
+                </span>
+              </div>
+            </div>
+
+            {/* User Avatar */}
+            <div className="hidden lg:flex items-center justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 bg-white/30 rounded-full blur-xl animate-pulse-slow"></div>
+                <div className="relative w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm border-4 border-white/40 flex items-center justify-center shadow-2xl">
+                  <span className="text-3xl font-bold text-white">
+                    {currentUser?.email?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div className="flex items-center gap-4">
-            <Award className="w-8 h-8 text-yellow-600" />
 
-            <div>
-              <p className="text-sm text-gray-500">Work Duration</p>
-              <p className="font-semibold text-gray-900">
-                {getWorkDuration()}
-              </p>
+        {/* ADMIN STATS */}
+        {userRole === 'admin' && (
+          <div className="space-y-6 animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
+            
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl">
+                <Zap className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                System Overview
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+              <StatCard
+                title="Total Deals"
+                value={stats.totalDeals}
+                icon={Briefcase}
+                gradient="from-blue-500 to-cyan-500"
+                trend="+12% this month"
+              />
+
+              <StatCard
+                title="Total Income"
+                value={formatCurrency(stats.totalIncome)}
+                icon={DollarSign}
+                gradient="from-purple-500 to-pink-500"
+                trend="+8% this month"
+              />
+
+              <StatCard
+                title="Active Users"
+                value={stats.activeUsers}
+                icon={Users}
+                gradient="from-orange-500 to-red-500"
+              />
+
+              <StatCard
+                title="Closed Deals"
+                value={stats.closedDeals}
+                icon={Trophy}
+                gradient="from-green-500 to-emerald-500"
+                trend="+15% this month"
+              />
+
             </div>
           </div>
+        )}
 
-          <div className="flex items-center gap-4">
-            <TrendingUp className="w-8 h-8 text-green-600" />
 
-            <div>
-              <p className="text-sm text-gray-500">Status</p>
-              <p className="font-semibold text-gray-900">Active</p>
+        {/* USER STATS */}
+        {userRole !== 'admin' && (
+          <div className="space-y-6 animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
+            
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                Your Performance
+              </h2>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+              <StatCard
+                title="My Deals"
+                value={stats.myDeals}
+                icon={Briefcase}
+                gradient="from-blue-500 to-cyan-500"
+              />
+
+              <StatCard
+                title="My Commission"
+                value={formatCurrency(stats.myIncome)}
+                icon={DollarSign}
+                gradient="from-purple-500 to-pink-500"
+              />
+
+              <StatCard
+                title="Closed Deals"
+                value={stats.closedDeals}
+                icon={Trophy}
+                gradient="from-green-500 to-emerald-500"
+              />
+
+            </div>
+          </div>
+        )}
+
+
+        {/* PROFILE */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 p-6 lg:p-8 animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
+
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl">
+              <Award className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              Your Profile
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <div className="group flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-100 hover:shadow-md transition-all duration-300">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <CalendarDays className="w-6 h-6 text-white" strokeWidth={2.5} />
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Member Since</p>
+                <p className="font-bold text-gray-900 text-lg">
+                  {joinedDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) || '—'}
+                </p>
+              </div>
+            </div>
+
+            <div className="group flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-100 hover:shadow-md transition-all duration-300">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <Award className="w-6 h-6 text-white" strokeWidth={2.5} />
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Work Duration</p>
+                <p className="font-bold text-gray-900 text-lg">
+                  {getWorkDuration()}
+                </p>
+              </div>
+            </div>
+
+            <div className="group flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 hover:shadow-md transition-all duration-300">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <Activity className="w-6 h-6 text-white" strokeWidth={2.5} />
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Status</p>
+                <p className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                  Active
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        {/* ACHIEVEMENTS */}
+        <div className="relative bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-2xl border-2 border-yellow-200 shadow-lg p-6 lg:p-8 overflow-hidden animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
+
+          {/* Background Decoration */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-200/30 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-orange-200/30 rounded-full blur-3xl"></div>
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl shadow-lg">
+                <Trophy className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-yellow-700 to-orange-600 bg-clip-text text-transparent">
+                Achievements & Badges
+              </h2>
+            </div>
+
+            {achievements.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-100 mb-4">
+                  <Target className="w-8 h-8 text-yellow-600" />
+                </div>
+                <p className="text-gray-600 font-medium mb-2">
+                  No achievements yet
+                </p>
+                <p className="text-sm text-gray-500">
+                  Keep working hard to unlock your first badge! 🚀
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                {achievements.map((a, i) => {
+                  const Icon = a.icon;
+
+                  return (
+                    <div
+                      key={i}
+                      className="group relative bg-white rounded-2xl shadow-md hover:shadow-xl border-2 border-gray-100 p-5 transition-all duration-300 hover:-translate-y-1 animate-scaleIn overflow-hidden"
+                      style={{ animationDelay: `${i * 100}ms` }}
+                    >
+                      
+                      {/* Background Gradient */}
+                      <div className={`absolute inset-0 bg-gradient-to-br ${a.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
+
+                      {/* Content */}
+                      <div className="relative z-10 flex items-start gap-4">
+                        
+                        <div className={`p-3 rounded-xl bg-gradient-to-br ${a.color} shadow-lg transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-300`}>
+                          <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-gray-900 mb-1 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text" style={{ backgroundImage: `linear-gradient(to right, var(--tw-gradient-stops))` }}>
+                            {a.title}
+                          </p>
+
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                            {a.desc}
+                          </p>
+                        </div>
+
+                      </div>
+
+                      {/* Shine Effect */}
+                      <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+
+                    </div>
+                  );
+                })}
+
+              </div>
+            )}
           </div>
 
         </div>
 
       </div>
 
+      {/* Styles */}
+      <style>{`
+        @keyframes fadeInDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
 
-      {/* ACHIEVEMENTS */}
-      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl border border-yellow-200 p-6">
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
 
-        <h2 className="text-xl font-bold text-gray-900 mb-4">
-          Achievements
-        </h2>
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
 
-        {achievements.length === 0 ? (
-          <p className="text-gray-600 text-sm">
-            No achievements yet. Keep working to unlock your first badge 🚀
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        @keyframes pulse-slow {
+          0%, 100% {
+            opacity: 0.6;
+          }
+          50% {
+            opacity: 1;
+          }
+        }
 
-            {achievements.map((a, i) => {
-              const Icon = a.icon;
+        .animate-fadeInDown {
+          animation: fadeInDown 0.6s ease-out;
+        }
 
-              return (
-                <div
-                  key={i}
-                  className="bg-white rounded-xl shadow-sm border p-4 flex items-center gap-4"
-                >
+        .animate-fadeInUp {
+          animation: fadeInUp 0.6s ease-out forwards;
+          opacity: 0;
+        }
 
-                  <div className="p-3 rounded-xl bg-yellow-100 text-yellow-700">
-                    <Icon size={22} />
-                  </div>
+        .animate-scaleIn {
+          animation: scaleIn 0.5s ease-out forwards;
+          opacity: 0;
+        }
 
-                  <div>
-                    <p className="font-semibold text-gray-900">
-                      {a.title}
-                    </p>
+        .animate-pulse-slow {
+          animation: pulse-slow 3s ease-in-out infinite;
+        }
 
-                    <p className="text-sm text-gray-500">
-                      {a.desc}
-                    </p>
-                  </div>
-
-                </div>
-              );
-            })}
-
-          </div>
-        )}
-
-      </div>
+        .animation-delay-150 {
+          animation-delay: 150ms;
+        }
+      `}</style>
 
     </div>
   );
