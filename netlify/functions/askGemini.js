@@ -1,60 +1,68 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-exports.handler = async function (event) {
+export default async function handler(request) {
   try {
-    if (event.httpMethod !== "POST") {
-      return {
-        statusCode: 405,
-        body: "Method Not Allowed"
-      };
+    // Only allow POST
+    if (request.method !== "POST") {
+      return new Response("Method Not Allowed", { status: 405 });
     }
 
-    const body = JSON.parse(event.body || "{}");
-
+    // Read body
+    const body = await request.json();
     const { prompt } = body;
 
     if (!prompt) {
-      return {
-        statusCode: 400,
-        body: "Prompt is required"
-      };
+      return new Response(
+        JSON.stringify({ error: "Prompt is required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
+    // Check API key
     if (!process.env.GEMINI_API_KEY) {
-      return {
-        statusCode: 500,
-        body: "Missing API key"
-      };
+      throw new Error("Missing GEMINI_API_KEY");
     }
 
-    const genAI = new GoogleGenerativeAI(
-      process.env.GEMINI_API_KEY
-    );
+    // Init Gemini
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash"
+      model: "gemini-1.5-flash",
     });
 
+    // Generate
     const result = await model.generateContent(prompt);
 
     const text = result.response.text();
 
-    return {
-      statusCode: 200,
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ reply: text })
-    };
+    // Return success
+    return new Response(
+      JSON.stringify({ reply: text }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
   } catch (err) {
-    console.error("Gemini error:", err);
+    console.error("Gemini Error:", err);
 
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        error: err.message || "Server error"
-      })
-    };
+    return new Response(
+      JSON.stringify({
+        error: "Server error",
+        details: err.message,
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
   }
-};
+}
