@@ -1,22 +1,30 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-export default async function handler(req) {
+exports.handler = async function (event) {
   try {
-    // Only allow POST
-    if (req.method !== "POST") {
-      return new Response("Method Not Allowed", {
-        status: 405
-      });
+    if (event.httpMethod !== "POST") {
+      return {
+        statusCode: 405,
+        body: "Method Not Allowed"
+      };
     }
 
-    const body = await req.json();
+    const body = JSON.parse(event.body || "{}");
 
     const { prompt } = body;
 
     if (!prompt) {
-      return new Response("Prompt is required", {
-        status: 400
-      });
+      return {
+        statusCode: 400,
+        body: "Prompt is required"
+      };
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      return {
+        statusCode: 500,
+        body: "Missing API key"
+      };
     }
 
     const genAI = new GoogleGenerativeAI(
@@ -31,24 +39,22 @@ export default async function handler(req) {
 
     const text = result.response.text();
 
-    return new Response(
-      JSON.stringify({ reply: text }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json"
-        }
-      }
-    );
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ reply: text })
+    };
 
-  } catch (error) {
-    console.error("Gemini error:", error);
+  } catch (err) {
+    console.error("Gemini error:", err);
 
-    return new Response(
-      "Gemini server error",
-      {
-        status: 500
-      }
-    );
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        error: err.message || "Server error"
+      })
+    };
   }
-}
+};
