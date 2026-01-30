@@ -1,412 +1,470 @@
-// Admin Users Page – Improved Interface (UI Only)
+import React, { useEffect, useState } from 'react';
 
-import React, { useState, useEffect } from "react";
-import { db, auth, secondaryAuth } from "../firebase";
-import {
-  collection,
-  getDocs,
-  addDoc,
-  updateDoc,
-  doc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { auth, db } from '../firebase';
 
 import {
   createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  signOut,
-} from "firebase/auth";
+  sendPasswordResetEmail
+} from 'firebase/auth';
 
 import {
-  Plus,
-  Edit2,
-  CheckCircle,
-  AlertCircle,
-  Lock,
-  UserX,
-  Users,
-} from "lucide-react";
+  collection,
+  getDocs,
+  doc,
+  setDoc,
+  updateDoc,
+  serverTimestamp
+} from 'firebase/firestore';
 
-/* ------------------------------------
-   USER MANAGEMENT – MODERN UI
------------------------------------- */
+import { useAuth } from '../contexts/AuthContext';
+
+/* ============================= */
 
 const ROLES = [
-  { value: "admin", label: "Admin" },
-  { value: "finance_manager", label: "Finance Manager" },
-  { value: "sales_manager", label: "Sales Manager" },
-  { value: "team_leader", label: "Team Leader" },
-  { value: "sales_member", label: "Sales Member" },
+  'admin',
+  'sales_manager',
+  'team_leader',
+  'sales_member',
+  'finance_manager'
 ];
 
-export const AdminUsersPage = () => {
-  const [users, setUsers] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
+/* ============================= */
 
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    role: "sales_member",
-  });
+export default function AdminUsersPage() {
+
+  const { currentUser } = useAuth();
+
+  const [users, setUsers] = useState([]);
 
   const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
 
-  /* ---------------- LOAD ---------------- */
+  const [showForm, setShowForm] = useState(false);
+
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    role: 'sales_member'
+  });
+
+  /* ============================= */
 
   useEffect(() => {
-    fetchUsers();
+    loadUsers();
   }, []);
 
-  const fetchUsers = async () => {
-    const snap = await getDocs(collection(db, "users"));
+  /* ============================= */
 
-    setUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  };
+  async function loadUsers() {
 
-  /* ---------------- SUBMIT ---------------- */
+    const snap = await getDocs(collection(db, 'users'));
 
-  const handleSubmit = async (e) => {
+    setUsers(
+      snap.docs.map(d => ({
+        id: d.id,
+        ...d.data()
+      }))
+    );
+  }
+
+  /* ============================= */
+
+  async function createUser(e) {
     e.preventDefault();
+
+    if (!form.password || form.password.length < 6) {
+      alert('Password min 6 chars');
+      return;
+    }
+
     setLoading(true);
-    setErrorMessage("");
 
     try {
-      if (editingUser) {
-        await updateDoc(doc(db, "users", editingUser.id), {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          role: formData.role,
-          updatedAt: serverTimestamp(),
-        });
 
-        setSuccessMessage("User updated successfully");
-      } else {
-        const cred = await createUserWithEmailAndPassword(
-          secondaryAuth,
-          formData.email,
-          formData.password
+      /* CREATE AUTH ACCOUNT */
+      const cred =
+        await createUserWithEmailAndPassword(
+          auth,
+          form.email,
+          form.password
         );
 
-        await addDoc(collection(db, "users"), {
-          uid: cred.user.uid,
-          email: formData.email,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          role: formData.role,
-          isActive: true,
-          createdAt: serverTimestamp(),
-          createdBy: auth.currentUser.uid,
-        });
+      const uid = cred.user.uid;
 
-        await signOut(secondaryAuth);
+      /* CREATE FIRESTORE PROFILE */
+      await setDoc(doc(db, 'users', uid), {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
 
-        setSuccessMessage("User created successfully");
+        role: form.role,
+
+        isActive: true,
+
+        createdBy: currentUser.uid,
+
+        createdAt: serverTimestamp()
+      });
+
+      alert('User created');
+
+      setForm({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        role: 'sales_member'
+      });
+
+      setShowForm(false);
+
+      loadUsers();
+
+    } catch (err) {
+
+      if (err.code === 'auth/email-already-in-use') {
+        alert('Email already exists');
+      } else {
+        alert(err.message);
       }
 
-      resetForm();
-      fetchUsers();
-    } catch (err) {
-      setErrorMessage(err.message);
-    } finally {
-      setLoading(false);
+      console.error(err);
     }
-  };
 
-  const resetForm = () => {
-    setFormData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      password: "",
-      role: "sales_member",
-    });
+    setLoading(false);
+  }
 
-    setEditingUser(null);
-    setShowForm(false);
+  /* ============================= */
 
-    setTimeout(() => setSuccessMessage(""), 3000);
-  };
+  async function updateUser(id, data) {
 
-  /* ---------------- ACTIONS ---------------- */
-
-  const handleEdit = (user) => {
-    setEditingUser(user);
-    setShowForm(true);
-
-    setFormData({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      password: "",
-      role: user.role,
-    });
-  };
-
-  const toggleUserStatus = async (user) => {
-    await updateDoc(doc(db, "users", user.id), {
-      isActive: !user.isActive,
-      updatedAt: serverTimestamp(),
-    });
-
-    fetchUsers();
-  };
-
-  const resetPassword = async (email) => {
     try {
-      await sendPasswordResetEmail(auth, email);
-      setSuccessMessage("Password reset email sent");
+
+      await updateDoc(doc(db, 'users', id), {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        role: data.role,
+        isActive: data.isActive
+      });
+
+      alert('Updated');
+
+      loadUsers();
+
     } catch (err) {
-      setErrorMessage(err.message);
+      alert('Update failed');
+      console.error(err);
     }
-  };
+  }
 
-  /* ---------------- PERMISSIONS ---------------- */
+  /* ============================= */
 
-  const canManageUsers =
-    users.find((u) => u.uid === auth.currentUser?.uid)?.role === "admin";
+  async function resetPassword(email) {
 
-  /* ---------------- UI ---------------- */
+    if (!window.confirm('Send reset email?')) return;
+
+    try {
+
+      await sendPasswordResetEmail(auth, email);
+
+      alert('Reset email sent');
+
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  /* ============================= */
 
   return (
-    <div className="p-4 md:p-6 space-y-6 bg-gray-50 min-h-screen">
-      {/* HEADER */}
+    <div className="space-y-6">
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Users className="text-indigo-600" />
-          <h1 className="text-2xl md:text-3xl font-bold">
-            User Management
-          </h1>
-        </div>
+      <h1 className="text-3xl font-bold">
+        User Management
+      </h1>
 
-        {canManageUsers && (
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl shadow"
-          >
-            <Plus size={18} />
-            {editingUser ? "Edit User" : "Add User"}
-          </button>
-        )}
-      </div>
+      <button
+        onClick={() => setShowForm(true)}
+        className="btn-blue"
+      >
+        Add User
+      </button>
 
-      {/* ALERTS */}
+      {/* USERS TABLE */}
 
-      {successMessage && (
-        <div className="bg-green-50 border border-green-200 p-3 rounded-xl flex gap-2 text-sm">
-          <CheckCircle className="text-green-600" />
-          {successMessage}
-        </div>
-      )}
+      <div className="bg-white rounded shadow overflow-x-auto">
 
-      {errorMessage && (
-        <div className="bg-red-50 border border-red-200 p-3 rounded-xl flex gap-2 text-sm">
-          <AlertCircle className="text-red-600" />
-          {errorMessage}
-        </div>
-      )}
+        <table>
 
-      {/* FORM */}
-
-      {showForm && canManageUsers && (
-        <div className="bg-white p-6 rounded-2xl shadow">
-          <h3 className="font-semibold text-lg mb-4">
-            {editingUser ? "Edit User" : "Create New User"}
-          </h3>
-
-          <form
-            onSubmit={handleSubmit}
-            className="grid grid-cols-1 md:grid-cols-2 gap-4"
-          >
-            <input
-              placeholder="First Name"
-              value={formData.firstName}
-              onChange={(e) =>
-                setFormData({ ...formData, firstName: e.target.value })
-              }
-              required
-              className="input"
-            />
-
-            <input
-              placeholder="Last Name"
-              value={formData.lastName}
-              onChange={(e) =>
-                setFormData({ ...formData, lastName: e.target.value })
-              }
-              required
-              className="input"
-            />
-
-            <input
-              placeholder="Email"
-              type="email"
-              value={formData.email}
-              disabled={!!editingUser}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              required
-              className="input"
-            />
-
-            {!editingUser && (
-              <input
-                placeholder="Password"
-                type="password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-                required
-                className="input"
-              />
-            )}
-
-            <select
-              value={formData.role}
-              onChange={(e) =>
-                setFormData({ ...formData, role: e.target.value })
-              }
-              className="input"
-            >
-              {ROLES.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-
-            <div className="md:col-span-2 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-4 py-2 rounded-lg border"
-              >
-                Cancel
-              </button>
-
-              <button
-                disabled={loading}
-                className="px-4 py-2 rounded-lg bg-indigo-600 text-white"
-              >
-                {editingUser ? "Update" : "Create"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* TABLE */}
-
-      <div className="bg-white shadow rounded-2xl overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-100 text-gray-600">
+          <thead>
             <tr>
-              <Th>Name</Th>
-              <Th>Email</Th>
-              <Th>Role</Th>
-              <Th>Status</Th>
-              <Th align="right">Actions</Th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
 
           <tbody>
-            {users.map((user) => (
-              <tr key={user.id} className="border-t hover:bg-gray-50">
-                <Td>
-                  <p className="font-medium">
-                    {user.firstName} {user.lastName}
-                  </p>
-                </Td>
 
-                <Td>{user.email}</Td>
+            {users.map(u => (
 
-                <Td className="capitalize">
-                  {user.role.replace("_", " ")}
-                </Td>
+              <UserRow
+                key={u.id}
+                user={u}
+                onSave={updateUser}
+                onReset={resetPassword}
+              />
 
-                <Td>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      user.isActive
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {user.isActive ? "Active" : "Disabled"}
-                  </span>
-                </Td>
-
-                <Td className="flex justify-end gap-2 p-2">
-                  {canManageUsers && (
-                    <>
-                      <IconBtn
-                        onClick={() => handleEdit(user)}
-                        color="text-blue-600"
-                      >
-                        <Edit2 size={16} />
-                      </IconBtn>
-
-                      <IconBtn
-                        onClick={() => toggleUserStatus(user)}
-                        color="text-orange-600"
-                      >
-                        <UserX size={16} />
-                      </IconBtn>
-
-                      <IconBtn
-                        onClick={() => resetPassword(user.email)}
-                        color="text-purple-600"
-                      >
-                        <Lock size={16} />
-                      </IconBtn>
-                    </>
-                  )}
-                </Td>
-              </tr>
             ))}
+
           </tbody>
+
         </table>
+
       </div>
 
-      {/* INPUT STYLE */}
-      <style>{`
-        .input {
-          border: 1px solid #e5e7eb;
-          padding: 0.5rem 0.75rem;
-          border-radius: 0.5rem;
-          width: 100%;
-          outline: none;
-        }
+      {/* CREATE MODAL */}
 
-        .input:focus {
-          border-color: #6366f1;
-          box-shadow: 0 0 0 1px #6366f1;
-        }
-      `}</style>
+      {showForm && (
+
+        <Modal onClose={() => setShowForm(false)}>
+
+          <h2 className="font-bold mb-3">
+            New User
+          </h2>
+
+          <form onSubmit={createUser} className="space-y-2">
+
+            <input
+              className="input"
+              placeholder="First Name"
+              required
+              value={form.firstName}
+              onChange={e =>
+                setForm({ ...form, firstName: e.target.value })
+              }
+            />
+
+            <input
+              className="input"
+              placeholder="Last Name"
+              required
+              value={form.lastName}
+              onChange={e =>
+                setForm({ ...form, lastName: e.target.value })
+              }
+            />
+
+            <input
+              className="input"
+              type="email"
+              placeholder="Email"
+              required
+              value={form.email}
+              onChange={e =>
+                setForm({ ...form, email: e.target.value })
+              }
+            />
+
+            <input
+              className="input"
+              type="password"
+              placeholder="Password"
+              required
+              value={form.password}
+              onChange={e =>
+                setForm({ ...form, password: e.target.value })
+              }
+            />
+
+            <select
+              className="input"
+              value={form.role}
+              onChange={e =>
+                setForm({ ...form, role: e.target.value })
+              }
+            >
+
+              {ROLES.map(r => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+
+            </select>
+
+            <div className="flex justify-end gap-2">
+
+              <button className="btn-blue">
+                Create
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="btn-gray"
+              >
+                Cancel
+              </button>
+
+            </div>
+
+          </form>
+
+        </Modal>
+
+      )}
+
     </div>
   );
-};
+}
 
-/* ---------------- SMALL UI COMPONENTS ---------------- */
+/* ============================= */
 
-const Th = ({ children, align = "left" }) => (
-  <th className={`p-3 text-${align} font-medium`}>{children}</th>
-);
+function UserRow({ user, onSave, onReset }) {
 
-const Td = ({ children }) => <td className="p-3">{children}</td>;
+  const [edit, setEdit] = useState(false);
 
-const IconBtn = ({ children, onClick, color }) => (
-  <button
-    onClick={onClick}
-    className={`p-1 rounded hover:bg-gray-100 ${color}`}
-  >
-    {children}
-  </button>
-);
+  const [data, setData] = useState({ ...user });
+
+  return (
+    <tr className="border-t">
+
+      <td>
+        {edit ? (
+          <input
+            className="input"
+            value={data.firstName}
+            onChange={e =>
+              setData({ ...data, firstName: e.target.value })
+            }
+          />
+        ) : (
+          user.firstName + ' ' + user.lastName
+        )}
+      </td>
+
+      <td>{user.email}</td>
+
+      <td>
+        {edit ? (
+
+          <select
+            className="input"
+            value={data.role}
+            onChange={e =>
+              setData({ ...data, role: e.target.value })
+            }
+          >
+
+            {ROLES.map(r => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+
+          </select>
+
+        ) : (
+          user.role
+        )}
+      </td>
+
+      <td>
+        {edit ? (
+
+          <select
+            className="input"
+            value={data.isActive}
+            onChange={e =>
+              setData({
+                ...data,
+                isActive: e.target.value === 'true'
+              })
+            }
+          >
+            <option value="true">Active</option>
+            <option value="false">Disabled</option>
+          </select>
+
+        ) : (
+          user.isActive ? 'Active' : 'Disabled'
+        )}
+      </td>
+
+      <td className="flex gap-2 py-2">
+
+        {edit ? (
+
+          <>
+
+            <button
+              onClick={() => {
+                onSave(user.id, data);
+                setEdit(false);
+              }}
+              className="btn-blue"
+            >
+              Save
+            </button>
+
+            <button
+              onClick={() => {
+                setEdit(false);
+                setData(user);
+              }}
+              className="btn-gray"
+            >
+              Cancel
+            </button>
+
+          </>
+
+        ) : (
+
+          <>
+
+            <button
+              onClick={() => setEdit(true)}
+              className="text-blue-600"
+            >
+              Edit
+            </button>
+
+            <button
+              onClick={() => onReset(user.email)}
+              className="text-purple-600"
+            >
+              Reset
+            </button>
+
+          </>
+
+        )}
+
+      </td>
+
+    </tr>
+  );
+}
+
+/* ============================= */
+
+function Modal({ children, onClose }) {
+  return (
+    <div
+      className="fixed inset-0 modal-backdrop z-50 flex justify-center items-center"
+      onClick={onClose}
+    >
+      <div
+        className="modal-box"
+        onClick={e => e.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
