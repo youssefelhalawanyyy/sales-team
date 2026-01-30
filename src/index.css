@@ -58,7 +58,14 @@ html, body, #root {
 
 /* Landscape orientation fixes */
 @media (max-height: 500px) and (orientation: landscape) {
-  header, nav {
+  header {
+    height: auto;
+  }
+
+  .h-14 { height: 48px !important; }
+  .h-16 { height: 56px !important; }
+
+  header nav {
     height: auto;
   }
 
@@ -68,21 +75,21 @@ html, body, #root {
 
   /* Reduce padding in landscape */
   .py-8 {
-    padding-top: 12px !important;
-    padding-bottom: 12px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
   }
 
   .p-6 {
-    padding: 12px !important;
+    padding: 8px !important;
   }
 
   .p-4 {
-    padding: 8px !important;
+    padding: 6px !important;
   }
 
   /* Better card sizing in landscape */
   .grid {
-    gap: 8px !important;
+    gap: 6px !important;
   }
 }
 

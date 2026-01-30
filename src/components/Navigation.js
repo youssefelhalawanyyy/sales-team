@@ -253,24 +253,24 @@ export const Navigation = ({ userRole }) => {
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm backdrop-blur-sm bg-white/95">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
 
         {/* TOP BAR */}
-        <div className="flex items-center justify-between h-16 lg:h-20">
+        <div className="flex items-center justify-between h-14 sm:h-16 lg:h-20">
 
           {/* LOGO */}
           <div
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-3 cursor-pointer group transition-all duration-300 hover:scale-105"
+            className="flex items-center gap-2 sm:gap-3 cursor-pointer group transition-all duration-300 hover:scale-105"
           >
-            <div className="relative w-11 h-11 lg:w-12 lg:h-12">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all duration-300 group-hover:rotate-6">
-                <span className="text-lg lg:text-xl">J</span>
+            <div className="relative w-9 sm:w-11 lg:w-12">
+              <div className="h-9 sm:h-11 lg:h-12 rounded-xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all duration-300 group-hover:rotate-6">
+                <span className="text-base sm:text-lg lg:text-xl">J</span>
               </div>
             </div>
 
             <div className="hidden sm:block">
-              <h1 className="text-lg lg:text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent tracking-tight">JONIX</h1>
+              <h1 className="text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent tracking-tight">JONIX</h1>
               <p className="text-xs text-gray-500 -mt-0.5 font-medium">Management System</p>
             </div>
           </div>
