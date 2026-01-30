@@ -17,9 +17,9 @@ import { Dashboard } from './pages/Dashboard';
 
 // Lazy load heavy pages for faster initial load on mobile
 const AdminUsersPage = React.lazy(() => import('./pages/AdminUsersPage'));
-const FinancePage = React.lazy(() => import('./pages/FinancePage'));
-const FinanceReportsPage = React.lazy(() => import('./pages/FinanceReportsPage'));
-const OwnerSettlementsPage = React.lazy(() => import('./pages/OwnerSettlementsPage'));
+const FinancePage = React.lazy(() => import('./pages/FinancePage').then(m => ({ default: m.FinancePage })));
+const FinanceReportsPage = React.lazy(() => import('./pages/FinanceReportsPage').then(m => ({ default: m.FinanceReportsPage })));
+const OwnerSettlementsPage = React.lazy(() => import('./pages/OwnerSettlementsPage').then(m => ({ default: m.OwnerSettlementsPage })));
 const CommissionPage = React.lazy(() => import('./pages/comission'));
 const DescriptionPage = React.lazy(() => import('./pages/description'));
 const SalesDealsPage = React.lazy(() => import('./pages/SalesDealsPage'));
