@@ -12,7 +12,8 @@ import {
   orderBy,
   query,
   arrayUnion,
-  where
+  where,
+  increment
 } from 'firebase/firestore';
 import { 
   Plus, Trash2, Edit, X, Search, Filter, TrendingUp, Clock, CheckCircle2, 
@@ -70,14 +71,12 @@ export default function SalesDealsPage() {
       
       let dealsQuery;
       
-      // Admin and sales_manager can see all deals
       if (userRole === 'admin' || userRole === 'sales_manager') {
         dealsQuery = query(
           collection(db, 'sales'),
           orderBy('createdAt', 'desc')
         );
       } else {
-        // Regular users: simple query by createdBy only (no composite index needed)
         dealsQuery = query(
           collection(db, 'sales'),
           where('createdBy', '==', currentUser.uid)
@@ -87,15 +86,13 @@ export default function SalesDealsPage() {
       const snapshot = await getDocs(dealsQuery);
       let allDeals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       
-      // Filter archived deals in memory
       const activeDeals = allDeals.filter(deal => !deal.archived);
       
-      // Sort in memory for regular users (since we can't orderBy in the query)
       if (userRole !== 'admin' && userRole !== 'sales_manager') {
         activeDeals.sort((a, b) => {
           const timeA = a.createdAt?.toMillis() || 0;
           const timeB = b.createdAt?.toMillis() || 0;
-          return timeB - timeA; // Descending order (newest first)
+          return timeB - timeA;
         });
       }
       
@@ -111,7 +108,6 @@ export default function SalesDealsPage() {
 
   async function loadArchivedDeals() {
     try {
-      // Simple query for archived deals
       const archivedQuery = query(
         collection(db, 'sales'),
         orderBy('createdAt', 'desc')
@@ -119,8 +115,6 @@ export default function SalesDealsPage() {
       
       const snapshot = await getDocs(archivedQuery);
       const allDeals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      
-      // Filter archived deals in memory
       const archived = allDeals.filter(deal => deal.archived === true);
       
       setArchivedDeals(archived);
@@ -190,19 +184,59 @@ export default function SalesDealsPage() {
         editHistory: arrayUnion(historyEntry)
       });
 
+      // NEW: Handle contact when deal is closed or lost
+      const statusChanged = originalDeal.status !== editDeal.status;
+      const isClosedOrLost = editDeal.status === 'closed' || editDeal.status === 'lost';
+      
+      if (statusChanged && isClosedOrLost && originalDeal.sourceContactId) {
+        try {
+          const contactRef = doc(db, 'contacts', originalDeal.sourceContactId);
+          
+          // Get current contact data to preserve existing deal history
+          const contactSnap = await getDocs(query(collection(db, 'contacts'), where('__name__', '==', originalDeal.sourceContactId)));
+          const currentContact = contactSnap.docs[0]?.data();
+          const currentHistory = currentContact?.dealHistory || { closedDeals: 0, lostDeals: 0 };
+          
+          // Update deal history on the contact
+          const dealHistoryUpdate = {
+            onHold: false,
+            onHoldBy: null,
+            onHoldByName: null,
+            onHoldAt: null,
+            releasedAt: serverTimestamp(),
+            releasedBy: currentUser.uid,
+            releasedByName: `${currentUser.firstName} ${currentUser.lastName}`,
+            dealHistory: {
+              closedDeals: currentHistory.closedDeals + (editDeal.status === 'closed' ? 1 : 0),
+              lostDeals: currentHistory.lostDeals + (editDeal.status === 'lost' ? 1 : 0),
+              lastDealStatus: editDeal.status,
+              lastDealDate: serverTimestamp()
+            }
+          };
+          
+          await updateDoc(contactRef, dealHistoryUpdate);
+          
+          const statusLabel = editDeal.status === 'closed' ? 'closed' : 'lost';
+          alert(`Deal updated successfully! The contact has been released and marked with a "${statusLabel}" deal in their history.`);
+        } catch (e) {
+          console.error('Error updating contact:', e);
+          alert('Deal updated successfully, but failed to update contact status.');
+        }
+      } else {
+        alert('Deal updated successfully!');
+      }
+
       setEditDeal(null);
       loadDeals();
       if (userRole === 'admin' || userRole === 'sales_manager') {
         loadArchivedDeals();
       }
-      alert('Deal updated successfully!');
     } catch (e) {
       console.error('Error updating deal:', e);
       alert('Failed to update deal: ' + e.message);
     }
   }
 
-  // NEW: Function to release a contact when deal is archived/deleted
   async function releaseContact(contactId) {
     if (!contactId) return;
     
@@ -219,11 +253,9 @@ export default function SalesDealsPage() {
       });
     } catch (e) {
       console.error('Error releasing contact:', e);
-      // Don't fail the main operation if contact release fails
     }
   }
 
-  // UPDATED: Archive deal with contact release
   async function archiveDeal(id) {
     if (!window.confirm('Archive this deal? You can restore it later.')) return;
     try {
@@ -236,7 +268,6 @@ export default function SalesDealsPage() {
         archivedByName: `${currentUser.firstName} ${currentUser.lastName}`
       });
 
-      // Release the contact if this deal came from a contact
       if (deal?.sourceContactId) {
         await releaseContact(deal.sourceContactId);
       }
@@ -256,7 +287,6 @@ export default function SalesDealsPage() {
     }
   }
 
-  // UPDATED: Restore deal with contact hold
   async function restoreDeal(id) {
     const deal = archivedDeals.find(d => d.id === id);
     const confirmMessage = deal?.sourceContactId
@@ -273,7 +303,6 @@ export default function SalesDealsPage() {
         restoredByName: `${currentUser.firstName} ${currentUser.lastName}`
       });
 
-      // Put contact back on hold if this deal came from a contact
       if (deal?.sourceContactId) {
         try {
           const contactRef = doc(db, 'contacts', deal.sourceContactId);
@@ -285,7 +314,6 @@ export default function SalesDealsPage() {
           });
         } catch (e) {
           console.error('Error putting contact back on hold:', e);
-          // Continue even if contact update fails
         }
       }
 
@@ -298,7 +326,6 @@ export default function SalesDealsPage() {
     }
   }
 
-  // UPDATED: Delete deal with contact release
   async function deleteDeal(id) {
     if (userRole !== 'admin') {
       alert('Only admins can permanently delete deals.');
@@ -310,7 +337,6 @@ export default function SalesDealsPage() {
       
       await deleteDoc(doc(db, 'sales', id));
 
-      // Release the contact if this deal came from a contact
       if (deal?.sourceContactId) {
         await releaseContact(deal.sourceContactId);
       }
@@ -396,7 +422,6 @@ export default function SalesDealsPage() {
         </div>
       </div>
 
-      {/* Role indicator for non-admins */}
       {!canViewArchive && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
           <UserCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -409,7 +434,6 @@ export default function SalesDealsPage() {
         </div>
       )}
 
-      {/* ERROR MESSAGE */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -691,7 +715,6 @@ function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, onViewHist
               </span>
             )}
           </div>
-          {/* NEW: Show contact source indicator */}
           {deal.sourceContactId && (
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold flex items-center gap-1">
@@ -792,7 +815,6 @@ function ArchivedDealCard({ deal, onRestore, onDelete, onViewProfile, onViewHist
               </span>
             )}
           </div>
-          {/* NEW: Show contact source indicator for archived deals */}
           {deal.sourceContactId && (
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-lg text-xs font-semibold flex items-center gap-1 border border-purple-200">

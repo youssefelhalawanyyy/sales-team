@@ -17,7 +17,7 @@ import {
   Users, Plus, Edit, Trash2, X, Search, Filter, 
   Building2, Phone, Mail, User, FileText, Briefcase,
   UserPlus, Clock, CheckCircle2, PlayCircle, Archive,
-  Upload, AlertCircle
+  Upload, AlertCircle, TrendingDown, Award
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -218,7 +218,6 @@ export default function ContactsPage() {
   async function loadContacts() {
     try {
       setLoading(true);
-      // Get all contacts and filter/sort in memory to avoid composite index requirement
       const contactsQuery = query(
         collection(db, 'contacts'),
         orderBy('createdAt', 'desc')
@@ -291,6 +290,12 @@ export default function ContactsPage() {
   }
 
   async function deleteContact(id) {
+    // Only admin can delete
+    if (userRole !== 'admin') {
+      alert('⚠️ Only administrators can delete contacts.');
+      return;
+    }
+    
     if (!window.confirm('⚠️ Delete this contact permanently?')) return;
     try {
       await deleteDoc(doc(db, 'contacts', id));
@@ -346,7 +351,6 @@ export default function ContactsPage() {
       let failed = 0;
       let skipped = 0;
       
-      // Import in batches of 10 to avoid overwhelming Firestore
       const batchSize = 10;
       for (let i = 0; i < FULL_CONTACT_LIST.length; i += batchSize) {
         const batch = FULL_CONTACT_LIST.slice(i, i + batchSize);
@@ -372,7 +376,6 @@ export default function ContactsPage() {
           }
         }));
         
-        // Small delay between batches
         await new Promise(resolve => setTimeout(resolve, 500));
       }
       
@@ -553,6 +556,7 @@ export default function ContactsPage() {
               onEdit={() => setEditContact(contact)}
               onDelete={() => deleteContact(contact.id)}
               onStartWorking={() => startWorkingOnContact(contact)}
+              userRole={userRole}
             />
           ))}
         </div>
@@ -780,7 +784,7 @@ function StatCard({ title, value, icon: Icon, color }) {
   );
 }
 
-function ContactCard({ contact, onEdit, onDelete, onStartWorking }) {
+function ContactCard({ contact, onEdit, onDelete, onStartWorking, userRole }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all">
       <div className="space-y-4">
@@ -790,9 +794,23 @@ function ContactCard({ contact, onEdit, onDelete, onStartWorking }) {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-bold text-gray-900 truncate">{contact.companyName}</h3>
-            <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold mt-1">
-              {contact.category}
-            </span>
+            <div className="flex flex-wrap gap-2 mt-1">
+              <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold">
+                {contact.category}
+              </span>
+              {contact.dealHistory && contact.dealHistory.closedDeals > 0 && (
+                <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-semibold flex items-center gap-1">
+                  <Award className="w-3 h-3" />
+                  {contact.dealHistory.closedDeals} Deal{contact.dealHistory.closedDeals > 1 ? 's' : ''} Closed
+                </span>
+              )}
+              {contact.dealHistory && contact.dealHistory.lostDeals > 0 && (
+                <span className="inline-block px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-semibold flex items-center gap-1">
+                  <TrendingDown className="w-3 h-3" />
+                  {contact.dealHistory.lostDeals} Lost
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -844,12 +862,14 @@ function ContactCard({ contact, onEdit, onDelete, onStartWorking }) {
             <Edit className="w-4 h-4" />
           </button>
           
-          <button 
-            onClick={onDelete} 
-            className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-medium transition-all"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          {userRole === 'admin' && (
+            <button 
+              onClick={onDelete} 
+              className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-medium transition-all"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {contact.createdByName && (
