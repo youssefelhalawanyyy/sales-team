@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { db } from '../firebase';
 
@@ -11,10 +12,31 @@ import {
   doc,
   serverTimestamp,
   orderBy,
-  query
+  query,
+  arrayUnion
 } from 'firebase/firestore';
 
-import { Plus, Trash2, Edit, X, Search, Filter, TrendingUp, Clock, CheckCircle2, XCircle, Archive, DollarSign, Users, Briefcase, Phone, Mail, FileText } from 'lucide-react';
+import { 
+  Plus, 
+  Trash2, 
+  Edit, 
+  X, 
+  Search, 
+  Filter, 
+  TrendingUp, 
+  Clock, 
+  CheckCircle2, 
+  XCircle, 
+  Archive, 
+  DollarSign, 
+  Users, 
+  Briefcase, 
+  Phone, 
+  Mail, 
+  FileText,
+  Eye,
+  ExternalLink
+} from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
 
@@ -35,6 +57,7 @@ export default function SalesDealsPage() {
   console.log('SALES PAGE LOADED');
 
   const { currentUser, userRole } = useAuth();
+  const navigate = useNavigate();
 
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -105,7 +128,10 @@ export default function SalesDealsPage() {
 
         archived: false,
 
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        
+        // Initialize edit history
+        editHistory: []
       });
 
       setForm({
@@ -131,13 +157,36 @@ export default function SalesDealsPage() {
 
   async function saveEdit() {
     try {
-      await updateDoc(
-        doc(db, 'sales', editDeal.id),
-        {
-          ...editDeal,
-          price: Number(editDeal.price) || 0
+      const dealRef = doc(db, 'sales', editDeal.id);
+      
+      // Find what changed
+      const originalDeal = deals.find(d => d.id === editDeal.id);
+      const changes = {};
+      
+      const fieldsToTrack = ['businessName', 'contactPerson', 'phoneNumber', 'status', 'price', 'notes'];
+      
+      fieldsToTrack.forEach(field => {
+        if (originalDeal[field] !== editDeal[field]) {
+          changes[field] = {
+            from: originalDeal[field],
+            to: editDeal[field]
+          };
         }
-      );
+      });
+
+      // Create edit history entry
+      const historyEntry = {
+        timestamp: new Date(),
+        editedBy: currentUser.uid,
+        editedByName: `${currentUser.firstName} ${currentUser.lastName}`,
+        changes: changes
+      };
+
+      await updateDoc(dealRef, {
+        ...editDeal,
+        price: Number(editDeal.price) || 0,
+        editHistory: arrayUnion(historyEntry)
+      });
 
       setEditDeal(null);
 
@@ -145,6 +194,7 @@ export default function SalesDealsPage() {
 
     } catch (e) {
       alert('Update failed');
+      console.error(e);
     }
   }
 
@@ -345,6 +395,7 @@ export default function SalesDealsPage() {
               onEdit={() => setEditDeal(d)}
               onArchive={() => archiveDeal(d.id)}
               onDelete={() => deleteDeal(d.id)}
+              onViewProfile={() => navigate(`/sales/client/${d.id}`)}
               userRole={userRole}
             />
           ))}
@@ -537,6 +588,19 @@ export default function SalesDealsPage() {
               </div>
             </div>
 
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <FileText className="w-4 h-4 inline mr-2" />
+                Notes
+              </label>
+              <textarea
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                rows="3"
+                value={editDeal.notes || ''}
+                onChange={e => setEditDeal({ ...editDeal, notes: e.target.value })}
+              />
+            </div>
+
             <div className="flex gap-3 pt-4">
               <button
                 onClick={saveEdit}
@@ -593,7 +657,7 @@ function StatCard({ title, value, icon: Icon, color, trend, subtitle }) {
 
 /* ============================= */
 
-function DealCard({ deal, onEdit, onArchive, onDelete, userRole }) {
+function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, userRole }) {
   const status = STATUSES.find(s => s.value === deal.status);
   const StatusIcon = status?.icon || Briefcase;
 
@@ -662,6 +726,14 @@ function DealCard({ deal, onEdit, onArchive, onDelete, userRole }) {
 
       {/* Actions */}
       <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap gap-2">
+        <button
+          onClick={onViewProfile}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg font-medium transition-all"
+        >
+          <Eye className="w-4 h-4" />
+          <span>View Profile</span>
+        </button>
+
         <button
           onClick={onEdit}
           className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg font-medium transition-all"

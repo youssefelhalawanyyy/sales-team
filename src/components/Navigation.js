@@ -73,12 +73,6 @@ export const Navigation = ({ userRole }) => {
     icon: Calculator
   };
 
-  const followUpsItem = {
-    label: 'Follow-Ups',
-    path: '/sales/followups',
-    icon: Bell
-  };
-
   const informationItem = {
     label: 'Information',
     path: '/description',
@@ -95,13 +89,13 @@ export const Navigation = ({ userRole }) => {
     admin: [
       dashboardItem,
       calculatorItem,
-      followUpsItem,
 
       {
         label: 'Sales',
         icon: Users2,
         children: [
           { label: 'Deals', path: '/sales/deals', icon: Users2 },
+          { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
           { label: 'Teams', path: '/sales/teams', icon: Users2 },
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
@@ -150,13 +144,13 @@ export const Navigation = ({ userRole }) => {
     sales_manager: [
       dashboardItem,
       calculatorItem,
-      followUpsItem,
 
       {
         label: 'Sales',
         icon: Users2,
         children: [
           { label: 'Deals', path: '/sales/deals', icon: Users2 },
+          { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
           { label: 'Teams', path: '/sales/teams', icon: Users2 },
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
@@ -170,13 +164,13 @@ export const Navigation = ({ userRole }) => {
     team_leader: [
       dashboardItem,
       calculatorItem,
-      followUpsItem,
 
       {
         label: 'Sales',
         icon: Users2,
         children: [
           { label: 'Deals', path: '/sales/deals', icon: Users2 },
+          { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
           { label: 'Teams', path: '/sales/teams', icon: Users2 },
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
@@ -190,13 +184,13 @@ export const Navigation = ({ userRole }) => {
     sales_member: [
       dashboardItem,
       calculatorItem,
-      followUpsItem,
 
       {
         label: 'Sales',
         icon: Users2,
         children: [
           { label: 'Deals', path: '/sales/deals', icon: Users2 },
+          { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
         ]
