@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import {
@@ -8,7 +8,8 @@ import {
   getDocs,
   doc,
   getDoc,
-  onSnapshot
+  onSnapshot,
+  limit
 } from 'firebase/firestore';
 import {
   Users,
@@ -34,9 +35,12 @@ const PerformancePage = () => {
   const [memberProjects, setMemberProjects] = useState([]);
   const [memberTasks, setMemberTasks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [activeTab, setActiveTab] = useState('overview');
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
+  const [tasksLoaded, setTasksLoaded] = useState(false);
 
   /* ===============================
      LOAD TEAM MEMBERS
@@ -100,22 +104,29 @@ const PerformancePage = () => {
   }, [currentUser, userRole]);
 
   /* ===============================
-     LOAD MEMBER STATS WITH REAL-TIME
+     LOAD MEMBER STATS - DEALS ONLY (FAST INITIAL LOAD)
   =============================== */
 
   useEffect(() => {
-    if (!selectedMember) return;
+    if (!selectedMember) {
+      setMemberStats(null);
+      setMemberProjects([]);
+      setMemberTasks([]);
+      setProjectsLoaded(false);
+      setTasksLoaded(false);
+      return;
+    }
+
+    setStatsLoading(true);
+    let unsubscribeDeal;
 
     try {
-      setLoading(true);
-      setError('');
-      let unsubscribeDeal, unsubscribeTask, unsubscribeProject;
-
-      // Real-time listener for deals
+      // Only load deals initially for fast load
       const dealsQuery = query(
         collection(db, 'sales'),
         where('createdBy', '==', selectedMember.id)
       );
+
       unsubscribeDeal = onSnapshot(dealsQuery, (snapshot) => {
         const deals = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -127,9 +138,11 @@ const PerformancePage = () => {
         const receivedPaymentDeals = deals.filter(d => d.paymentReceived);
         const totalRevenue = receivedPaymentDeals.reduce((sum, d) => sum + (parseFloat(d.price) || 0), 0);
 
-        setMemberStats({
+        setMemberStats(prev => ({
+          ...prev,
           deals,
           statistics: {
+            ...(prev?.statistics || {}),
             totalDeals: deals.length,
             closedDeals: closedDeals.length,
             wonDeals: wonDeals.length,
@@ -138,14 +151,66 @@ const PerformancePage = () => {
             paymentReceiveRate: deals.length > 0 ? Math.round((receivedPaymentDeals.length / deals.length) * 100) : 0,
             conversionRate: deals.length > 0 ? Math.round((wonDeals.length / deals.length) * 100) : 0
           }
-        });
+        }));
+        setStatsLoading(false);
       });
 
-      // Real-time listener for tasks
+      return () => {
+        if (unsubscribeDeal) unsubscribeDeal();
+      };
+    } catch (err) {
+      console.error('Error loading deals:', err);
+      setStatsLoading(false);
+    }
+  }, [selectedMember]);
+
+  /* ===============================
+     LAZY LOAD PROJECTS (ON DEMAND)
+  =============================== */
+
+  useEffect(() => {
+    if (!selectedMember || activeTab !== 'projects' || projectsLoaded) return;
+
+    let unsubscribeProject;
+
+    try {
+      const projectsQuery = query(
+        collection(db, 'projects'),
+        where('assignedTo', '==', selectedMember.id)
+      );
+
+      unsubscribeProject = onSnapshot(projectsQuery, (snapshot) => {
+        const projects = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setMemberProjects(projects);
+        setProjectsLoaded(true);
+      });
+
+      return () => {
+        if (unsubscribeProject) unsubscribeProject();
+      };
+    } catch (err) {
+      console.error('Error loading projects:', err);
+    }
+  }, [selectedMember, activeTab, projectsLoaded]);
+
+  /* ===============================
+     LAZY LOAD TASKS (ON DEMAND)
+  =============================== */
+
+  useEffect(() => {
+    if (!selectedMember || activeTab !== 'tasks' || tasksLoaded) return;
+
+    let unsubscribeTask;
+
+    try {
       const tasksQuery = query(
         collection(db, 'tasks'),
         where('assignedTo', '==', selectedMember.id)
       );
+
       unsubscribeTask = onSnapshot(tasksQuery, (snapshot) => {
         const tasks = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -171,47 +236,29 @@ const PerformancePage = () => {
             taskCompletionRate: tasks.length > 0 ? Math.round((approvedTasks.length / tasks.length) * 100) : 0
           }
         }));
+        setTasksLoaded(true);
       });
 
-      // Real-time listener for projects
-      const projectsQuery = query(
-        collection(db, 'projects'),
-        where('assignedTo', '==', selectedMember.id)
-      );
-      unsubscribeProject = onSnapshot(projectsQuery, (snapshot) => {
-        const projects = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setMemberProjects(projects);
-      });
-
-      setLoading(false);
-
-      // Cleanup function
       return () => {
-        if (unsubscribeDeal) unsubscribeDeal();
         if (unsubscribeTask) unsubscribeTask();
-        if (unsubscribeProject) unsubscribeProject();
       };
-
     } catch (err) {
-      console.error('Error loading member stats:', err);
-      setError('Failed to load member statistics');
-      setLoading(false);
+      console.error('Error loading tasks:', err);
     }
-  }, [selectedMember]);
+  }, [selectedMember, activeTab, tasksLoaded]);
 
   /* ===============================
-     FILTER DEALS
+     MEMOIZED FILTERED DEALS
   =============================== */
 
-  const filteredDeals = memberStats?.deals?.filter(deal => {
-    if (filterStatus === 'all') return true;
-    if (filterStatus === 'paid') return deal.paymentReceived;
-    if (filterStatus === 'unpaid') return !deal.paymentReceived;
-    return deal.status === filterStatus;
-  }) || [];
+  const filteredDeals = useMemo(() => {
+    return memberStats?.deals?.filter(deal => {
+      if (filterStatus === 'all') return true;
+      if (filterStatus === 'paid') return deal.paymentReceived;
+      if (filterStatus === 'unpaid') return !deal.paymentReceived;
+      return deal.status === filterStatus;
+    }) || [];
+  }, [memberStats?.deals, filterStatus]);
 
   /* ===============================
      EXPORT REPORT
@@ -379,7 +426,7 @@ Created: ${new Date(deal.createdAt?.toDate ? deal.createdAt.toDate() : deal.crea
                   </div>
                 </div>
 
-                {loading ? (
+                {statsLoading && !memberStats ? (
                   <div className="bg-white rounded-lg shadow-md p-12 text-center">
                     <div className="inline-block animate-spin">
                       <Clock className="text-blue-600" size={32} />
