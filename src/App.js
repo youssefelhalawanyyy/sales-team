@@ -34,7 +34,7 @@ import VisitsPage from './pages/VisitsPage';
 import ContactsPage from './pages/Contactspage';
 
 /* ✅ NEW PAGES - TASKS & PERFORMANCE */
-import TasksPage from './pages/TasksPage';
+import TasksPageV2 from './pages/TasksPageV2';
 import CreateTaskPage from './pages/CreateTaskPage';
 import PerformancePage from './pages/PerformancePage';
 
@@ -328,7 +328,7 @@ const AppContent = () => {
               'team_leader',
               'sales_member'
             ]}>
-              <TasksPage />
+              <TasksPageV2 />
             </ProtectedRoute>
           }
         />

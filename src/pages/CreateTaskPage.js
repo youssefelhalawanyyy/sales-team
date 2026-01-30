@@ -135,6 +135,7 @@ const CreateTaskPage = () => {
         title: formData.title,
         description: formData.description,
         assignedTo: formData.assignedTo,
+        assignedToEmail: availableUsers.find(u => u.id === formData.assignedTo)?.email,
         deadline: selectedDate,
         priority: formData.priority
       });

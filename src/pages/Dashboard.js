@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTasks } from '../contexts/TasksContext';
+import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
@@ -17,7 +19,11 @@ import {
   Sparkles,
   Activity,
   Zap,
-  Crown
+  Crown,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  ChevronRight
 } from 'lucide-react';
 
 import { formatCurrency } from '../utils/currency';
@@ -36,7 +42,11 @@ export const Dashboard = () => {
 
   const [joinedDate, setJoinedDate] = useState(null);
   const [achievements, setAchievements] = useState([]);
+  const [myTasks, setMyTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const { getAssignedTasks } = useTasks();
+  const navigate = useNavigate();
 
 
   /* ===================================
@@ -45,7 +55,18 @@ export const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    fetchMyTasks();
   }, [userRole, currentUser?.uid]);
+
+  const fetchMyTasks = async () => {
+    try {
+      const tasks = await getAssignedTasks();
+      const pending = tasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
+      setMyTasks(pending.slice(0, 3));
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    }
+  };
 
 
   const fetchDashboardData = async () => {
@@ -544,6 +565,67 @@ export const Dashboard = () => {
           </div>
 
         </div>
+
+
+        {/* QUICK TASKS */}
+        {myTasks.length > 0 && (
+          <div className="space-y-6 animate-fadeInUp" style={{ animationDelay: '0.25s' }}>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl">
+                  <CheckCircle className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                  My Active Tasks
+                </h2>
+              </div>
+              <button
+                onClick={() => navigate('/tasks')}
+                className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-semibold text-sm transition-colors"
+              >
+                View All <ChevronRight size={16} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {myTasks.map((task, idx) => {
+                const deadline = task.deadline?.toDate?.() || new Date(task.deadline);
+                const isOverdue = deadline < new Date();
+                
+                return (
+                  <div
+                    key={task.id}
+                    onClick={() => navigate('/tasks')}
+                    className="group bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg hover:border-indigo-300 transition-all duration-300 cursor-pointer hover:-translate-y-1 animate-slideInUp"
+                    style={{ animationDelay: `${idx * 100}ms` }}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                        isOverdue 
+                          ? 'bg-red-100 text-red-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {isOverdue ? 'Overdue' : 'Pending'}
+                      </span>
+                      {task.priority === 'urgent' && (
+                        <Flame size={16} className="text-red-600 animate-pulse" />
+                      )}
+                    </div>
+                    <h4 className="font-semibold text-gray-900 mb-1 line-clamp-1 group-hover:text-indigo-600 transition">
+                      {task.title}
+                    </h4>
+                    <p className="text-xs text-gray-600 mb-3 line-clamp-1">{task.description}</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>by {task.createdByEmail?.split('@')[0]}</span>
+                      <span>{deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
 
         {/* ACHIEVEMENTS */}

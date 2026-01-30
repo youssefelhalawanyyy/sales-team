@@ -58,6 +58,7 @@ export const TasksProvider = ({ children }) => {
         title: taskData.title,
         description: taskData.description,
         assignedTo: taskData.assignedTo,
+        assignedToEmail: taskData.assignedToEmail,
         createdBy: currentUser.uid,
         createdByEmail: currentUser.email,
         creatorRole: userRole,
@@ -161,7 +162,7 @@ export const TasksProvider = ({ children }) => {
         submittedByEmail: currentUser.email,
         submissionText: submissionData.submissionText,
         attachments: submissionData.attachments || [],
-        submittedAt: serverTimestamp()
+        submittedAt: new Date()
       };
 
       await updateDoc(taskRef, {
@@ -191,7 +192,7 @@ export const TasksProvider = ({ children }) => {
         addedBy: currentUser.uid,
         addedByEmail: currentUser.email,
         text: noteText,
-        addedAt: serverTimestamp()
+        addedAt: new Date()
       };
 
       await updateDoc(taskRef, {
