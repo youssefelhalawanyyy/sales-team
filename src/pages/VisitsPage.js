@@ -8,7 +8,6 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
-  orderBy,
   query,
   where,
   Timestamp
@@ -105,14 +104,11 @@ export default function VisitsPage() {
       let snapshot;
 
       if (userRole === 'admin' || userRole === 'sales_manager') {
-        // Admin/Manager sees all visits - simple query
-        const q = query(
-          collection(db, 'visits'),
-          orderBy('visitDate', 'desc')
-        );
+        // Admin/Manager sees all visits - simple query WITHOUT orderBy
+        const q = query(collection(db, 'visits'));
         snapshot = await getDocs(q);
       } else {
-        // Reps see only their visits - query without orderBy to avoid composite index
+        // Reps see only their visits - query WITHOUT orderBy
         const q = query(
           collection(db, 'visits'),
           where('salesRepId', '==', currentUser.uid)
@@ -122,14 +118,12 @@ export default function VisitsPage() {
 
       let list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
-      // For non-admin users, sort by visitDate in memory
-      if (userRole !== 'admin' && userRole !== 'sales_manager') {
-        list.sort((a, b) => {
-          const dateA = a.visitDate?.toMillis?.() || 0;
-          const dateB = b.visitDate?.toMillis?.() || 0;
-          return dateB - dateA; // Descending order (newest first)
-        });
-      }
+      // Sort by visitDate in memory (newest first)
+      list.sort((a, b) => {
+        const dateA = a.visitDate?.toMillis?.() || 0;
+        const dateB = b.visitDate?.toMillis?.() || 0;
+        return dateB - dateA; // Descending order (newest first)
+      });
 
       setVisits(list);
     } catch (e) {

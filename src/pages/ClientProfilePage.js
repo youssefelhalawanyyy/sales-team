@@ -8,7 +8,6 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
   updateDoc,
   serverTimestamp
 } from 'firebase/firestore';
@@ -101,34 +100,46 @@ export default function ClientProfilePage() {
       setDeal(dealData);
       setNotesText(dealData.notes || ''); // Initialize notes text
 
-      // Load visits for this deal
+      // Load visits for this deal (WITHOUT orderBy to avoid index requirement)
       const visitsQuery = query(
         collection(db, 'visits'),
-        where('dealId', '==', dealId),
-        orderBy('visitDate', 'desc')
+        where('dealId', '==', dealId)
       );
       
       const visitsSnap = await getDocs(visitsQuery);
-      const visitsList = visitsSnap.docs.map(d => ({ 
+      let visitsList = visitsSnap.docs.map(d => ({ 
         id: d.id, 
         ...d.data() 
       }));
+
+      // Sort visits by date in memory (newest first)
+      visitsList.sort((a, b) => {
+        const dateA = a.visitDate?.toMillis?.() || 0;
+        const dateB = b.visitDate?.toMillis?.() || 0;
+        return dateB - dateA; // Descending order
+      });
       
       console.log('Loaded visits:', visitsList); // Debug log
       setVisits(visitsList);
 
-      // Load follow-ups for this deal
+      // Load follow-ups for this deal (WITHOUT orderBy to avoid index requirement)
       const followupsQuery = query(
         collection(db, 'followups'),
-        where('dealId', '==', dealId),
-        orderBy('reminderDate', 'asc')
+        where('dealId', '==', dealId)
       );
       
       const followupsSnap = await getDocs(followupsQuery);
-      const followupsList = followupsSnap.docs.map(d => ({ 
+      let followupsList = followupsSnap.docs.map(d => ({ 
         id: d.id, 
         ...d.data() 
       }));
+
+      // Sort follow-ups by date in memory (oldest first)
+      followupsList.sort((a, b) => {
+        const dateA = a.reminderDate?.toMillis?.() || 0;
+        const dateB = b.reminderDate?.toMillis?.() || 0;
+        return dateA - dateB; // Ascending order
+      });
       
       console.log('Loaded follow-ups:', followupsList); // Debug log
       setFollowups(followupsList);
