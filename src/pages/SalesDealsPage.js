@@ -43,6 +43,7 @@ export default function SalesDealsPage() {
   const [editDeal, setEditDeal] = useState(null);
   const [showArchive, setShowArchive] = useState(false);
   const [viewingHistory, setViewingHistory] = useState(null);
+  const [error, setError] = useState(null);
 
   const [form, setForm] = useState({
     businessName: '',
@@ -56,35 +57,53 @@ export default function SalesDealsPage() {
   useEffect(() => {
     if (currentUser?.uid) {
       loadDeals();
-      if (userRole === 'admin') loadArchivedDeals();
+      if (userRole === 'admin' || userRole === 'sales_manager') {
+        loadArchivedDeals();
+      }
     }
   }, [currentUser, userRole]);
 
   async function loadDeals() {
     try {
       setLoading(true);
-      let q;
+      setError(null);
       
-      if (userRole === 'admin') {
-        q = query(
+      let dealsQuery;
+      
+      // Admin and sales_manager can see all deals
+      if (userRole === 'admin' || userRole === 'sales_manager') {
+        // Simple query without composite index requirement
+        dealsQuery = query(
           collection(db, 'sales'),
-          where('archived', '==', false),
           orderBy('createdAt', 'desc')
         );
       } else {
-        q = query(
+        // Regular users see only their deals
+        dealsQuery = query(
           collection(db, 'sales'),
           where('createdBy', '==', currentUser.uid),
-          where('archived', '==', false),
           orderBy('createdAt', 'desc')
         );
       }
 
-      const snap = await getDocs(q);
-      setDeals(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const snapshot = await getDocs(dealsQuery);
+      const allDeals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      
+      // Filter archived deals in memory instead of in query
+      const activeDeals = allDeals.filter(deal => !deal.archived);
+      
+      setDeals(activeDeals);
     } catch (e) {
       console.error('Error loading deals:', e);
-      alert('Failed to load deals. Please try again.');
+      setError(e.message);
+      
+      // Provide helpful error message
+      if (e.code === 'failed-precondition') {
+        alert('Database index required. Please check the console for the index creation link.');
+        console.error('CREATE INDEX:', e.message);
+      } else {
+        alert('Failed to load deals: ' + e.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -92,13 +111,19 @@ export default function SalesDealsPage() {
 
   async function loadArchivedDeals() {
     try {
-      const q = query(
+      // Simple query for archived deals
+      const archivedQuery = query(
         collection(db, 'sales'),
-        where('archived', '==', true),
         orderBy('createdAt', 'desc')
       );
-      const snap = await getDocs(q);
-      setArchivedDeals(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      
+      const snapshot = await getDocs(archivedQuery);
+      const allDeals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      
+      // Filter archived deals in memory
+      const archived = allDeals.filter(deal => deal.archived === true);
+      
+      setArchivedDeals(archived);
     } catch (e) {
       console.error('Error loading archived deals:', e);
     }
@@ -116,6 +141,7 @@ export default function SalesDealsPage() {
         createdAt: serverTimestamp(),
         editHistory: []
       });
+      
       setForm({
         businessName: '',
         contactPerson: '',
@@ -126,16 +152,19 @@ export default function SalesDealsPage() {
       });
       setShowForm(false);
       loadDeals();
+      alert('Deal created successfully!');
     } catch (e) {
       console.error('Error creating deal:', e);
-      alert('Failed to create deal. Please try again.');
+      alert('Failed to create deal: ' + e.message);
     }
   }
 
   async function saveEdit() {
     try {
       const dealRef = doc(db, 'sales', editDeal.id);
-      const originalDeal = deals.find(d => d.id === editDeal.id);
+      const originalDeal = deals.find(d => d.id === editDeal.id) || 
+                          archivedDeals.find(d => d.id === editDeal.id);
+      
       const changes = {};
       
       ['businessName', 'contactPerson', 'phoneNumber', 'status', 'price', 'notes'].forEach(field => {
@@ -152,16 +181,24 @@ export default function SalesDealsPage() {
       };
 
       await updateDoc(dealRef, {
-        ...editDeal,
+        businessName: editDeal.businessName,
+        contactPerson: editDeal.contactPerson,
+        phoneNumber: editDeal.phoneNumber,
+        status: editDeal.status,
         price: Number(editDeal.price) || 0,
+        notes: editDeal.notes,
         editHistory: arrayUnion(historyEntry)
       });
 
       setEditDeal(null);
       loadDeals();
+      if (userRole === 'admin' || userRole === 'sales_manager') {
+        loadArchivedDeals();
+      }
+      alert('Deal updated successfully!');
     } catch (e) {
       console.error('Error updating deal:', e);
-      alert('Failed to update deal. Please try again.');
+      alert('Failed to update deal: ' + e.message);
     }
   }
 
@@ -175,10 +212,13 @@ export default function SalesDealsPage() {
         archivedByName: `${currentUser.firstName} ${currentUser.lastName}`
       });
       loadDeals();
-      if (userRole === 'admin') loadArchivedDeals();
+      if (userRole === 'admin' || userRole === 'sales_manager') {
+        loadArchivedDeals();
+      }
+      alert('Deal archived successfully!');
     } catch (e) {
       console.error('Error archiving deal:', e);
-      alert('Failed to archive deal. Please try again.');
+      alert('Failed to archive deal: ' + e.message);
     }
   }
 
@@ -193,22 +233,27 @@ export default function SalesDealsPage() {
       });
       loadDeals();
       loadArchivedDeals();
+      alert('Deal restored successfully!');
     } catch (e) {
       console.error('Error restoring deal:', e);
-      alert('Failed to restore deal. Please try again.');
+      alert('Failed to restore deal: ' + e.message);
     }
   }
 
   async function deleteDeal(id) {
-    if (userRole !== 'admin') return;
+    if (userRole !== 'admin') {
+      alert('Only admins can permanently delete deals.');
+      return;
+    }
     if (!window.confirm('⚠️ PERMANENTLY DELETE THIS DEAL? This action cannot be undone!')) return;
     try {
       await deleteDoc(doc(db, 'sales', id));
       loadDeals();
       if (showArchive) loadArchivedDeals();
+      alert('Deal deleted permanently!');
     } catch (e) {
       console.error('Error deleting deal:', e);
-      alert('Failed to delete deal. Please try again.');
+      alert('Failed to delete deal: ' + e.message);
     }
   }
 
@@ -227,7 +272,12 @@ export default function SalesDealsPage() {
   const totalRevenue = filtered.filter(d => d.status === 'closed').reduce((s, d) => s + (d.price || 0), 0);
   const potentialRevenue = filtered.filter(d => d.status === 'potential_client' || d.status === 'pending_approval').reduce((s, d) => s + (d.price || 0), 0);
 
-  const canModifyDeal = (deal) => userRole === 'admin' || deal.createdBy === currentUser.uid;
+  const canModifyDeal = (deal) => {
+    if (userRole === 'admin' || userRole === 'sales_manager') return true;
+    return deal.createdBy === currentUser.uid;
+  };
+
+  const canViewArchive = userRole === 'admin' || userRole === 'sales_manager';
 
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
@@ -241,12 +291,12 @@ export default function SalesDealsPage() {
             Sales Deals
           </h1>
           <p className="text-gray-600 mt-1 ml-15">
-            {userRole === 'admin' ? 'Manage and track all sales pipeline deals' : 'Manage and track your sales deals'}
+            {canViewArchive ? 'Manage and track all sales pipeline deals' : 'Manage and track your sales deals'}
           </p>
         </div>
 
         <div className="flex gap-3">
-          {userRole === 'admin' && (
+          {canViewArchive && (
             <button
               onClick={() => setShowArchive(!showArchive)}
               className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg transition-all hover:scale-105 ${
@@ -276,7 +326,7 @@ export default function SalesDealsPage() {
       </div>
 
       {/* Role indicator for non-admins */}
-      {userRole !== 'admin' && (
+      {!canViewArchive && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
           <UserCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div>
@@ -288,17 +338,28 @@ export default function SalesDealsPage() {
         </div>
       )}
 
+      {/* ERROR MESSAGE */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-red-900">Error Loading Deals</p>
+            <p className="text-sm text-red-700 mt-1">{error}</p>
+          </div>
+        </div>
+      )}
+
       {/* STATS */}
       {!showArchive && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-          <StatCard title="Total Deals" value={filtered.length} icon={Briefcase} color="blue" trend="+12%" />
-          <StatCard title="Closed Deals" value={filtered.filter(d => d.status === 'closed').length} icon={CheckCircle2} color="green" trend="+8%" />
+          <StatCard title="Total Deals" value={filtered.length} icon={Briefcase} color="blue" />
+          <StatCard title="Closed Deals" value={filtered.filter(d => d.status === 'closed').length} icon={CheckCircle2} color="green" />
           <StatCard title="Total Revenue" value={formatCurrency(totalRevenue)} icon={DollarSign} color="purple" subtitle="From closed deals" />
           <StatCard title="Pending Approval" value={filtered.filter(d => d.status === 'pending_approval').length} icon={Clock} color="yellow" subtitle={formatCurrency(potentialRevenue) + " potential"} />
         </div>
       )}
 
-      {showArchive && userRole === 'admin' && (
+      {showArchive && canViewArchive && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6">
           <StatCard title="Archived Deals" value={filteredArchived.length} icon={Archive} color="gray" />
           <StatCard title="Archived Revenue" value={formatCurrency(filteredArchived.filter(d => d.status === 'closed').reduce((s, d) => s + (d.price || 0), 0))} icon={DollarSign} color="gray" subtitle="From closed archived deals" />
@@ -403,7 +464,7 @@ export default function SalesDealsPage() {
       )}
 
       {/* ARCHIVED DEALS */}
-      {!loading && showArchive && userRole === 'admin' && (
+      {!loading && showArchive && canViewArchive && (
         <>
           {filteredArchived.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
@@ -498,7 +559,7 @@ export default function SalesDealsPage() {
   );
 }
 
-function StatCard({ title, value, icon: Icon, color, trend, subtitle }) {
+function StatCard({ title, value, icon: Icon, color, subtitle }) {
   const colorClasses = {
     blue: 'from-blue-500 to-blue-600 shadow-blue-500/30',
     green: 'from-green-500 to-green-600 shadow-green-500/30',
@@ -513,12 +574,6 @@ function StatCard({ title, value, icon: Icon, color, trend, subtitle }) {
         <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colorClasses[color]} flex items-center justify-center shadow-lg`}>
           <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
         </div>
-        {trend && (
-          <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold">
-            <TrendingUp className="w-3 h-3" />
-            {trend}
-          </div>
-        )}
       </div>
       <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
       <p className="text-2xl lg:text-3xl font-bold text-gray-900">{value}</p>
