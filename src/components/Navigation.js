@@ -95,6 +95,7 @@ export const Navigation = ({ userRole }) => {
         label: 'Sales',
         icon: Users2,
         children: [
+          { label: 'Contacts', path: '/sales/contacts', icon: Users },
           { label: 'Deals', path: '/sales/deals', icon: Users2 },
           { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
@@ -151,6 +152,7 @@ export const Navigation = ({ userRole }) => {
         label: 'Sales',
         icon: Users2,
         children: [
+          { label: 'Contacts', path: '/sales/contacts', icon: Users },
           { label: 'Deals', path: '/sales/deals', icon: Users2 },
           { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
@@ -172,6 +174,7 @@ export const Navigation = ({ userRole }) => {
         label: 'Sales',
         icon: Users2,
         children: [
+          { label: 'Contacts', path: '/sales/contacts', icon: Users },
           { label: 'Deals', path: '/sales/deals', icon: Users2 },
           { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
@@ -193,6 +196,7 @@ export const Navigation = ({ userRole }) => {
         label: 'Sales',
         icon: Users2,
         children: [
+          { label: 'Contacts', path: '/sales/contacts', icon: Users },
           { label: 'Deals', path: '/sales/deals', icon: Users2 },
           { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },

@@ -202,28 +202,69 @@ export default function SalesDealsPage() {
     }
   }
 
+  // NEW: Function to release a contact when deal is archived/deleted
+  async function releaseContact(contactId) {
+    if (!contactId) return;
+    
+    try {
+      const contactRef = doc(db, 'contacts', contactId);
+      await updateDoc(contactRef, {
+        onHold: false,
+        onHoldBy: null,
+        onHoldByName: null,
+        onHoldAt: null,
+        releasedAt: serverTimestamp(),
+        releasedBy: currentUser.uid,
+        releasedByName: `${currentUser.firstName} ${currentUser.lastName}`
+      });
+    } catch (e) {
+      console.error('Error releasing contact:', e);
+      // Don't fail the main operation if contact release fails
+    }
+  }
+
+  // UPDATED: Archive deal with contact release
   async function archiveDeal(id) {
     if (!window.confirm('Archive this deal? You can restore it later.')) return;
     try {
+      const deal = deals.find(d => d.id === id);
+      
       await updateDoc(doc(db, 'sales', id), {
         archived: true,
         archivedAt: serverTimestamp(),
         archivedBy: currentUser.uid,
         archivedByName: `${currentUser.firstName} ${currentUser.lastName}`
       });
+
+      // Release the contact if this deal came from a contact
+      if (deal?.sourceContactId) {
+        await releaseContact(deal.sourceContactId);
+      }
+
       loadDeals();
       if (userRole === 'admin' || userRole === 'sales_manager') {
         loadArchivedDeals();
       }
-      alert('Deal archived successfully!');
+      
+      const message = deal?.sourceContactId 
+        ? 'Deal archived successfully! The contact has been released and is now available.'
+        : 'Deal archived successfully!';
+      alert(message);
     } catch (e) {
       console.error('Error archiving deal:', e);
       alert('Failed to archive deal: ' + e.message);
     }
   }
 
+  // UPDATED: Restore deal with contact hold
   async function restoreDeal(id) {
-    if (!window.confirm('Restore this deal to active deals?')) return;
+    const deal = archivedDeals.find(d => d.id === id);
+    const confirmMessage = deal?.sourceContactId
+      ? 'Restore this deal to active deals? This will put the contact back on hold.'
+      : 'Restore this deal to active deals?';
+    
+    if (!window.confirm(confirmMessage)) return;
+    
     try {
       await updateDoc(doc(db, 'sales', id), {
         archived: false,
@@ -231,6 +272,23 @@ export default function SalesDealsPage() {
         restoredBy: currentUser.uid,
         restoredByName: `${currentUser.firstName} ${currentUser.lastName}`
       });
+
+      // Put contact back on hold if this deal came from a contact
+      if (deal?.sourceContactId) {
+        try {
+          const contactRef = doc(db, 'contacts', deal.sourceContactId);
+          await updateDoc(contactRef, {
+            onHold: true,
+            onHoldBy: currentUser.uid,
+            onHoldByName: `${currentUser.firstName} ${currentUser.lastName}`,
+            onHoldAt: serverTimestamp()
+          });
+        } catch (e) {
+          console.error('Error putting contact back on hold:', e);
+          // Continue even if contact update fails
+        }
+      }
+
       loadDeals();
       loadArchivedDeals();
       alert('Deal restored successfully!');
@@ -240,6 +298,7 @@ export default function SalesDealsPage() {
     }
   }
 
+  // UPDATED: Delete deal with contact release
   async function deleteDeal(id) {
     if (userRole !== 'admin') {
       alert('Only admins can permanently delete deals.');
@@ -247,10 +306,22 @@ export default function SalesDealsPage() {
     }
     if (!window.confirm('⚠️ PERMANENTLY DELETE THIS DEAL? This action cannot be undone!')) return;
     try {
+      const deal = [...deals, ...archivedDeals].find(d => d.id === id);
+      
       await deleteDoc(doc(db, 'sales', id));
+
+      // Release the contact if this deal came from a contact
+      if (deal?.sourceContactId) {
+        await releaseContact(deal.sourceContactId);
+      }
+
       loadDeals();
       if (showArchive) loadArchivedDeals();
-      alert('Deal deleted permanently!');
+      
+      const message = deal?.sourceContactId
+        ? 'Deal deleted permanently! The contact has been released.'
+        : 'Deal deleted permanently!';
+      alert(message);
     } catch (e) {
       console.error('Error deleting deal:', e);
       alert('Failed to delete deal: ' + e.message);
@@ -620,6 +691,15 @@ function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, onViewHist
               </span>
             )}
           </div>
+          {/* NEW: Show contact source indicator */}
+          {deal.sourceContactId && (
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                From Contact Directory
+              </span>
+            </div>
+          )}
           {deal.notes && (
             <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 border border-gray-200">
               💬 {deal.notes}
@@ -712,6 +792,15 @@ function ArchivedDealCard({ deal, onRestore, onDelete, onViewProfile, onViewHist
               </span>
             )}
           </div>
+          {/* NEW: Show contact source indicator for archived deals */}
+          {deal.sourceContactId && (
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-lg text-xs font-semibold flex items-center gap-1 border border-purple-200">
+                <Users className="w-3 h-3" />
+                From Contact Directory
+              </span>
+            </div>
+          )}
           {deal.notes && (
             <p className="text-sm text-gray-600 bg-white rounded-lg p-3 border border-gray-300">
               💬 {deal.notes}
