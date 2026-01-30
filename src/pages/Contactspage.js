@@ -17,7 +17,7 @@ import {
   Users, Plus, Edit, Trash2, X, Search, Filter, 
   Building2, Phone, Mail, User, FileText, Briefcase,
   UserPlus, Clock, CheckCircle2, PlayCircle, Archive,
-  Upload, AlertCircle, TrendingDown, Award
+  Upload, AlertCircle, TrendingDown, Award, Lock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -29,7 +29,7 @@ const CATEGORIES = [
   'Barista items', 'Protein Bar', 'Packaged Beverages', 'Other'
 ];
 
-// FULL CONTACT LIST - All your contacts from the spreadsheet
+// COMPLETE CONTACT LIST - All contacts from the spreadsheet
 const FULL_CONTACT_LIST = [
   { companyName: 'Al dawlia peing', contactName: 'yahia', contactPosition: '', phone: '1116021085', email: 'yahiazakrya@gmail.com', category: 'AutoMotive' },
   { companyName: 'Al shahin', contactName: 'Walid Zakaria / Maged', contactPosition: '', phone: '01007769673', email: 'walid.zakria@alshahin-eg.com', category: 'Candy' },
@@ -183,7 +183,7 @@ const FULL_CONTACT_LIST = [
   { companyName: 'Meditteraneo Industries', contactName: 'Haitham El Malt', contactPosition: '', phone: '1061354345', email: 'haitham.elmalt@mediterraneo-egypt.com', category: 'Barista items' },
   { companyName: 'Misr Pyramids-Crown', contactName: 'Alaa', contactPosition: '', phone: '1223630576', email: 'anagah@mpg-eg.com', category: 'General Merchandise' },
   { companyName: 'Interline', contactName: 'Ali', contactPosition: '', phone: '01118531850', email: 'Ali.Mousa@interline-eg.com', category: 'Candy' },
-  { companyName: 'Al Ashraf for trading', contactName: 'Mahmoud / Khaled', contactPosition: '', phone: '0 111 363 7123', email: 'soudi9027@gmail.com', category: 'Healthy Beauty Care' }
+  { companyName: 'Al Ashraf for trading', contactName: 'Mahmoud / Khaled', contactPosition: '', phone: '0 111 363 7123', email: 'soudi9027@gmail.com', category: 'Healthy Beauty Care' },
 ];
 
 export default function ContactsPage() {
@@ -191,6 +191,7 @@ export default function ContactsPage() {
   const navigate = useNavigate();
 
   const [contacts, setContacts] = useState([]);
+  const [activeDeals, setActiveDeals] = useState([]); // Track active deals
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
   const [search, setSearch] = useState('');
@@ -212,6 +213,7 @@ export default function ContactsPage() {
   useEffect(() => {
     if (currentUser?.uid) {
       loadContacts();
+      loadActiveDeals();
     }
   }, [currentUser]);
 
@@ -226,10 +228,7 @@ export default function ContactsPage() {
       const snapshot = await getDocs(contactsQuery);
       const allContacts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       
-      // Filter out contacts that are on hold
-      const availableContacts = allContacts.filter(contact => !contact.onHold);
-      
-      setContacts(availableContacts);
+      setContacts(allContacts);
     } catch (e) {
       console.error('Error loading contacts:', e);
       alert('Failed to load contacts: ' + e.message);
@@ -238,12 +237,46 @@ export default function ContactsPage() {
     }
   }
 
+  async function loadActiveDeals() {
+    try {
+      // Load all active deals (not closed or lost)
+      const dealsQuery = query(
+        collection(db, 'sales'),
+        where('status', 'in', ['potential_client', 'contacted', 'meeting_scheduled', 'proposal_sent', 'negotiating'])
+      );
+      
+      const snapshot = await getDocs(dealsQuery);
+      const deals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setActiveDeals(deals);
+    } catch (e) {
+      console.error('Error loading active deals:', e);
+    }
+  }
+
+  // Check if a contact is currently being worked on
+  function isContactInProgress(contact) {
+    return activeDeals.some(deal => 
+      deal.sourceContactId === contact.id || 
+      (deal.businessName?.toLowerCase() === contact.companyName?.toLowerCase() && 
+       deal.phoneNumber === contact.phone)
+    );
+  }
+
+  // Get the user who's working on this contact
+  function getWorkingUser(contact) {
+    const deal = activeDeals.find(deal => 
+      deal.sourceContactId === contact.id || 
+      (deal.businessName?.toLowerCase() === contact.companyName?.toLowerCase() && 
+       deal.phoneNumber === contact.phone)
+    );
+    return deal ? deal.createdByName : null;
+  }
+
   async function createContact(e) {
     e.preventDefault();
     try {
       await addDoc(collection(db, 'contacts'), {
         ...form,
-        onHold: false,
         createdBy: currentUser.uid,
         createdByName: `${currentUser.firstName} ${currentUser.lastName}`,
         createdAt: serverTimestamp()
@@ -308,9 +341,17 @@ export default function ContactsPage() {
   }
 
   async function startWorkingOnContact(contact) {
-    if (!window.confirm(`Start working on ${contact.companyName}? This will create a sales deal and put this contact on hold.`)) return;
+    // Check if someone is already working on this contact
+    if (isContactInProgress(contact)) {
+      const workingUser = getWorkingUser(contact);
+      alert(`⚠️ This contact is already being worked on by ${workingUser}.\n\nYou cannot start a new deal for this contact until the current deal is closed or marked as lost.`);
+      return;
+    }
+
+    if (!window.confirm(`Start working on ${contact.companyName}?\n\nThis will create a sales deal and lock this contact so others can't work on it simultaneously.`)) return;
     
     try {
+      // Create the deal with reference to the contact
       await addDoc(collection(db, 'sales'), {
         businessName: contact.companyName,
         contactPerson: contact.contactName,
@@ -321,20 +362,15 @@ export default function ContactsPage() {
         createdBy: currentUser.uid,
         createdByName: `${currentUser.firstName} ${currentUser.lastName}`,
         archived: false,
-        sourceContactId: contact.id,
+        sourceContactId: contact.id, // Link to the original contact
         createdAt: serverTimestamp(),
         editHistory: []
       });
 
-      await updateDoc(doc(db, 'contacts', contact.id), {
-        onHold: true,
-        onHoldBy: currentUser.uid,
-        onHoldByName: `${currentUser.firstName} ${currentUser.lastName}`,
-        onHoldAt: serverTimestamp()
-      });
-
-      loadContacts();
-      alert('Deal created successfully! The contact is now on hold.');
+      // Reload active deals to reflect the new deal
+      await loadActiveDeals();
+      
+      alert(`✅ Deal created successfully!\n\n${contact.companyName} is now locked to you. Others cannot start working on this contact until you close or lose the deal.`);
       navigate('/sales/deals');
     } catch (e) {
       console.error('Error starting work on contact:', e);
@@ -343,7 +379,7 @@ export default function ContactsPage() {
   }
 
   async function importAllContacts() {
-    if (!window.confirm(`Import ${FULL_CONTACT_LIST.length} contacts? This may take a few moments.`)) return;
+    if (!window.confirm(`Import ${FULL_CONTACT_LIST.length} contacts?\n\nThis will add all contacts that don't already exist in your database.`)) return;
     
     setImporting(true);
     try {
@@ -351,15 +387,26 @@ export default function ContactsPage() {
       let failed = 0;
       let skipped = 0;
       
+      // Get existing contacts to avoid duplicates
+      const existingSnapshot = await getDocs(collection(db, 'contacts'));
+      const existingCompanies = new Set(
+        existingSnapshot.docs.map(d => d.data().companyName?.toLowerCase())
+      );
+      
       const batchSize = 10;
       for (let i = 0; i < FULL_CONTACT_LIST.length; i += batchSize) {
         const batch = FULL_CONTACT_LIST.slice(i, i + batchSize);
         
         await Promise.all(batch.map(async (contact) => {
           try {
+            // Skip if contact already exists
+            if (existingCompanies.has(contact.companyName?.toLowerCase())) {
+              skipped++;
+              return;
+            }
+            
             await addDoc(collection(db, 'contacts'), {
               ...contact,
-              onHold: false,
               notes: '',
               createdBy: currentUser.uid,
               createdByName: `${currentUser.firstName} ${currentUser.lastName}`,
@@ -367,21 +414,18 @@ export default function ContactsPage() {
             });
             imported++;
           } catch (e) {
-            if (e.code === 'permission-denied') {
-              skipped++;
-            } else {
-              failed++;
-            }
+            failed++;
             console.error(`Failed to import ${contact.companyName}:`, e);
           }
         }));
         
+        // Small delay between batches to avoid overwhelming the database
         await new Promise(resolve => setTimeout(resolve, 500));
       }
       
       setShowImport(false);
       loadContacts();
-      alert(`Import complete!\n✅ Imported: ${imported}\n❌ Failed: ${failed}\n⏭️ Skipped: ${skipped}\n\nTotal: ${FULL_CONTACT_LIST.length}`);
+      alert(`✅ Import complete!\n\n✅ Imported: ${imported}\n⏭️ Skipped (already exist): ${skipped}\n❌ Failed: ${failed}\n\nTotal processed: ${FULL_CONTACT_LIST.length}`);
     } catch (e) {
       console.error('Error importing contacts:', e);
       alert('Import failed: ' + e.message);
@@ -407,6 +451,9 @@ export default function ContactsPage() {
     return acc;
   }, {});
 
+  const availableContacts = filtered.filter(c => !isContactInProgress(c));
+  const inProgressContacts = filtered.filter(c => isContactInProgress(c));
+
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
       {/* HEADER */}
@@ -430,7 +477,7 @@ export default function ContactsPage() {
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white rounded-xl font-semibold shadow-lg shadow-green-500/30 transition-all hover:shadow-green-500/50 hover:scale-105"
             >
               <Upload size={20} strokeWidth={2.5} />
-              <span>Import All Contacts</span>
+              <span>Import Contacts</span>
             </button>
           )}
           
@@ -447,13 +494,9 @@ export default function ContactsPage() {
       {/* STATS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <StatCard title="Total Contacts" value={contacts.length} icon={Users} color="purple" />
-        <StatCard title="Available" value={contacts.filter(c => !c.onHold).length} icon={CheckCircle2} color="green" />
+        <StatCard title="Available" value={availableContacts.length} icon={CheckCircle2} color="green" />
+        <StatCard title="In Progress" value={inProgressContacts.length} icon={Clock} color="yellow" />
         <StatCard title="Categories" value={Object.keys(categoryCounts).length} icon={Building2} color="blue" />
-        <StatCard title="This Month" value={contacts.filter(c => {
-          const created = c.createdAt?.toDate();
-          const now = new Date();
-          return created && created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
-        }).length} icon={Clock} color="yellow" />
       </div>
 
       {/* FILTERS */}
@@ -546,19 +589,50 @@ export default function ContactsPage() {
         </div>
       )}
 
-      {/* CONTACTS GRID */}
-      {!loading && filtered.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(contact => (
-            <ContactCard
-              key={contact.id}
-              contact={contact}
-              onEdit={() => setEditContact(contact)}
-              onDelete={() => deleteContact(contact.id)}
-              onStartWorking={() => startWorkingOnContact(contact)}
-              userRole={userRole}
-            />
-          ))}
+      {/* AVAILABLE CONTACTS */}
+      {!loading && availableContacts.length > 0 && (
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <CheckCircle2 className="w-6 h-6 text-green-600" />
+            Available Contacts ({availableContacts.length})
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {availableContacts.map(contact => (
+              <ContactCard
+                key={contact.id}
+                contact={contact}
+                onEdit={() => setEditContact(contact)}
+                onDelete={() => deleteContact(contact.id)}
+                onStartWorking={() => startWorkingOnContact(contact)}
+                userRole={userRole}
+                isAvailable={true}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* IN PROGRESS CONTACTS */}
+      {!loading && inProgressContacts.length > 0 && (
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Clock className="w-6 h-6 text-yellow-600" />
+            Currently Being Worked On ({inProgressContacts.length})
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {inProgressContacts.map(contact => (
+              <ContactCard
+                key={contact.id}
+                contact={contact}
+                onEdit={() => setEditContact(contact)}
+                onDelete={() => deleteContact(contact.id)}
+                onStartWorking={() => startWorkingOnContact(contact)}
+                userRole={userRole}
+                isAvailable={false}
+                workingUser={getWorkingUser(contact)}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -720,13 +794,13 @@ export default function ContactsPage() {
               <p className="text-sm text-blue-900 font-semibold mb-2">📋 Import Complete Contact List</p>
               <p className="text-sm text-blue-700 mb-3">
                 This will import all {FULL_CONTACT_LIST.length} contacts from your spreadsheet. 
-                The import will run in batches to ensure reliability.
+                Contacts that already exist will be skipped to avoid duplicates.
               </p>
               <ul className="text-sm text-blue-700 space-y-1 ml-4">
-                <li>• {FULL_CONTACT_LIST.length} total contacts</li>
-                <li>• Includes all categories and contact information</li>
+                <li>• {FULL_CONTACT_LIST.length} total contacts to process</li>
+                <li>• Duplicate contacts will be automatically skipped</li>
                 <li>• Import will take approximately 1-2 minutes</li>
-                <li>• You can continue using the app during import</li>
+                <li>• All categories and contact information included</li>
               </ul>
             </div>
 
@@ -784,13 +858,17 @@ function StatCard({ title, value, icon: Icon, color }) {
   );
 }
 
-function ContactCard({ contact, onEdit, onDelete, onStartWorking, userRole }) {
+function ContactCard({ contact, onEdit, onDelete, onStartWorking, userRole, isAvailable, workingUser }) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all">
+    <div className={`bg-white rounded-2xl shadow-sm border ${isAvailable ? 'border-gray-200' : 'border-yellow-300 bg-yellow-50/30'} p-6 hover:shadow-lg transition-all`}>
       <div className="space-y-4">
         <div className="flex items-start gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center flex-shrink-0">
-            <Building2 className="w-6 h-6 text-purple-600" />
+          <div className={`w-12 h-12 rounded-xl ${isAvailable ? 'bg-gradient-to-br from-purple-100 to-pink-100' : 'bg-gradient-to-br from-yellow-100 to-orange-100'} flex items-center justify-center flex-shrink-0`}>
+            {isAvailable ? (
+              <Building2 className="w-6 h-6 text-purple-600" />
+            ) : (
+              <Lock className="w-6 h-6 text-yellow-600" />
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-bold text-gray-900 truncate">{contact.companyName}</h3>
@@ -798,21 +876,27 @@ function ContactCard({ contact, onEdit, onDelete, onStartWorking, userRole }) {
               <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold">
                 {contact.category}
               </span>
-              {contact.dealHistory && contact.dealHistory.closedDeals > 0 && (
-                <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-semibold flex items-center gap-1">
-                  <Award className="w-3 h-3" />
-                  {contact.dealHistory.closedDeals} Deal{contact.dealHistory.closedDeals > 1 ? 's' : ''} Closed
-                </span>
-              )}
-              {contact.dealHistory && contact.dealHistory.lostDeals > 0 && (
-                <span className="inline-block px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-semibold flex items-center gap-1">
-                  <TrendingDown className="w-3 h-3" />
-                  {contact.dealHistory.lostDeals} Lost
+              {!isAvailable && (
+                <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-semibold flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  In Progress
                 </span>
               )}
             </div>
           </div>
         </div>
+
+        {!isAvailable && workingUser && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <p className="text-xs text-yellow-800 font-semibold flex items-center gap-2">
+              <Lock className="w-3 h-3" />
+              Being worked on by: {workingUser}
+            </p>
+            <p className="text-xs text-yellow-600 mt-1">
+              This contact is locked until the deal is closed or lost
+            </p>
+          </div>
+        )}
 
         <div className="space-y-2 text-sm">
           {contact.contactName && (
@@ -847,13 +931,23 @@ function ContactCard({ contact, onEdit, onDelete, onStartWorking, userRole }) {
         )}
 
         <div className="pt-4 border-t border-gray-200 flex flex-wrap gap-2">
-          <button 
-            onClick={onStartWorking} 
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white rounded-lg font-medium transition-all shadow-sm hover:shadow-md"
-          >
-            <PlayCircle className="w-4 h-4" />
-            <span>Start Working</span>
-          </button>
+          {isAvailable ? (
+            <button 
+              onClick={onStartWorking} 
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white rounded-lg font-medium transition-all shadow-sm hover:shadow-md"
+            >
+              <PlayCircle className="w-4 h-4" />
+              <span>Start Working</span>
+            </button>
+          ) : (
+            <button 
+              disabled
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-300 text-gray-500 rounded-lg font-medium cursor-not-allowed"
+            >
+              <Lock className="w-4 h-4" />
+              <span>Locked</span>
+            </button>
+          )}
           
           <button 
             onClick={onEdit} 

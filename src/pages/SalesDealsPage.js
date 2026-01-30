@@ -18,7 +18,7 @@ import {
 import { 
   Plus, Trash2, Edit, X, Search, Filter, TrendingUp, Clock, CheckCircle2, 
   XCircle, Archive, DollarSign, Users, Briefcase, Phone, FileText, Eye,
-  ArchiveRestore, AlertCircle, UserCheck
+  ArchiveRestore, AlertCircle, UserCheck, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../utils/currency';
@@ -40,20 +40,10 @@ export default function SalesDealsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
-  const [showForm, setShowForm] = useState(false);
-  const [editDeal, setEditDeal] = useState(null);
   const [showArchive, setShowArchive] = useState(false);
+  const [editDeal, setEditDeal] = useState(null);
   const [viewingHistory, setViewingHistory] = useState(null);
   const [error, setError] = useState(null);
-
-  const [form, setForm] = useState({
-    businessName: '',
-    contactPerson: '',
-    phoneNumber: '',
-    status: 'potential_client',
-    price: '',
-    notes: ''
-  });
 
   useEffect(() => {
     if (currentUser?.uid) {
@@ -123,36 +113,6 @@ export default function SalesDealsPage() {
     }
   }
 
-  async function createDeal(e) {
-    e.preventDefault();
-    try {
-      await addDoc(collection(db, 'sales'), {
-        ...form,
-        price: Number(form.price) || 0,
-        createdBy: currentUser.uid,
-        createdByName: `${currentUser.firstName} ${currentUser.lastName}`,
-        archived: false,
-        createdAt: serverTimestamp(),
-        editHistory: []
-      });
-      
-      setForm({
-        businessName: '',
-        contactPerson: '',
-        phoneNumber: '',
-        status: 'potential_client',
-        price: '',
-        notes: ''
-      });
-      setShowForm(false);
-      loadDeals();
-      alert('Deal created successfully!');
-    } catch (e) {
-      console.error('Error creating deal:', e);
-      alert('Failed to create deal: ' + e.message);
-    }
-  }
-
   async function saveEdit() {
     try {
       const dealRef = doc(db, 'sales', editDeal.id);
@@ -184,7 +144,7 @@ export default function SalesDealsPage() {
         editHistory: arrayUnion(historyEntry)
       });
 
-      // NEW: Handle contact when deal is closed or lost
+      // Handle contact when deal is closed or lost
       const statusChanged = originalDeal.status !== editDeal.status;
       const isClosedOrLost = editDeal.status === 'closed' || editDeal.status === 'lost';
       
@@ -199,13 +159,6 @@ export default function SalesDealsPage() {
           
           // Update deal history on the contact
           const dealHistoryUpdate = {
-            onHold: false,
-            onHoldBy: null,
-            onHoldByName: null,
-            onHoldAt: null,
-            releasedAt: serverTimestamp(),
-            releasedBy: currentUser.uid,
-            releasedByName: `${currentUser.firstName} ${currentUser.lastName}`,
             dealHistory: {
               closedDeals: currentHistory.closedDeals + (editDeal.status === 'closed' ? 1 : 0),
               lostDeals: currentHistory.lostDeals + (editDeal.status === 'lost' ? 1 : 0),
@@ -217,7 +170,7 @@ export default function SalesDealsPage() {
           await updateDoc(contactRef, dealHistoryUpdate);
           
           const statusLabel = editDeal.status === 'closed' ? 'closed' : 'lost';
-          alert(`Deal updated successfully! The contact has been released and marked with a "${statusLabel}" deal in their history.`);
+          alert(`✅ Deal updated successfully!\n\nThe contact has been updated with a "${statusLabel}" deal in their history.`);
         } catch (e) {
           console.error('Error updating contact:', e);
           alert('Deal updated successfully, but failed to update contact status.');
@@ -243,10 +196,6 @@ export default function SalesDealsPage() {
     try {
       const contactRef = doc(db, 'contacts', contactId);
       await updateDoc(contactRef, {
-        onHold: false,
-        onHoldBy: null,
-        onHoldByName: null,
-        onHoldAt: null,
         releasedAt: serverTimestamp(),
         releasedBy: currentUser.uid,
         releasedByName: `${currentUser.firstName} ${currentUser.lastName}`
@@ -257,7 +206,7 @@ export default function SalesDealsPage() {
   }
 
   async function archiveDeal(id) {
-    if (!window.confirm('Archive this deal? You can restore it later.')) return;
+    if (!window.confirm('📦 Archive this deal?\n\nYou can restore it later from the archive.')) return;
     try {
       const deal = deals.find(d => d.id === id);
       
@@ -278,8 +227,8 @@ export default function SalesDealsPage() {
       }
       
       const message = deal?.sourceContactId 
-        ? 'Deal archived successfully! The contact has been released and is now available.'
-        : 'Deal archived successfully!';
+        ? '✅ Deal archived successfully!\n\nThe contact has been released and is now available for others to work on.'
+        : '✅ Deal archived successfully!';
       alert(message);
     } catch (e) {
       console.error('Error archiving deal:', e);
@@ -290,8 +239,8 @@ export default function SalesDealsPage() {
   async function restoreDeal(id) {
     const deal = archivedDeals.find(d => d.id === id);
     const confirmMessage = deal?.sourceContactId
-      ? 'Restore this deal to active deals? This will put the contact back on hold.'
-      : 'Restore this deal to active deals?';
+      ? '🔄 Restore this deal to active deals?\n\nThis will put the contact back on hold so you can continue working on it.'
+      : '🔄 Restore this deal to active deals?';
     
     if (!window.confirm(confirmMessage)) return;
     
@@ -307,19 +256,18 @@ export default function SalesDealsPage() {
         try {
           const contactRef = doc(db, 'contacts', deal.sourceContactId);
           await updateDoc(contactRef, {
-            onHold: true,
-            onHoldBy: currentUser.uid,
-            onHoldByName: `${currentUser.firstName} ${currentUser.lastName}`,
-            onHoldAt: serverTimestamp()
+            restoredAt: serverTimestamp(),
+            restoredBy: currentUser.uid,
+            restoredByName: `${currentUser.firstName} ${currentUser.lastName}`
           });
         } catch (e) {
-          console.error('Error putting contact back on hold:', e);
+          console.error('Error updating contact:', e);
         }
       }
 
       loadDeals();
       loadArchivedDeals();
-      alert('Deal restored successfully!');
+      alert('✅ Deal restored successfully!');
     } catch (e) {
       console.error('Error restoring deal:', e);
       alert('Failed to restore deal: ' + e.message);
@@ -328,10 +276,10 @@ export default function SalesDealsPage() {
 
   async function deleteDeal(id) {
     if (userRole !== 'admin') {
-      alert('Only admins can permanently delete deals.');
+      alert('⚠️ Only admins can permanently delete deals.');
       return;
     }
-    if (!window.confirm('⚠️ PERMANENTLY DELETE THIS DEAL? This action cannot be undone!')) return;
+    if (!window.confirm('⚠️ PERMANENTLY DELETE THIS DEAL?\n\nThis action cannot be undone!')) return;
     try {
       const deal = [...deals, ...archivedDeals].find(d => d.id === id);
       
@@ -345,13 +293,17 @@ export default function SalesDealsPage() {
       if (showArchive) loadArchivedDeals();
       
       const message = deal?.sourceContactId
-        ? 'Deal deleted permanently! The contact has been released.'
-        : 'Deal deleted permanently!';
+        ? '✅ Deal deleted permanently!\n\nThe contact has been released.'
+        : '✅ Deal deleted permanently!';
       alert(message);
     } catch (e) {
       console.error('Error deleting deal:', e);
       alert('Failed to delete deal: ' + e.message);
     }
+  }
+
+  function goToContacts() {
+    navigate('/sales/contacts');
   }
 
   const filtered = deals.filter(d => {
@@ -413,11 +365,29 @@ export default function SalesDealsPage() {
           )}
 
           <button
-            onClick={() => setShowForm(true)}
+            onClick={goToContacts}
             className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 transition-all hover:shadow-blue-500/50 hover:scale-105"
           >
             <Plus size={20} strokeWidth={2.5} />
-            <span>Add New Deal</span>
+            <span>Create Deal from Contact</span>
+          </button>
+        </div>
+      </div>
+
+      {/* INFO BANNER */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+        <Users className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-blue-900">How to Create Deals</p>
+          <p className="text-sm text-blue-700 mt-1">
+            Deals are created from the Contact Directory. Select a contact and click "Start Working" to create a deal and lock the contact to prevent others from working on it simultaneously.
+          </p>
+          <button
+            onClick={goToContacts}
+            className="mt-3 flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all text-sm"
+          >
+            <span>Go to Contact Directory</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -522,19 +492,23 @@ export default function SalesDealsPage() {
       {/* ACTIVE DEALS */}
       {!loading && !showArchive && filtered.length === 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Briefcase className="w-10 h-10 text-gray-400" />
+          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Briefcase className="w-10 h-10 text-blue-600" />
           </div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">No deals found</h3>
           <p className="text-gray-600 mb-6">
-            {search || filter !== 'all' ? 'Try adjusting your filters or search terms' : 'Get started by creating your first deal'}
+            {search || filter !== 'all' 
+              ? 'Try adjusting your filters or search terms' 
+              : 'Get started by creating your first deal from a contact'}
           </p>
           {!search && filter === 'all' && (
             <button
-              onClick={() => setShowForm(true)}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all hover:scale-105"
+              onClick={goToContacts}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all hover:scale-105 inline-flex items-center gap-2"
             >
-              Create First Deal
+              <Users className="w-5 h-5" />
+              <span>Go to Contact Directory</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -599,29 +573,6 @@ export default function SalesDealsPage() {
       )}
 
       {/* MODALS */}
-      {showForm && (
-        <Modal onClose={() => setShowForm(false)} title="Create New Deal">
-          <form onSubmit={createDeal} className="space-y-4">
-            <InputField label="Business Name" icon={Briefcase} required value={form.businessName} onChange={e => setForm({ ...form, businessName: e.target.value })} />
-            <InputField label="Contact Person" icon={Users} required value={form.contactPerson} onChange={e => setForm({ ...form, contactPerson: e.target.value })} />
-            <InputField label="Phone Number" icon={Phone} required value={form.phoneNumber} onChange={e => setForm({ ...form, phoneNumber: e.target.value })} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <SelectField label="Status" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} options={STATUSES.map(s => ({ value: s.value, label: s.label }))} />
-              <InputField label="Deal Value" icon={DollarSign} type="number" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} />
-            </div>
-            <TextAreaField label="Notes" icon={FileText} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
-            <div className="flex gap-3 pt-4">
-              <button type="submit" className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 transition-all hover:shadow-blue-500/50">
-                Create Deal
-              </button>
-              <button type="button" onClick={() => setShowForm(false)} className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-all">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
       {editDeal && (
         <Modal onClose={() => setEditDeal(null)} title="Edit Deal">
           <div className="space-y-4">
