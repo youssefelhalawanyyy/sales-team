@@ -72,38 +72,38 @@ export default function SalesDealsPage() {
       
       // Admin and sales_manager can see all deals
       if (userRole === 'admin' || userRole === 'sales_manager') {
-        // Simple query without composite index requirement
         dealsQuery = query(
           collection(db, 'sales'),
           orderBy('createdAt', 'desc')
         );
       } else {
-        // Regular users see only their deals
+        // Regular users: simple query by createdBy only (no composite index needed)
         dealsQuery = query(
           collection(db, 'sales'),
-          where('createdBy', '==', currentUser.uid),
-          orderBy('createdAt', 'desc')
+          where('createdBy', '==', currentUser.uid)
         );
       }
 
       const snapshot = await getDocs(dealsQuery);
-      const allDeals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      let allDeals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       
-      // Filter archived deals in memory instead of in query
+      // Filter archived deals in memory
       const activeDeals = allDeals.filter(deal => !deal.archived);
+      
+      // Sort in memory for regular users (since we can't orderBy in the query)
+      if (userRole !== 'admin' && userRole !== 'sales_manager') {
+        activeDeals.sort((a, b) => {
+          const timeA = a.createdAt?.toMillis() || 0;
+          const timeB = b.createdAt?.toMillis() || 0;
+          return timeB - timeA; // Descending order (newest first)
+        });
+      }
       
       setDeals(activeDeals);
     } catch (e) {
       console.error('Error loading deals:', e);
       setError(e.message);
-      
-      // Provide helpful error message
-      if (e.code === 'failed-precondition') {
-        alert('Database index required. Please check the console for the index creation link.');
-        console.error('CREATE INDEX:', e.message);
-      } else {
-        alert('Failed to load deals: ' + e.message);
-      }
+      alert('Failed to load deals: ' + e.message);
     } finally {
       setLoading(false);
     }

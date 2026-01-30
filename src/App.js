@@ -26,9 +26,10 @@ import { TeamManagementPage } from './pages/TeamManagementPage';
 /* ✅ JONIX AI */
 import AIHelper from './pages/aiHelper';
 
-/* ✅ NEW PAGES - FOLLOW-UPS & CLIENT PROFILE */
+/* ✅ NEW PAGES - FOLLOW-UPS & CLIENT PROFILE & VISITS */
 import FollowUpsPage from './pages/FollowUpsPage';
 import ClientProfilePage from './pages/ClientProfilePage';
+import VisitsPage from './pages/VisitsPage';
 
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navigation } from './components/Navigation';
@@ -187,6 +188,23 @@ const AppContent = () => {
             ]}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <FollowUpsPage />
+              </div>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= CLIENT VISITS ================= */}
+        <Route
+          path="/sales/visits"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <VisitsPage />
               </div>
             </ProtectedRoute>
           }
