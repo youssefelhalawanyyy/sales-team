@@ -10,7 +10,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 import { LoginPage } from './pages/LoginPage';
 import { Dashboard } from './pages/Dashboard';
-import { AdminUsersPage } from './pages/AdminUsersPage';
+import AdminUsersPage from './pages/AdminUsersPage';
 import { FinancePage } from './pages/FinancePage';
 import { FinanceReportsPage } from './pages/FinanceReportsPage';
 import { OwnerSettlementsPage } from './pages/OwnerSettlementsPage';
