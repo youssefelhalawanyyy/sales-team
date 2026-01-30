@@ -5,6 +5,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #f9fafb;
 }
 
 code {
@@ -14,5 +15,89 @@ code {
 
 html, body, #root {
   height: 100%;
+  width: 100%;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  body {
+    padding: 0;
+    margin: 0;
+  }
+
+  #root {
+    width: 100vw;
+    height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Disable zoom on input focus for iOS */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Better touch targets */
+  button, a, input[type="button"], input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Prevent layout shift on scroll */
+  body {
+    overscroll-behavior: contain;
+  }
+
+  /* Safe area for notch devices */
+  @supports (padding: max(0px)) {
+    body {
+      padding-left: max(0px, env(safe-area-inset-left));
+      padding-right: max(0px, env(safe-area-inset-right));
+    }
+  }
+}
+
+/* Landscape orientation fixes */
+@media (max-height: 500px) and (orientation: landscape) {
+  header, nav {
+    height: auto;
+  }
+
+  .max-w-7xl {
+    padding: 4px 12px;
+  }
+
+  /* Reduce padding in landscape */
+  .py-8 {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+
+  .p-6 {
+    padding: 12px !important;
+  }
+
+  .p-4 {
+    padding: 8px !important;
+  }
+
+  /* Better card sizing in landscape */
+  .grid {
+    gap: 8px !important;
+  }
+}
+
+/* Portrait orientation optimizations */
+@media (orientation: portrait) and (max-width: 768px) {
+  .grid-cols-2, .grid-cols-3, .grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .lg\:col-span-2 {
+    grid-column: span 1 !important;
+  }
+
+  .lg\:col-span-3 {
+    grid-column: span 1 !important;
+  }
 }
 

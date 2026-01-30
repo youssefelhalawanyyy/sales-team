@@ -336,25 +336,25 @@ Created: ${new Date(deal.createdAt?.toDate ? deal.createdAt.toDate() : deal.crea
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Performance & Analytics</h1>
-          <p className="text-gray-600 mt-1">View team member performance, deals, and tasks</p>
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Performance & Analytics</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">View team member performance, deals, and tasks</p>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
             <AlertCircle className="text-red-600 mr-3 mt-0.5 flex-shrink-0" size={20} />
-            <p className="text-red-700">{error}</p>
+            <p className="text-red-700 text-sm sm:text-base">{error}</p>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
           {/* Left Sidebar - Team Members */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 sticky top-2 lg:top-4 max-h-[calc(100vh-120px)] overflow-y-auto">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <Users size={20} className="mr-2" />
                 Team Members
@@ -375,13 +375,13 @@ Created: ${new Date(deal.createdAt?.toDate ? deal.createdAt.toDate() : deal.crea
                     <button
                       key={member.id}
                       onClick={() => setSelectedMember(member)}
-                      className={`w-full text-left px-4 py-3 rounded-lg transition ${selectedMember?.id === member.id
+                      className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base ${selectedMember?.id === member.id
                         ? 'bg-blue-100 border-2 border-blue-600'
                         : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
                         }`}
                     >
-                      <div className="font-medium text-gray-900 text-sm">{member.name}</div>
-                      <div className="text-xs text-gray-600">{member.email}</div>
+                      <div className="font-medium text-gray-900 text-xs sm:text-sm">{member.name}</div>
+                      <div className="text-xs text-gray-600 truncate">{member.email}</div>
                       <div className="text-xs text-gray-500 mt-1 capitalize">{member.role}</div>
                     </button>
                   ))}
@@ -393,36 +393,36 @@ Created: ${new Date(deal.createdAt?.toDate ? deal.createdAt.toDate() : deal.crea
           {/* Right Content - Statistics */}
           <div className="lg:col-span-2">
             {!selectedMember ? (
-              <div className="bg-white rounded-lg shadow-md p-12 text-center">
-                <Users size={48} className="mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-600 text-lg">Select a team member to view their performance</p>
+              <div className="bg-white rounded-lg shadow-md p-6 sm:p-12 text-center">
+                <Users size={40} className="mx-auto text-gray-400 mb-4 sm:size-48" />
+                <p className="text-gray-600 text-base sm:text-lg">Select a team member to view their performance</p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Header */}
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">{selectedMember.name}</h2>
-                      <p className="text-gray-600">{selectedMember.email}</p>
-                      <p className="text-sm text-gray-500 mt-1 capitalize">Role: {selectedMember.role}</p>
+                <div className="bg-white rounded-lg shadow-md p-3 sm:p-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4">
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{selectedMember.name}</h2>
+                      <p className="text-gray-600 text-sm truncate">{selectedMember.email}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-1 capitalize">Role: {selectedMember.role}</p>
                     </div>
                     <button
                       onClick={handleExportReport}
-                      className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                      className="flex items-center bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm sm:text-base whitespace-nowrap"
                     >
-                      <Download size={18} className="mr-2" />
-                      Export Report
+                      <Download size={16} className="mr-2" />
+                      Export
                     </button>
                   </div>
 
                   {/* Tabs */}
-                  <div className="flex gap-2 border-b border-gray-200 mt-4">
+                  <div className="flex gap-1 sm:gap-2 border-b border-gray-200 mt-4 overflow-x-auto">
                     {['overview', 'deals', 'projects', 'tasks'].map(tab => (
                       <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`px-4 py-2 font-medium border-b-2 transition ${
+                        className={`px-3 sm:px-4 py-2 font-medium text-xs sm:text-sm border-b-2 transition whitespace-nowrap ${
                           activeTab === tab
                             ? 'border-blue-600 text-blue-600'
                             : 'border-transparent text-gray-600 hover:text-gray-900'
@@ -448,55 +448,55 @@ Created: ${new Date(deal.createdAt?.toDate ? deal.createdAt.toDate() : deal.crea
                       <>
                         {/* Deals Statistics */}
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
                             <Target size={20} className="mr-2" />
                             Deals Performance
                           </h3>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-600">
-                              <div className="text-gray-600 text-sm font-medium">Total Deals</div>
-                              <div className="text-3xl font-bold text-blue-600 mt-2">{memberStats.statistics.totalDeals}</div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+                            <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 border-l-4 border-blue-600">
+                              <div className="text-gray-600 text-xs sm:text-sm font-medium">Total Deals</div>
+                              <div className="text-2xl sm:text-3xl font-bold text-blue-600 mt-2">{memberStats.statistics.totalDeals}</div>
                             </div>
 
-                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-600">
-                              <div className="text-gray-600 text-sm font-medium">Won Deals</div>
-                              <div className="text-3xl font-bold text-green-600 mt-2">{memberStats.statistics.wonDeals}</div>
-                              <div className="text-xs text-gray-600 mt-1">{memberStats.statistics.conversionRate}% conversion</div>
+                            <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 border-l-4 border-green-600">
+                              <div className="text-gray-600 text-xs sm:text-sm font-medium">Won Deals</div>
+                              <div className="text-2xl sm:text-3xl font-bold text-green-600 mt-2">{memberStats.statistics.wonDeals}</div>
+                              <div className="text-xs text-gray-600 mt-1">{memberStats.statistics.conversionRate}% conv</div>
                             </div>
 
-                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-purple-600">
-                              <div className="text-gray-600 text-sm font-medium">Paid Deals</div>
-                              <div className="text-3xl font-bold text-purple-600 mt-2">{memberStats.statistics.dealsWithPayment}</div>
-                              <div className="text-xs text-gray-600 mt-1">{memberStats.statistics.paymentReceiveRate}% payment rate</div>
+                            <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 border-l-4 border-purple-600">
+                              <div className="text-gray-600 text-xs sm:text-sm font-medium">Paid Deals</div>
+                              <div className="text-2xl sm:text-3xl font-bold text-purple-600 mt-2">{memberStats.statistics.dealsWithPayment}</div>
+                              <div className="text-xs text-gray-600 mt-1">{memberStats.statistics.paymentReceiveRate}% paid</div>
                             </div>
 
-                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-emerald-600">
-                              <div className="text-gray-600 text-sm font-medium">Total Revenue</div>
-                              <div className="text-2xl font-bold text-emerald-600 mt-2">{formatCurrency(memberStats.statistics.totalRevenue)}</div>
+                            <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 border-l-4 border-emerald-600">
+                              <div className="text-gray-600 text-xs sm:text-sm font-medium">Revenue</div>
+                              <div className="text-lg sm:text-2xl font-bold text-emerald-600 mt-2 truncate">{formatCurrency(memberStats.statistics.totalRevenue)}</div>
                             </div>
                           </div>
                         </div>
 
                         {/* Tasks Statistics */}
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center">
                             <Zap size={20} className="mr-2" />
                             Tasks Performance
                           </h3>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-gray-600">
-                              <div className="text-gray-600 text-sm font-medium">Total Tasks</div>
-                              <div className="text-3xl font-bold text-gray-900 mt-2">{memberStats.statistics.totalTasks}</div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+                            <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 border-l-4 border-gray-600">
+                              <div className="text-gray-600 text-xs sm:text-sm font-medium">Total Tasks</div>
+                              <div className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2">{memberStats.statistics.totalTasks}</div>
                             </div>
 
-                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-600">
-                              <div className="text-gray-600 text-sm font-medium">Approved</div>
-                              <div className="text-3xl font-bold text-green-600 mt-2">{memberStats.statistics.approvedTasks}</div>
+                            <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 border-l-4 border-green-600">
+                              <div className="text-gray-600 text-xs sm:text-sm font-medium">Approved</div>
+                              <div className="text-2xl sm:text-3xl font-bold text-green-600 mt-2">{memberStats.statistics.approvedTasks}</div>
                             </div>
 
-                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-yellow-600">
-                              <div className="text-gray-600 text-sm font-medium">Pending</div>
-                              <div className="text-3xl font-bold text-yellow-600 mt-2">{memberStats.statistics.pendingTasks}</div>
+                            <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 border-l-4 border-yellow-600">
+                              <div className="text-gray-600 text-xs sm:text-sm font-medium">Pending</div>
+                              <div className="text-2xl sm:text-3xl font-bold text-yellow-600 mt-2">{memberStats.statistics.pendingTasks}</div>
                             </div>
 
                             <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-600">
