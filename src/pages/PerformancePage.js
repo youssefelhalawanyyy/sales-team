@@ -104,109 +104,102 @@ const PerformancePage = () => {
   =============================== */
 
   useEffect(() => {
-    const loadMemberStats = async () => {
-      if (!selectedMember) return;
+    if (!selectedMember) return;
 
-      try {
-        setLoading(true);
-        setError('');
-        let unsubscribeDeal, unsubscribeTask, unsubscribeProject;
+    try {
+      setLoading(true);
+      setError('');
+      let unsubscribeDeal, unsubscribeTask, unsubscribeProject;
 
-        // Real-time listener for deals
-        const dealsQuery = query(
-          collection(db, 'sales'),
-          where('createdBy', '==', selectedMember.id)
-        );
-        unsubscribeDeal = onSnapshot(dealsQuery, (snapshot) => {
-          const deals = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
+      // Real-time listener for deals
+      const dealsQuery = query(
+        collection(db, 'sales'),
+        where('createdBy', '==', selectedMember.id)
+      );
+      unsubscribeDeal = onSnapshot(dealsQuery, (snapshot) => {
+        const deals = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
 
-          const closedDeals = deals.filter(d => d.status === 'closed');
-          const wonDeals = deals.filter(d => d.status === 'won' || d.status === 'closed');
-          const receivedPaymentDeals = deals.filter(d => d.paymentReceived);
-          const totalRevenue = receivedPaymentDeals.reduce((sum, d) => sum + (parseFloat(d.price) || 0), 0);
+        const closedDeals = deals.filter(d => d.status === 'closed');
+        const wonDeals = deals.filter(d => d.status === 'won' || d.status === 'closed');
+        const receivedPaymentDeals = deals.filter(d => d.paymentReceived);
+        const totalRevenue = receivedPaymentDeals.reduce((sum, d) => sum + (parseFloat(d.price) || 0), 0);
 
-          setMemberStats({
-            deals,
-            statistics: {
-              totalDeals: deals.length,
-              closedDeals: closedDeals.length,
-              wonDeals: wonDeals.length,
-              dealsWithPayment: receivedPaymentDeals.length,
-              totalRevenue,
-              paymentReceiveRate: deals.length > 0 ? Math.round((receivedPaymentDeals.length / deals.length) * 100) : 0,
-              conversionRate: deals.length > 0 ? Math.round((wonDeals.length / deals.length) * 100) : 0
-            }
-          });
+        setMemberStats({
+          deals,
+          statistics: {
+            totalDeals: deals.length,
+            closedDeals: closedDeals.length,
+            wonDeals: wonDeals.length,
+            dealsWithPayment: receivedPaymentDeals.length,
+            totalRevenue,
+            paymentReceiveRate: deals.length > 0 ? Math.round((receivedPaymentDeals.length / deals.length) * 100) : 0,
+            conversionRate: deals.length > 0 ? Math.round((wonDeals.length / deals.length) * 100) : 0
+          }
+        });
+      });
+
+      // Real-time listener for tasks
+      const tasksQuery = query(
+        collection(db, 'tasks'),
+        where('assignedTo', '==', selectedMember.id)
+      );
+      unsubscribeTask = onSnapshot(tasksQuery, (snapshot) => {
+        const tasks = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        const approvedTasks = tasks.filter(t => t.status === 'approved');
+        const pendingTasks = tasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
+        const overdueTasks = tasks.filter(t => {
+          const deadline = t.deadline?.toDate ? t.deadline.toDate() : new Date(t.deadline);
+          return new Date() > deadline && (t.status === 'pending' || t.status === 'in_progress');
         });
 
-        // Real-time listener for tasks
-        const tasksQuery = query(
-          collection(db, 'tasks'),
-          where('assignedTo', '==', selectedMember.id)
-        );
-        unsubscribeTask = onSnapshot(tasksQuery, (snapshot) => {
-          const tasks = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
+        setMemberTasks(tasks);
+        setMemberStats(prev => ({
+          ...prev,
+          statistics: {
+            ...prev?.statistics,
+            totalTasks: tasks.length,
+            approvedTasks: approvedTasks.length,
+            pendingTasks: pendingTasks.length,
+            overdueTasks: overdueTasks.length,
+            taskCompletionRate: tasks.length > 0 ? Math.round((approvedTasks.length / tasks.length) * 100) : 0
+          }
+        }));
+      });
 
-          const approvedTasks = tasks.filter(t => t.status === 'approved');
-          const pendingTasks = tasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
-          const overdueTasks = tasks.filter(t => {
-            const deadline = t.deadline?.toDate ? t.deadline.toDate() : new Date(t.deadline);
-            return new Date() > deadline && (t.status === 'pending' || t.status === 'in_progress');
-          });
+      // Real-time listener for projects
+      const projectsQuery = query(
+        collection(db, 'projects'),
+        where('assignedTo', '==', selectedMember.id)
+      );
+      unsubscribeProject = onSnapshot(projectsQuery, (snapshot) => {
+        const projects = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setMemberProjects(projects);
+      });
 
-          setMemberTasks(tasks);
-          setMemberStats(prev => ({
-            ...prev,
-            statistics: {
-              ...prev?.statistics,
-              totalTasks: tasks.length,
-              approvedTasks: approvedTasks.length,
-              pendingTasks: pendingTasks.length,
-              overdueTasks: overdueTasks.length,
-              taskCompletionRate: tasks.length > 0 ? Math.round((approvedTasks.length / tasks.length) * 100) : 0
-            }
-          }));
-        });
+      setLoading(false);
 
-        // Real-time listener for projects
-        const projectsQuery = query(
-          collection(db, 'projects'),
-          where('assignedTo', '==', selectedMember.id)
-        );
-        unsubscribeProject = onSnapshot(projectsQuery, (snapshot) => {
-          const projects = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          setMemberProjects(projects);
-        });
+      // Cleanup function
+      return () => {
+        if (unsubscribeDeal) unsubscribeDeal();
+        if (unsubscribeTask) unsubscribeTask();
+        if (unsubscribeProject) unsubscribeProject();
+      };
 
-        setLoading(false);
-
-        // Cleanup function
-        return () => {
-          if (unsubscribeDeal) unsubscribeDeal();
-          if (unsubscribeTask) unsubscribeTask();
-          if (unsubscribeProject) unsubscribeProject();
-        };
-
-      } catch (err) {
-        console.error('Error loading member stats:', err);
-        setError('Failed to load member statistics');
-        setLoading(false);
-      }
-    };
-
-    const cleanup = loadMemberStats();
-    return () => {
-      if (cleanup) cleanup();
-    };
+    } catch (err) {
+      console.error('Error loading member stats:', err);
+      setError('Failed to load member statistics');
+      setLoading(false);
+    }
   }, [selectedMember]);
 
   /* ===============================
