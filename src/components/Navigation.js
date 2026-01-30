@@ -14,7 +14,8 @@ import {
   Users2,
   ChevronDown,
   Info,
-  Calculator
+  Calculator,
+  Bell
 } from 'lucide-react';
 
 export const Navigation = ({ userRole }) => {
@@ -72,6 +73,12 @@ export const Navigation = ({ userRole }) => {
     icon: Calculator
   };
 
+  const followUpsItem = {
+    label: 'Follow-Ups',
+    path: '/sales/followups',
+    icon: Bell
+  };
+
   const informationItem = {
     label: 'Information',
     path: '/description',
@@ -88,6 +95,7 @@ export const Navigation = ({ userRole }) => {
     admin: [
       dashboardItem,
       calculatorItem,
+      followUpsItem,
 
       {
         label: 'Sales',
@@ -142,6 +150,7 @@ export const Navigation = ({ userRole }) => {
     sales_manager: [
       dashboardItem,
       calculatorItem,
+      followUpsItem,
 
       {
         label: 'Sales',
@@ -161,6 +170,7 @@ export const Navigation = ({ userRole }) => {
     team_leader: [
       dashboardItem,
       calculatorItem,
+      followUpsItem,
 
       {
         label: 'Sales',
@@ -180,6 +190,7 @@ export const Navigation = ({ userRole }) => {
     sales_member: [
       dashboardItem,
       calculatorItem,
+      followUpsItem,
 
       {
         label: 'Sales',
