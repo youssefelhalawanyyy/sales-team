@@ -70,28 +70,29 @@ export default function VisitsPage() {
 
   async function loadDeals() {
     try {
-      let q;
+      let snapshot;
 
-      if (userRole === 'admin') {
-        // Admin sees all deals
-        q = query(
-          collection(db, 'sales'),
-          where('archived', '==', false)
-        );
+      if (userRole === 'admin' || userRole === 'sales_manager') {
+        // Admin/Manager sees all deals - simple query
+        const q = query(collection(db, 'sales'));
+        snapshot = await getDocs(q);
       } else {
         // Reps see only their deals
-        q = query(
+        const q = query(
           collection(db, 'sales'),
-          where('createdBy', '==', currentUser.uid),
-          where('archived', '==', false)
+          where('createdBy', '==', currentUser.uid)
         );
+        snapshot = await getDocs(q);
       }
 
-      const snap = await getDocs(q);
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setDeals(list);
+      const allDeals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Filter out archived deals in memory
+      const activeDeals = allDeals.filter(deal => !deal.archived);
+      
+      setDeals(activeDeals);
     } catch (e) {
       console.error('Error loading deals:', e);
+      alert('Failed to load deals: ' + e.message);
     }
   }
 
@@ -101,30 +102,39 @@ export default function VisitsPage() {
     try {
       setLoading(true);
 
-      let q;
+      let snapshot;
 
-      if (userRole === 'admin') {
-        // Admin sees all visits
-        q = query(
+      if (userRole === 'admin' || userRole === 'sales_manager') {
+        // Admin/Manager sees all visits - simple query
+        const q = query(
           collection(db, 'visits'),
           orderBy('visitDate', 'desc')
         );
+        snapshot = await getDocs(q);
       } else {
-        // Reps see only their visits
-        q = query(
+        // Reps see only their visits - query without orderBy to avoid composite index
+        const q = query(
           collection(db, 'visits'),
-          where('salesRepId', '==', currentUser.uid),
-          orderBy('visitDate', 'desc')
+          where('salesRepId', '==', currentUser.uid)
         );
+        snapshot = await getDocs(q);
       }
 
-      const snap = await getDocs(q);
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      let list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // For non-admin users, sort by visitDate in memory
+      if (userRole !== 'admin' && userRole !== 'sales_manager') {
+        list.sort((a, b) => {
+          const dateA = a.visitDate?.toMillis?.() || 0;
+          const dateB = b.visitDate?.toMillis?.() || 0;
+          return dateB - dateA; // Descending order (newest first)
+        });
+      }
 
       setVisits(list);
     } catch (e) {
       console.error('Error loading visits:', e);
-      alert('Failed to load visits');
+      alert('Failed to load visits: ' + e.message);
     } finally {
       setLoading(false);
     }
@@ -172,9 +182,10 @@ export default function VisitsPage() {
 
       setShowForm(false);
       loadVisits();
+      alert('Visit logged successfully!');
     } catch (e) {
       console.error('Error creating visit:', e);
-      alert('Failed to create visit');
+      alert('Failed to create visit: ' + e.message);
     }
   }
 
@@ -203,9 +214,10 @@ export default function VisitsPage() {
 
       setEditVisit(null);
       loadVisits();
+      alert('Visit updated successfully!');
     } catch (e) {
       console.error('Error updating visit:', e);
-      alert('Failed to update visit');
+      alert('Failed to update visit: ' + e.message);
     }
   }
 
@@ -217,9 +229,10 @@ export default function VisitsPage() {
     try {
       await deleteDoc(doc(db, 'visits', id));
       loadVisits();
+      alert('Visit deleted successfully!');
     } catch (e) {
       console.error('Error deleting visit:', e);
-      alert('Failed to delete visit');
+      alert('Failed to delete visit: ' + e.message);
     }
   }
 
@@ -240,6 +253,8 @@ export default function VisitsPage() {
 
     return searchMatch && repMatch;
   });
+
+  const canDelete = userRole === 'admin' || userRole === 'sales_manager';
 
   /* ============================= */
 
@@ -314,8 +329,8 @@ export default function VisitsPage() {
             />
           </div>
 
-          {/* Filter by Rep (Admin only) */}
-          {userRole === 'admin' && uniqueReps.length > 0 && (
+          {/* Filter by Rep (Admin/Manager only) */}
+          {(userRole === 'admin' || userRole === 'sales_manager') && uniqueReps.length > 0 && (
             <div className="relative sm:w-64">
               <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <select
@@ -402,7 +417,7 @@ export default function VisitsPage() {
                 });
               }}
               onDelete={() => deleteVisit(visit.id)}
-              userRole={userRole}
+              canDelete={canDelete}
             />
           ))}
         </div>
@@ -656,7 +671,7 @@ function StatCard({ title, value, icon: Icon, color }) {
 
 /* ============================= */
 
-function VisitCard({ visit, onEdit, onDelete, userRole }) {
+function VisitCard({ visit, onEdit, onDelete, canDelete }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all">
       <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
@@ -732,7 +747,7 @@ function VisitCard({ visit, onEdit, onDelete, userRole }) {
           <span>Edit</span>
         </button>
 
-        {userRole === 'admin' && (
+        {canDelete && (
           <button
             onClick={onDelete}
             className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-medium transition-all"

@@ -8,7 +8,9 @@ import {
   getDocs,
   query,
   where,
-  orderBy
+  orderBy,
+  updateDoc,
+  serverTimestamp
 } from 'firebase/firestore';
 import {
   ArrowLeft,
@@ -28,7 +30,9 @@ import {
   XCircle,
   Target,
   Users,
-  Edit
+  Edit,
+  Save,
+  X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../utils/currency';
@@ -54,6 +58,12 @@ export default function ClientProfilePage() {
   const [visits, setVisits] = useState([]);
   const [followups, setFollowups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Notes editing state
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [notesText, setNotesText] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
 
   /* ============================= */
 
@@ -68,52 +78,99 @@ export default function ClientProfilePage() {
   async function loadClientData() {
     try {
       setLoading(true);
+      setError(null);
 
-      // Load deal
+      // Load deal from 'sales' collection
       const dealDoc = await getDoc(doc(db, 'sales', dealId));
+      
       if (!dealDoc.exists()) {
-        alert('Client not found');
-        navigate('/sales');
+        setError('Client not found');
+        setLoading(false);
         return;
       }
 
       const dealData = { id: dealDoc.id, ...dealDoc.data() };
 
-      // Check permissions
+      // Check permissions - only admin or the creator can view
       if (userRole !== 'admin' && dealData.createdBy !== currentUser.uid) {
-        alert('You do not have permission to view this client');
-        navigate('/sales');
+        setError('You do not have permission to view this client');
+        setLoading(false);
         return;
       }
 
       setDeal(dealData);
+      setNotesText(dealData.notes || ''); // Initialize notes text
 
-      // Load visits
+      // Load visits for this deal
       const visitsQuery = query(
         collection(db, 'visits'),
         where('dealId', '==', dealId),
         orderBy('visitDate', 'desc')
       );
+      
       const visitsSnap = await getDocs(visitsQuery);
-      const visitsList = visitsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const visitsList = visitsSnap.docs.map(d => ({ 
+        id: d.id, 
+        ...d.data() 
+      }));
+      
+      console.log('Loaded visits:', visitsList); // Debug log
       setVisits(visitsList);
 
-      // Load follow-ups
+      // Load follow-ups for this deal
       const followupsQuery = query(
         collection(db, 'followups'),
         where('dealId', '==', dealId),
         orderBy('reminderDate', 'asc')
       );
+      
       const followupsSnap = await getDocs(followupsQuery);
-      const followupsList = followupsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const followupsList = followupsSnap.docs.map(d => ({ 
+        id: d.id, 
+        ...d.data() 
+      }));
+      
+      console.log('Loaded follow-ups:', followupsList); // Debug log
       setFollowups(followupsList);
 
     } catch (e) {
       console.error('Error loading client data:', e);
-      alert('Failed to load client data');
+      setError('Failed to load client data: ' + e.message);
     } finally {
       setLoading(false);
     }
+  }
+
+  /* ============================= */
+
+  async function handleSaveNotes() {
+    if (!dealId) return;
+
+    try {
+      setSavingNotes(true);
+
+      const dealRef = doc(db, 'sales', dealId);
+      await updateDoc(dealRef, {
+        notes: notesText,
+        updatedAt: serverTimestamp()
+      });
+
+      // Update local state
+      setDeal(prev => ({ ...prev, notes: notesText }));
+      setIsEditingNotes(false);
+
+      alert('Notes saved successfully!');
+    } catch (e) {
+      console.error('Error saving notes:', e);
+      alert('Failed to save notes: ' + e.message);
+    } finally {
+      setSavingNotes(false);
+    }
+  }
+
+  function handleCancelEdit() {
+    setNotesText(deal.notes || '');
+    setIsEditingNotes(false);
   }
 
   /* ============================= */
@@ -127,15 +184,19 @@ export default function ClientProfilePage() {
     );
   }
 
-  if (!deal) {
+  if (error || !deal) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Building2 className="w-10 h-10 text-gray-400" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Client not found</h3>
-          <p className="text-gray-600 mb-6">The client you're looking for doesn't exist or you don't have permission to view it.</p>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
+            {error || 'Client not found'}
+          </h3>
+          <p className="text-gray-600 mb-6">
+            {error ? 'Please try again or contact support.' : "The client you're looking for doesn't exist or you don't have permission to view it."}
+          </p>
           <button
             onClick={() => navigate('/sales')}
             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 transition-all hover:scale-105"
@@ -147,8 +208,8 @@ export default function ClientProfilePage() {
     );
   }
 
-  const status = STATUSES.find(s => s.value === deal.status);
-  const StatusIcon = status?.icon || Briefcase;
+  const status = STATUSES.find(s => s.value === deal.status) || STATUSES[0];
+  const StatusIcon = status.icon;
 
   const colorClasses = {
     blue: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -178,10 +239,10 @@ export default function ClientProfilePage() {
               <Building2 className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">{deal.businessName}</h1>
+              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">{deal.businessName || 'Unnamed Business'}</h1>
               <p className="text-gray-600 mt-1 flex items-center gap-2">
                 <User className="w-4 h-4" />
-                {deal.contactPerson}
+                {deal.contactPerson || 'No contact person'}
               </p>
             </div>
           </div>
@@ -210,7 +271,7 @@ export default function ClientProfilePage() {
               <User className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase">Contact Person</p>
-                <p className="text-sm font-medium text-gray-900">{deal.contactPerson}</p>
+                <p className="text-sm font-medium text-gray-900">{deal.contactPerson || 'N/A'}</p>
               </div>
             </div>
 
@@ -218,9 +279,19 @@ export default function ClientProfilePage() {
               <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase">Phone</p>
-                <p className="text-sm font-medium text-gray-900">{deal.phoneNumber}</p>
+                <p className="text-sm font-medium text-gray-900">{deal.phoneNumber || 'N/A'}</p>
               </div>
             </div>
+
+            {deal.email && (
+              <div className="flex items-start gap-3">
+                <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase">Email</p>
+                  <p className="text-sm font-medium text-gray-900">{deal.email}</p>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-start gap-3">
               <Users className="w-5 h-5 text-gray-400 mt-0.5" />
@@ -234,7 +305,9 @@ export default function ClientProfilePage() {
               <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase">Created On</p>
-                <p className="text-sm font-medium text-gray-900">{formatDate(deal.createdAt)}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {deal.createdAt ? formatDate(deal.createdAt) : 'N/A'}
+                </p>
               </div>
             </div>
           </div>
@@ -261,11 +334,13 @@ export default function ClientProfilePage() {
               </div>
             </div>
 
-            {deal.notes && (
+            {deal.address && (
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Notes</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-1">
+                  <MapPin className="w-3 h-3" /> Address
+                </p>
                 <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 border border-gray-200">
-                  {deal.notes}
+                  {deal.address}
                 </p>
               </div>
             )}
@@ -307,6 +382,81 @@ export default function ClientProfilePage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* NOTES SECTION */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-indigo-600" />
+            Client Notes
+          </h3>
+          
+          {!isEditingNotes && (
+            <button
+              onClick={() => setIsEditingNotes(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+            >
+              <Edit className="w-4 h-4" />
+              Edit Notes
+            </button>
+          )}
+        </div>
+
+        {isEditingNotes ? (
+          <div className="space-y-4">
+            <textarea
+              value={notesText}
+              onChange={(e) => setNotesText(e.target.value)}
+              placeholder="Add notes about this client..."
+              rows={6}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm"
+            />
+            
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSaveNotes}
+                disabled={savingNotes}
+                className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingNotes ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save Notes
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={handleCancelEdit}
+                disabled={savingNotes}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <X className="w-4 h-4" />
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            {deal.notes ? (
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{deal.notes}</p>
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-600 font-medium">No notes added yet</p>
+                <p className="text-sm text-gray-500 mt-1">Click "Edit Notes" to add information about this client</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* TIMELINE SECTIONS */}
@@ -399,11 +549,15 @@ function VisitItem({ visit }) {
         <div className="flex items-start gap-2">
           <Calendar className="w-4 h-4 text-purple-600 mt-0.5" />
           <div>
-            <p className="text-sm font-bold text-gray-900">{formatDate(visit.visitDate)}</p>
-            <p className="text-xs text-gray-600 mt-0.5 flex items-center gap-1">
-              <MapPin className="w-3 h-3" />
-              {visit.address}
+            <p className="text-sm font-bold text-gray-900">
+              {visit.visitDate ? formatDate(visit.visitDate) : 'No date'}
             </p>
+            {visit.address && (
+              <p className="text-xs text-gray-600 mt-0.5 flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                {visit.address}
+              </p>
+            )}
           </div>
         </div>
         <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -412,12 +566,14 @@ function VisitItem({ visit }) {
       </div>
 
       <div className="mt-3 space-y-2">
-        <div className="bg-white rounded-lg p-2 border border-purple-200">
-          <p className="text-xs font-semibold text-purple-700 mb-1 flex items-center gap-1">
-            <Target className="w-3 h-3" /> PURPOSE
-          </p>
-          <p className="text-xs text-gray-700">{visit.purpose}</p>
-        </div>
+        {visit.purpose && (
+          <div className="bg-white rounded-lg p-2 border border-purple-200">
+            <p className="text-xs font-semibold text-purple-700 mb-1 flex items-center gap-1">
+              <Target className="w-3 h-3" /> PURPOSE
+            </p>
+            <p className="text-xs text-gray-700">{visit.purpose}</p>
+          </div>
+        )}
 
         {visit.result && (
           <div className="bg-white rounded-lg p-2 border border-purple-200">
@@ -440,7 +596,7 @@ function VisitItem({ visit }) {
 
       <div className="mt-3 pt-3 border-t border-purple-200 flex items-center gap-2 text-xs text-gray-600">
         <User className="w-3 h-3" />
-        <span>{visit.salesRepName}</span>
+        <span>{visit.salesRepName || 'Unknown'}</span>
       </div>
     </div>
   );
@@ -464,10 +620,14 @@ function FollowUpItem({ followup }) {
         <div className="flex items-start gap-2">
           <Calendar className={`w-4 h-4 mt-0.5 ${isOverdueItem ? 'text-red-600' : isDone ? 'text-green-600' : 'text-orange-600'}`} />
           <div>
-            <p className="text-sm font-bold text-gray-900">{formatDate(followup.reminderDate)}</p>
-            <p className="text-xs text-gray-600 mt-0.5">
-              {followup.nextAction}
+            <p className="text-sm font-bold text-gray-900">
+              {followup.reminderDate ? formatDate(followup.reminderDate) : 'No date'}
             </p>
+            {followup.nextAction && (
+              <p className="text-xs text-gray-600 mt-0.5">
+                {followup.nextAction}
+              </p>
+            )}
           </div>
         </div>
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
@@ -509,7 +669,7 @@ function FollowUpItem({ followup }) {
       }`}>
         <div className="flex items-center gap-2 text-xs text-gray-600">
           <User className="w-3 h-3" />
-          <span>{followup.assignedToName}</span>
+          <span>{followup.assignedToName || 'Unknown'}</span>
         </div>
         <span className={`px-2 py-1 rounded text-xs font-bold ${
           isOverdueItem 
@@ -518,7 +678,7 @@ function FollowUpItem({ followup }) {
               ? 'bg-green-100 text-green-700'
               : 'bg-yellow-100 text-yellow-700'
         }`}>
-          {followup.status.toUpperCase()}
+          {followup.status ? followup.status.toUpperCase() : 'PENDING'}
         </span>
       </div>
     </div>

@@ -15,7 +15,8 @@ import {
   ChevronDown,
   Info,
   Calculator,
-  Bell
+  Bell,
+  MapPin
 } from 'lucide-react';
 
 export const Navigation = ({ userRole }) => {
@@ -95,6 +96,7 @@ export const Navigation = ({ userRole }) => {
         icon: Users2,
         children: [
           { label: 'Deals', path: '/sales/deals', icon: Users2 },
+          { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
           { label: 'Teams', path: '/sales/teams', icon: Users2 },
@@ -150,6 +152,7 @@ export const Navigation = ({ userRole }) => {
         icon: Users2,
         children: [
           { label: 'Deals', path: '/sales/deals', icon: Users2 },
+          { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
           { label: 'Teams', path: '/sales/teams', icon: Users2 },
@@ -170,6 +173,7 @@ export const Navigation = ({ userRole }) => {
         icon: Users2,
         children: [
           { label: 'Deals', path: '/sales/deals', icon: Users2 },
+          { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
           { label: 'Teams', path: '/sales/teams', icon: Users2 },
@@ -190,6 +194,7 @@ export const Navigation = ({ userRole }) => {
         icon: Users2,
         children: [
           { label: 'Deals', path: '/sales/deals', icon: Users2 },
+          { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
