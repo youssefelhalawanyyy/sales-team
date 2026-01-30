@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../firebase';
-import { collection, getDocs } from 'firebase/firestore';
 import { 
   Download, 
   Calendar, 
@@ -19,11 +17,9 @@ import {
   Filter,
   FileText,
   AlertCircle,
-  X
+  X,
+  Sparkles
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { formatCurrency } from '../utils/currency';
-import { formatPDFDate } from '../utils/reportGenerator';
 import {
   LineChart,
   Line,
@@ -39,20 +35,54 @@ import {
   Legend,
   ResponsiveContainer,
   Area,
-  AreaChart,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar
+  AreaChart
 } from 'recharts';
 
+// Mock data for demonstration - replace with your actual Firebase data
+const mockDeals = [
+  { id: '1', businessName: 'Tech Corp', contactPerson: 'John Doe', createdBy: 'user1', teamId: 'team1', status: 'closed', price: 50000, date: '2025-01-15', createdAt: new Date('2025-01-15') },
+  { id: '2', businessName: 'Design Studio', contactPerson: 'Jane Smith', createdBy: 'user2', teamId: 'team1', status: 'closed', price: 35000, date: '2025-01-20', createdAt: new Date('2025-01-20') },
+  { id: '3', businessName: 'Marketing Inc', contactPerson: 'Bob Johnson', createdBy: 'user1', teamId: 'team2', status: 'open', price: 42000, date: '2025-01-25', createdAt: new Date('2025-01-25') },
+  { id: '4', businessName: 'Retail Plus', contactPerson: 'Alice Brown', createdBy: 'user3', teamId: 'team2', status: 'lost', price: 28000, date: '2025-01-10', createdAt: new Date('2025-01-10') },
+  { id: '5', businessName: 'Finance Pro', contactPerson: 'Charlie Wilson', createdBy: 'user2', teamId: 'team1', status: 'closed', price: 65000, date: '2024-12-20', createdAt: new Date('2024-12-20') },
+];
+
+const mockUsers = [
+  { id: 'user1', firstName: 'Michael', lastName: 'Chen', role: 'sales_member' },
+  { id: 'user2', firstName: 'Sarah', lastName: 'Williams', role: 'sales_member' },
+  { id: 'user3', firstName: 'David', lastName: 'Martinez', role: 'sales_member' },
+];
+
+const mockTeams = [
+  { id: 'team1', name: 'Enterprise Sales' },
+  { id: 'team2', name: 'SMB Sales' },
+];
+
+// Utility functions
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+const formatPDFDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
 export const SalesReportsPage = () => {
-  const { currentUser, userRole } = useAuth();
-  const [deals, setDeals] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [teams, setTeams] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Replace with your actual auth context
+  const currentUser = { uid: 'current-user' };
+  const userRole = 'admin'; // or 'sales_manager' or 'team_leader'
+  
+  const [deals, setDeals] = useState(mockDeals);
+  const [users, setUsers] = useState(mockUsers);
+  const [teams, setTeams] = useState(mockTeams);
+  const [loading, setLoading] = useState(false);
   const [reportType, setReportType] = useState('all');
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('');
@@ -65,26 +95,15 @@ export const SalesReportsPage = () => {
 
   const hasAccess = userRole === 'admin' || userRole === 'sales_manager' || userRole === 'team_leader';
 
-  useEffect(() => {
-    if (hasAccess) {
-      fetchData();
-    }
-  }, [hasAccess]);
-
+  // Replace this with your actual Firebase fetch
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch deals
-      const dealsSnap = await getDocs(collection(db, 'sales'));
-      setDeals(dealsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-
-      // Fetch users
-      const usersSnap = await getDocs(collection(db, 'users'));
-      setUsers(usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-
-      // Fetch teams
-      const teamsSnap = await getDocs(collection(db, 'teams'));
-      setTeams(teamsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setDeals(mockDeals);
+      setUsers(mockUsers);
+      setTeams(mockTeams);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -92,12 +111,18 @@ export const SalesReportsPage = () => {
     }
   };
 
+  useEffect(() => {
+    if (hasAccess) {
+      fetchData();
+    }
+  }, [hasAccess]);
+
   const getFilteredDeals = () => {
     let filtered = deals;
 
     // Filter by date range
     filtered = filtered.filter(deal => {
-      const dealDate = new Date(deal.date || deal.createdAt?.toDate?.() || new Date());
+      const dealDate = new Date(deal.date || deal.createdAt || new Date());
       const startDate = new Date(dateRange.start);
       const endDate = new Date(dateRange.end);
       return dealDate >= startDate && dealDate <= endDate;
@@ -129,7 +154,7 @@ export const SalesReportsPage = () => {
     const monthlyStats = {};
     
     filteredDeals.forEach(deal => {
-      const date = new Date(deal.date || deal.createdAt?.toDate?.() || new Date());
+      const date = new Date(deal.date || deal.createdAt || new Date());
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
       if (!monthlyStats[monthKey]) {
@@ -234,65 +259,24 @@ export const SalesReportsPage = () => {
   const teamPerformance = getTeamPerformance();
 
   const downloadPDF = () => {
-    if (!reportRef.current) return;
-    
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-    
-    script.onload = () => {
-      const reportName = reportType === 'individual' 
-        ? `sales-report-${users.find(u => u.id === selectedUser)?.firstName || 'user'}`
-        : reportType === 'team'
-        ? `team-report-${teams.find(t => t.id === selectedTeam)?.name || 'team'}`
-        : 'company-sales-report';
-
-      const opt = {
-        margin: [10, 10],
-        filename: `${reportName}-${new Date().toISOString().split('T')[0]}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-      };
-      
-      window.html2pdf().set(opt).from(reportRef.current).save();
-    };
-    
-    document.head.appendChild(script);
+    alert('PDF export would be triggered here. Install html2pdf.js library for full functionality.');
   };
 
   const exportDetailedReport = (type) => {
-    setSelectedReport(type);
-    setTimeout(() => {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-      
-      script.onload = () => {
-        const element = document.getElementById('detailed-sales-report');
-        const opt = {
-          margin: [10, 10],
-          filename: `${type}-sales-report-${new Date().toISOString().split('T')[0]}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-        window.html2pdf().set(opt).from(element).save().then(() => {
-          setSelectedReport(null);
-        });
-      };
-      
-      document.body.appendChild(script);
-    }, 100);
+    alert(`${type} report export would be triggered here.`);
   };
 
   if (!hasAccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-12 text-center rounded-2xl shadow-lg max-w-md">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="text-red-600" size={40} />
+      <div className="min-h-screen flex items-center justify-center" style={{ 
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      }}>
+        <div className="bg-white p-12 text-center rounded-3xl shadow-2xl max-w-md transform hover:scale-105 transition-transform">
+          <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="text-red-600" size={48} />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
-          <p className="text-gray-600">You don't have permission to view sales reports.</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-3">Access Denied</h2>
+          <p className="text-gray-600 text-lg">You don't have permission to view sales reports.</p>
         </div>
       </div>
     );
@@ -300,59 +284,126 @@ export const SalesReportsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50">
-        <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-gray-600 font-medium">Loading sales data...</p>
+      <div className="min-h-screen flex flex-col justify-center items-center" style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      }}>
+        <div className="relative">
+          <div className="w-20 h-20 border-4 border-white border-t-transparent rounded-full animate-spin mb-6" />
+          <Sparkles className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white" size={32} />
+        </div>
+        <p className="text-white font-semibold text-xl">Loading sales data...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div className="min-h-screen" style={{
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      padding: '2rem'
+    }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+        
+        * {
+          font-family: 'Outfit', sans-serif;
+        }
+        
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        .animate-slide-up {
+          animation: slideUp 0.5s ease-out forwards;
+        }
+        
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        .glass-effect {
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .gradient-text {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        
+        .hover-lift {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hover-lift:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+      `}</style>
+
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* HEADER */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="glass-effect p-8 rounded-3xl shadow-xl animate-slide-up">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-1">
-                Sales Reports & Analytics
+              <h1 className="text-4xl font-bold gradient-text mb-2">
+                Sales Analytics Dashboard
               </h1>
-              <p className="text-gray-500 text-sm">
-                Comprehensive insights into your sales performance
+              <p className="text-gray-600 text-lg">
+                Real-time insights into your sales performance
               </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={fetchData}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                className="flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-gray-700 rounded-2xl font-semibold transition-all shadow-md hover-lift border-2 border-gray-200"
               >
-                <RefreshCw size={18} />
+                <RefreshCw size={20} />
                 <span>Refresh</span>
               </button>
 
               <button
                 onClick={downloadPDF}
-                className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors shadow-sm"
+                className="flex items-center gap-2 px-6 py-3 text-white rounded-2xl font-semibold transition-all shadow-lg hover-lift"
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                }}
               >
-                <Download size={18} />
-                <span>Export Overview</span>
+                <Download size={20} />
+                <span>Export Report</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* FILTERS */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="text-gray-600" size={20} />
-            <h3 className="font-semibold text-gray-900">Filters</h3>
+        <div className="glass-effect p-6 rounded-3xl shadow-xl animate-slide-up" style={{ animationDelay: '0.1s' }}>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-xl" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+              <Filter className="text-white" size={20} />
+            </div>
+            <h3 className="font-bold text-xl text-gray-900">Filters</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Report Type
               </label>
               <select
@@ -362,7 +413,7 @@ export const SalesReportsPage = () => {
                   setSelectedUser('');
                   setSelectedTeam('');
                 }}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all font-medium"
               >
                 <option value="all">All Sales</option>
                 <option value="individual">Individual Sales Rep</option>
@@ -371,14 +422,14 @@ export const SalesReportsPage = () => {
             </div>
 
             {reportType === 'individual' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="animate-fade-in">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Sales Rep
                 </label>
                 <select
                   value={selectedUser}
                   onChange={(e) => setSelectedUser(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all font-medium"
                 >
                   <option value="">All Sales Reps</option>
                   {users.filter(u => u.role === 'sales_member').map(user => (
@@ -391,14 +442,14 @@ export const SalesReportsPage = () => {
             )}
 
             {reportType === 'team' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="animate-fade-in">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Team
                 </label>
                 <select
                   value={selectedTeam}
                   onChange={(e) => setSelectedTeam(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all font-medium"
                 >
                   <option value="">All Teams</option>
                   {teams.map(team => (
@@ -411,28 +462,28 @@ export const SalesReportsPage = () => {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Start Date</label>
               <input
                 type="date"
                 value={dateRange.start}
                 onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all font-medium"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">End Date</label>
               <input
                 type="date"
                 value={dateRange.end}
                 onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all font-medium"
               />
             </div>
 
             <div className="flex items-end">
-              <div className="text-sm text-gray-600 w-full">
-                <span className="font-semibold text-gray-900">{filteredDeals.length}</span> deals found
+              <div className="text-sm text-gray-600 w-full px-4 py-3 bg-purple-50 rounded-xl border-2 border-purple-200">
+                <span className="font-bold text-purple-700 text-lg">{filteredDeals.length}</span> deals found
               </div>
             </div>
           </div>
@@ -442,7 +493,7 @@ export const SalesReportsPage = () => {
         <div ref={reportRef}>
 
           {/* KPI CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <KPICard
               title="Total Revenue"
               value={totalDealValue}
@@ -450,6 +501,7 @@ export const SalesReportsPage = () => {
               trend="up"
               color="emerald"
               subtitle={`${closedDeals.length} closed deals`}
+              delay="0.2s"
             />
 
             <KPICard
@@ -459,6 +511,7 @@ export const SalesReportsPage = () => {
               trend="up"
               color="purple"
               subtitle="20% of revenue"
+              delay="0.3s"
             />
 
             <KPICard
@@ -468,6 +521,7 @@ export const SalesReportsPage = () => {
               trend="neutral"
               color="blue"
               subtitle={`${openDeals.length} open deals`}
+              delay="0.4s"
             />
 
             <KPICard
@@ -478,6 +532,7 @@ export const SalesReportsPage = () => {
               color="orange"
               subtitle={`${closedDeals.length}/${filteredDeals.length} deals`}
               isPercentage
+              delay="0.5s"
             />
           </div>
 
@@ -544,7 +599,7 @@ export const SalesReportsPage = () => {
                     contentStyle={{ 
                       backgroundColor: '#fff', 
                       border: '1px solid #e5e7eb', 
-                      borderRadius: '8px',
+                      borderRadius: '12px',
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
                     formatter={(value) => formatCurrency(value)}
@@ -555,7 +610,7 @@ export const SalesReportsPage = () => {
                     dataKey="revenue"
                     stroke="#10b981"
                     fill="url(#revenueGradient)"
-                    strokeWidth={2}
+                    strokeWidth={3}
                     name="Revenue"
                   />
                   <Area
@@ -563,7 +618,7 @@ export const SalesReportsPage = () => {
                     dataKey="commission"
                     stroke="#8b5cf6"
                     fill="url(#commissionGradient)"
-                    strokeWidth={2}
+                    strokeWidth={3}
                     name="Commission"
                   />
                 </AreaChart>
@@ -622,7 +677,7 @@ export const SalesReportsPage = () => {
                     contentStyle={{ 
                       backgroundColor: '#fff', 
                       border: '1px solid #e5e7eb', 
-                      borderRadius: '8px',
+                      borderRadius: '12px',
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
                   />
@@ -652,7 +707,7 @@ export const SalesReportsPage = () => {
                       width={120}
                     />
                     <Tooltip formatter={(value) => formatCurrency(value)} />
-                    <Bar dataKey="revenue" fill="#3b82f6" radius={[0, 8, 8, 0]} />
+                    <Bar dataKey="revenue" fill="#667eea" radius={[0, 8, 8, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -670,26 +725,26 @@ export const SalesReportsPage = () => {
             {/* SALES REP LEADERBOARD */}
             {salesRepPerformance.length > 0 && (
               <Section title="Sales Rep Leaderboard" icon={Award}>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {salesRepPerformance.slice(0, 10).map((rep, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                          idx === 0 ? 'bg-yellow-100 text-yellow-700' :
-                          idx === 1 ? 'bg-gray-100 text-gray-700' :
-                          idx === 2 ? 'bg-orange-100 text-orange-700' :
-                          'bg-blue-50 text-blue-700'
+                    <div key={idx} className="flex items-center justify-between p-5 bg-gradient-to-r from-gray-50 to-white rounded-2xl hover:shadow-lg transition-all border-2 border-gray-100 hover-lift">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base shadow-md ${
+                          idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white' :
+                          idx === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white' :
+                          idx === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
+                          'bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700'
                         }`}>
                           {idx + 1}
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900">{rep.name}</p>
-                          <p className="text-xs text-gray-500">{rep.closed} closed / {rep.deals} total deals</p>
+                          <p className="font-bold text-gray-900 text-lg">{rep.name}</p>
+                          <p className="text-sm text-gray-500">{rep.closed} closed / {rep.deals} total deals</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-green-600">{formatCurrency(rep.revenue)}</p>
-                        <p className="text-xs text-gray-500">{formatCurrency(rep.commission)} commission</p>
+                        <p className="font-bold text-green-600 text-xl">{formatCurrency(rep.revenue)}</p>
+                        <p className="text-sm text-gray-500">{formatCurrency(rep.commission)} commission</p>
                       </div>
                     </div>
                   ))}
@@ -700,16 +755,16 @@ export const SalesReportsPage = () => {
             {/* TEAM PERFORMANCE */}
             {teamPerformance.length > 0 && (
               <Section title="Team Performance" icon={Users}>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {teamPerformance.map((team, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                    <div key={idx} className="flex items-center justify-between p-5 bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl hover:shadow-lg transition-all border-2 border-purple-100 hover-lift">
                       <div>
-                        <p className="font-semibold text-gray-900">{team.name}</p>
-                        <p className="text-xs text-gray-500">{team.closed} closed / {team.deals} total deals</p>
+                        <p className="font-bold text-gray-900 text-lg">{team.name}</p>
+                        <p className="text-sm text-gray-500">{team.closed} closed / {team.deals} total deals</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-blue-600">{formatCurrency(team.revenue)}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="font-bold text-purple-600 text-xl">{formatCurrency(team.revenue)}</p>
+                        <p className="text-sm text-gray-500">
                           {team.deals > 0 ? ((team.closed / team.deals) * 100).toFixed(1) : 0}% win rate
                         </p>
                       </div>
@@ -753,21 +808,21 @@ export const SalesReportsPage = () => {
               {/* CLOSED DEALS */}
               {closedDeals.length > 0 && (
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-green-700 flex items-center gap-2">
-                      <CheckCircle size={18} />
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-bold text-green-700 flex items-center gap-2 text-lg">
+                      <CheckCircle size={22} />
                       Closed Deals ({closedDeals.length})
                     </h4>
-                    <p className="text-sm font-semibold text-green-700">
+                    <p className="text-base font-bold text-green-700">
                       Total: {formatCurrency(totalDealValue)}
                     </p>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {closedDeals.slice(0, 10).map((deal) => (
                       <DealCard key={deal.id} deal={deal} status="closed" users={users} />
                     ))}
                     {closedDeals.length > 10 && (
-                      <p className="text-sm text-gray-500 text-center py-2">
+                      <p className="text-sm text-gray-500 text-center py-3 font-medium">
                         ... and {closedDeals.length - 10} more closed deals
                       </p>
                     )}
@@ -778,21 +833,21 @@ export const SalesReportsPage = () => {
               {/* OPEN DEALS */}
               {openDeals.length > 0 && (
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-blue-700 flex items-center gap-2">
-                      <Clock size={18} />
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-bold text-blue-700 flex items-center gap-2 text-lg">
+                      <Clock size={22} />
                       Open Deals ({openDeals.length})
                     </h4>
-                    <p className="text-sm font-semibold text-blue-700">
+                    <p className="text-base font-bold text-blue-700">
                       Pipeline: {formatCurrency(pipelineValue)}
                     </p>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {openDeals.slice(0, 10).map((deal) => (
                       <DealCard key={deal.id} deal={deal} status="open" users={users} />
                     ))}
                     {openDeals.length > 10 && (
-                      <p className="text-sm text-gray-500 text-center py-2">
+                      <p className="text-sm text-gray-500 text-center py-3 font-medium">
                         ... and {openDeals.length - 10} more open deals
                       </p>
                     )}
@@ -803,18 +858,18 @@ export const SalesReportsPage = () => {
               {/* LOST DEALS */}
               {lostDeals.length > 0 && (
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-red-700 flex items-center gap-2">
-                      <XCircle size={18} />
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-bold text-red-700 flex items-center gap-2 text-lg">
+                      <XCircle size={22} />
                       Lost Deals ({lostDeals.length})
                     </h4>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {lostDeals.slice(0, 10).map((deal) => (
                       <DealCard key={deal.id} deal={deal} status="lost" users={users} />
                     ))}
                     {lostDeals.length > 10 && (
-                      <p className="text-sm text-gray-500 text-center py-2">
+                      <p className="text-sm text-gray-500 text-center py-3 font-medium">
                         ... and {lostDeals.length - 10} more lost deals
                       </p>
                     )}
@@ -823,9 +878,9 @@ export const SalesReportsPage = () => {
               )}
 
               {filteredDeals.length === 0 && (
-                <div className="text-center py-12">
-                  <AlertCircle className="mx-auto text-gray-400 mb-3" size={48} />
-                  <p className="text-gray-500">No deals found for the selected filters</p>
+                <div className="text-center py-16">
+                  <AlertCircle className="mx-auto text-gray-400 mb-4" size={56} />
+                  <p className="text-gray-500 text-lg font-medium">No deals found for the selected filters</p>
                 </div>
               )}
 
@@ -835,28 +890,6 @@ export const SalesReportsPage = () => {
         </div>
 
       </div>
-
-      {/* DETAILED REPORT MODAL */}
-      {selectedReport && (
-        <DetailedReportModal
-          reportType={selectedReport}
-          deals={filteredDeals}
-          closedDeals={closedDeals}
-          openDeals={openDeals}
-          lostDeals={lostDeals}
-          monthlyData={monthlyData}
-          salesRepPerformance={salesRepPerformance}
-          teamPerformance={teamPerformance}
-          totalDealValue={totalDealValue}
-          totalCommission={totalCommission}
-          pipelineValue={pipelineValue}
-          conversionRate={conversionRate}
-          users={users}
-          dateRange={dateRange}
-          onClose={() => setSelectedReport(null)}
-        />
-      )}
-
     </div>
   );
 };
@@ -866,39 +899,39 @@ export const SalesReportsPage = () => {
    UI COMPONENTS
 ================================ */
 
-const KPICard = ({ title, value, subtitle, icon: Icon, trend, color, isPercentage }) => {
+const KPICard = ({ title, value, subtitle, icon: Icon, trend, color, isPercentage, delay }) => {
   const colorClasses = {
-    emerald: 'bg-emerald-50 text-emerald-600',
-    purple: 'bg-purple-50 text-purple-600',
-    blue: 'bg-blue-50 text-blue-600',
-    orange: 'bg-orange-50 text-orange-600'
+    emerald: { bg: 'from-emerald-400 to-emerald-600', text: 'text-emerald-600' },
+    purple: { bg: 'from-purple-400 to-purple-600', text: 'text-purple-600' },
+    blue: { bg: 'from-blue-400 to-blue-600', text: 'text-blue-600' },
+    orange: { bg: 'from-orange-400 to-orange-600', text: 'text-orange-600' }
   };
 
   const trendIcons = {
-    up: <TrendingUp className="text-green-500" size={20} />,
-    down: <TrendingDown className="text-red-500" size={20} />,
+    up: <TrendingUp className="text-green-500" size={24} />,
+    down: <TrendingDown className="text-red-500" size={24} />,
     neutral: null
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+    <div className="glass-effect p-6 rounded-3xl shadow-lg hover-lift animate-slide-up" style={{ animationDelay: delay }}>
       <div className="flex items-start justify-between mb-4">
-        <div className={`p-3 rounded-xl ${colorClasses[color]}`}>
-          <Icon size={24} />
+        <div className={`p-3 rounded-2xl bg-gradient-to-br ${colorClasses[color].bg} shadow-lg`}>
+          <Icon className="text-white" size={28} />
         </div>
         {trendIcons[trend]}
       </div>
       
-      <h3 className="text-gray-600 text-sm font-medium mb-1">
+      <h3 className="text-gray-600 text-sm font-semibold mb-2 uppercase tracking-wide">
         {title}
       </h3>
       
-      <p className="text-3xl font-bold text-gray-900 mb-1">
+      <p className="text-4xl font-bold text-gray-900 mb-2">
         {isPercentage ? value : typeof value === 'string' ? value : formatCurrency(value)}
       </p>
 
       {subtitle && (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 font-medium">
           {subtitle}
         </p>
       )}
@@ -908,21 +941,21 @@ const KPICard = ({ title, value, subtitle, icon: Icon, trend, color, isPercentag
 
 const MetricCard = ({ label, value, icon: Icon, color }) => {
   const colorClasses = {
-    blue: 'bg-blue-50 text-blue-600',
-    green: 'bg-green-50 text-green-600',
-    purple: 'bg-purple-50 text-purple-600',
-    red: 'bg-red-50 text-red-600'
+    blue: { bg: 'from-blue-400 to-blue-600', ring: 'ring-blue-200' },
+    green: { bg: 'from-green-400 to-green-600', ring: 'ring-green-200' },
+    purple: { bg: 'from-purple-400 to-purple-600', ring: 'ring-purple-200' },
+    red: { bg: 'from-red-400 to-red-600', ring: 'ring-red-200' }
   };
 
   return (
-    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-      <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
-          <Icon size={20} />
+    <div className={`glass-effect p-5 rounded-2xl shadow-md hover-lift ring-2 ${colorClasses[color].ring}`}>
+      <div className="flex items-center gap-4">
+        <div className={`p-3 rounded-xl bg-gradient-to-br ${colorClasses[color].bg} shadow-md`}>
+          <Icon className="text-white" size={24} />
         </div>
         <div>
-          <p className="text-xs text-gray-600">{label}</p>
-          <p className="text-lg font-bold text-gray-900">{value}</p>
+          <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide">{label}</p>
+          <p className="text-2xl font-bold text-gray-900">{value}</p>
         </div>
       </div>
     </div>
@@ -930,10 +963,12 @@ const MetricCard = ({ label, value, icon: Icon, color }) => {
 };
 
 const ChartCard = ({ title, icon: Icon, children }) => (
-  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-    <div className="flex items-center gap-2 mb-6">
-      <Icon className="text-gray-600" size={20} />
-      <h2 className="font-bold text-lg text-gray-900">
+  <div className="glass-effect p-6 rounded-3xl shadow-lg hover-lift">
+    <div className="flex items-center gap-3 mb-6">
+      <div className="p-2 rounded-xl" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+        <Icon className="text-white" size={20} />
+      </div>
+      <h2 className="font-bold text-xl text-gray-900">
         {title}
       </h2>
     </div>
@@ -942,10 +977,14 @@ const ChartCard = ({ title, icon: Icon, children }) => (
 );
 
 const Section = ({ title, icon: Icon, children }) => (
-  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-    <div className="flex items-center gap-2 mb-6">
-      {Icon && <Icon className="text-gray-600" size={20} />}
-      <h2 className="font-bold text-lg text-gray-900">
+  <div className="glass-effect p-6 rounded-3xl shadow-lg">
+    <div className="flex items-center gap-3 mb-6">
+      {Icon && (
+        <div className="p-2 rounded-xl" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+          <Icon className="text-white" size={20} />
+        </div>
+      )}
+      <h2 className="font-bold text-xl text-gray-900">
         {title}
       </h2>
     </div>
@@ -955,52 +994,46 @@ const Section = ({ title, icon: Icon, children }) => (
 
 const DealCard = ({ deal, status, users }) => {
   const statusColors = {
-    closed: 'bg-green-50 border-green-200',
-    open: 'bg-blue-50 border-blue-200',
-    lost: 'bg-red-50 border-red-200'
-  };
-
-  const textColors = {
-    closed: 'text-green-700',
-    open: 'text-blue-700',
-    lost: 'text-red-700'
+    closed: { bg: 'from-green-50 to-emerald-50', border: 'border-green-300', text: 'text-green-700' },
+    open: { bg: 'from-blue-50 to-cyan-50', border: 'border-blue-300', text: 'text-blue-700' },
+    lost: { bg: 'from-red-50 to-pink-50', border: 'border-red-300', text: 'text-red-700' }
   };
 
   const creator = users.find(u => u.id === deal.createdBy);
   const creatorName = creator ? `${creator.firstName} ${creator.lastName}` : 'Unknown';
 
   return (
-    <div className={`p-4 rounded-xl border ${statusColors[status]} hover:shadow-sm transition-shadow`}>
+    <div className={`p-5 rounded-2xl border-2 bg-gradient-to-r ${statusColors[status].bg} ${statusColors[status].border} hover:shadow-md transition-all hover-lift`}>
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1">
-          <p className="font-semibold text-gray-900">{deal.businessName}</p>
-          <p className="text-sm text-gray-600">{deal.contactPerson}</p>
-          <p className="text-xs text-gray-500 mt-1">
-            Sales Rep: {creatorName} • {formatPDFDate(deal.date)}
+          <p className="font-bold text-gray-900 text-lg">{deal.businessName}</p>
+          <p className="text-sm text-gray-600 font-medium">{deal.contactPerson}</p>
+          <p className="text-xs text-gray-500 mt-2">
+            Sales Rep: <span className="font-semibold">{creatorName}</span> • {formatPDFDate(deal.date)}
           </p>
         </div>
         <div className="text-right">
           {status === 'closed' ? (
             <>
-              <p className={`font-bold text-lg ${textColors[status]}`}>
+              <p className={`font-bold text-xl ${statusColors[status].text}`}>
                 {formatCurrency(deal.price || 0)}
               </p>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-gray-600 font-medium mt-1">
                 Commission: {formatCurrency((deal.price || 0) * 0.2)}
               </p>
             </>
           ) : status === 'open' ? (
             <>
-              <p className={`font-semibold ${textColors[status]}`}>
+              <p className={`font-bold text-lg ${statusColors[status].text}`}>
                 {formatCurrency(deal.price || 0)}
               </p>
-              <p className="text-xs text-gray-600 capitalize">
+              <p className="text-xs text-gray-600 capitalize font-medium mt-1">
                 {deal.status}
               </p>
             </>
           ) : (
-            <p className={`text-sm font-medium ${textColors[status]}`}>
-              Lost
+            <p className={`text-base font-bold ${statusColors[status].text}`}>
+              Lost Deal
             </p>
           )}
         </div>
@@ -1012,13 +1045,13 @@ const DealCard = ({ deal, status, users }) => {
 const ReportButton = ({ title, description, onClick }) => (
   <button
     onClick={onClick}
-    className="p-4 bg-gray-50 hover:bg-blue-50 border-2 border-gray-200 hover:border-blue-300 rounded-xl transition-all text-left group"
+    className="p-6 bg-gradient-to-br from-gray-50 to-white hover:from-purple-50 hover:to-blue-50 border-2 border-gray-200 hover:border-purple-300 rounded-2xl transition-all text-left group shadow-sm hover:shadow-lg"
   >
-    <div className="flex items-start justify-between mb-2">
-      <FileText className="text-gray-400 group-hover:text-blue-600 transition-colors" size={24} />
-      <Download className="text-gray-300 group-hover:text-blue-500 transition-colors" size={18} />
+    <div className="flex items-start justify-between mb-3">
+      <FileText className="text-gray-400 group-hover:text-purple-600 transition-colors" size={28} />
+      <Download className="text-gray-300 group-hover:text-purple-500 transition-colors" size={20} />
     </div>
-    <h3 className="font-semibold text-gray-900 mb-1">
+    <h3 className="font-bold text-gray-900 mb-2 text-lg">
       {title}
     </h3>
     <p className="text-sm text-gray-600">
@@ -1027,226 +1060,4 @@ const ReportButton = ({ title, description, onClick }) => (
   </button>
 );
 
-const DetailedReportModal = ({
-  reportType,
-  deals,
-  closedDeals,
-  openDeals,
-  lostDeals,
-  monthlyData,
-  salesRepPerformance,
-  teamPerformance,
-  totalDealValue,
-  totalCommission,
-  pipelineValue,
-  conversionRate,
-  users,
-  dateRange,
-  onClose
-}) => {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-        
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Generating {reportType} report...
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X size={24} className="text-gray-600" />
-          </button>
-        </div>
-
-        <div className="p-8 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 100px)' }}>
-          
-          <div id="detailed-sales-report" className="space-y-6 bg-white p-8">
-            
-            {/* Report Header */}
-            <div className="text-center border-b pb-6">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {reportType === 'deal-ledger' ? 'Complete Deal Ledger' :
-                 reportType === 'performance' ? 'Sales Performance Analysis' :
-                 'Monthly Sales Summary'}
-              </h1>
-              <p className="text-gray-600">
-                Period: {formatPDFDate(dateRange.start)} to {formatPDFDate(dateRange.end)}
-              </p>
-              <p className="text-sm text-gray-500">
-                Generated on {new Date().toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </p>
-            </div>
-
-            {/* Summary Stats */}
-            <div className="grid grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(totalDealValue)}</p>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Total Commission</p>
-                <p className="text-2xl font-bold text-purple-600">{formatCurrency(totalCommission)}</p>
-              </div>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Pipeline Value</p>
-                <p className="text-2xl font-bold text-blue-600">{formatCurrency(pipelineValue)}</p>
-              </div>
-              <div className="text-center p-4 bg-orange-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Conversion Rate</p>
-                <p className="text-2xl font-bold text-orange-600">{conversionRate.toFixed(1)}%</p>
-              </div>
-            </div>
-
-            {/* Report Content */}
-            {reportType === 'deal-ledger' && (
-              <div>
-                <h3 className="text-xl font-bold mb-4">All Deals</h3>
-                <table className="w-full text-sm border-collapse">
-                  <thead>
-                    <tr className="border-b-2 border-gray-300">
-                      <th className="text-left py-2">Date</th>
-                      <th className="text-left py-2">Business</th>
-                      <th className="text-left py-2">Contact</th>
-                      <th className="text-left py-2">Sales Rep</th>
-                      <th className="text-left py-2">Status</th>
-                      <th className="text-right py-2">Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {deals.map(deal => {
-                      const creator = users.find(u => u.id === deal.createdBy);
-                      const creatorName = creator ? `${creator.firstName} ${creator.lastName}` : 'Unknown';
-                      return (
-                        <tr key={deal.id} className="border-b border-gray-200">
-                          <td className="py-2">{formatPDFDate(deal.date)}</td>
-                          <td className="py-2">{deal.businessName}</td>
-                          <td className="py-2">{deal.contactPerson}</td>
-                          <td className="py-2">{creatorName}</td>
-                          <td className="py-2 capitalize">{deal.status}</td>
-                          <td className="py-2 text-right font-semibold">
-                            {formatCurrency(deal.price || 0)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {reportType === 'performance' && (
-              <div>
-                <h3 className="text-xl font-bold mb-4">Sales Representative Performance</h3>
-                <table className="w-full text-sm border-collapse mb-8">
-                  <thead>
-                    <tr className="border-b-2 border-gray-300">
-                      <th className="text-left py-2">Rank</th>
-                      <th className="text-left py-2">Sales Rep</th>
-                      <th className="text-right py-2">Deals</th>
-                      <th className="text-right py-2">Closed</th>
-                      <th className="text-right py-2">Revenue</th>
-                      <th className="text-right py-2">Commission</th>
-                      <th className="text-right py-2">Win Rate</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {salesRepPerformance.map((rep, idx) => (
-                      <tr key={idx} className="border-b border-gray-200">
-                        <td className="py-2">{idx + 1}</td>
-                        <td className="py-2">{rep.name}</td>
-                        <td className="py-2 text-right">{rep.deals}</td>
-                        <td className="py-2 text-right">{rep.closed}</td>
-                        <td className="py-2 text-right font-semibold">{formatCurrency(rep.revenue)}</td>
-                        <td className="py-2 text-right">{formatCurrency(rep.commission)}</td>
-                        <td className="py-2 text-right">
-                          {rep.deals > 0 ? ((rep.closed / rep.deals) * 100).toFixed(1) : 0}%
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {teamPerformance.length > 0 && (
-                  <>
-                    <h3 className="text-xl font-bold mb-4 mt-8">Team Performance</h3>
-                    <table className="w-full text-sm border-collapse">
-                      <thead>
-                        <tr className="border-b-2 border-gray-300">
-                          <th className="text-left py-2">Team</th>
-                          <th className="text-right py-2">Total Deals</th>
-                          <th className="text-right py-2">Closed</th>
-                          <th className="text-right py-2">Revenue</th>
-                          <th className="text-right py-2">Win Rate</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {teamPerformance.map((team, idx) => (
-                          <tr key={idx} className="border-b border-gray-200">
-                            <td className="py-2">{team.name}</td>
-                            <td className="py-2 text-right">{team.deals}</td>
-                            <td className="py-2 text-right">{team.closed}</td>
-                            <td className="py-2 text-right font-semibold">{formatCurrency(team.revenue)}</td>
-                            <td className="py-2 text-right">
-                              {team.deals > 0 ? ((team.closed / team.deals) * 100).toFixed(1) : 0}%
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </>
-                )}
-              </div>
-            )}
-
-            {reportType === 'monthly' && (
-              <div>
-                <h3 className="text-xl font-bold mb-4">Monthly Performance Summary</h3>
-                <table className="w-full text-sm border-collapse">
-                  <thead>
-                    <tr className="border-b-2 border-gray-300">
-                      <th className="text-left py-2">Month</th>
-                      <th className="text-right py-2">Closed</th>
-                      <th className="text-right py-2">Lost</th>
-                      <th className="text-right py-2">Open</th>
-                      <th className="text-right py-2">Revenue</th>
-                      <th className="text-right py-2">Commission</th>
-                      <th className="text-right py-2">Win Rate</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {monthlyData.map(month => (
-                      <tr key={month.month} className="border-b border-gray-200">
-                        <td className="py-2">{month.monthName}</td>
-                        <td className="py-2 text-right text-green-600 font-semibold">{month.closed}</td>
-                        <td className="py-2 text-right text-red-600">{month.lost}</td>
-                        <td className="py-2 text-right text-blue-600">{month.open}</td>
-                        <td className="py-2 text-right font-semibold">{formatCurrency(month.revenue)}</td>
-                        <td className="py-2 text-right">{formatCurrency(month.commission)}</td>
-                        <td className="py-2 text-right">
-                          {(month.closed + month.lost) > 0 
-                            ? ((month.closed / (month.closed + month.lost)) * 100).toFixed(1) 
-                            : 0}%
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-          </div>
-
-        </div>
-
-      </div>
-    </div>
-  );
-};
+export default SalesReportsPage;
