@@ -218,15 +218,19 @@ export default function ContactsPage() {
   async function loadContacts() {
     try {
       setLoading(true);
+      // Get all contacts and filter/sort in memory to avoid composite index requirement
       const contactsQuery = query(
         collection(db, 'contacts'),
-        where('onHold', '==', false),
         orderBy('createdAt', 'desc')
       );
       
       const snapshot = await getDocs(contactsQuery);
       const allContacts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      setContacts(allContacts);
+      
+      // Filter out contacts that are on hold
+      const availableContacts = allContacts.filter(contact => !contact.onHold);
+      
+      setContacts(availableContacts);
     } catch (e) {
       console.error('Error loading contacts:', e);
       alert('Failed to load contacts: ' + e.message);
