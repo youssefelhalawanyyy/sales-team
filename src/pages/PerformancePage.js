@@ -9,7 +9,9 @@ import {
   doc,
   getDoc,
   onSnapshot,
-  limit
+  limit,
+  orderBy,
+  QueryConstraint
 } from 'firebase/firestore';
 import {
   Users,
@@ -41,6 +43,12 @@ const PerformancePage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [projectsLoaded, setProjectsLoaded] = useState(false);
   const [tasksLoaded, setTasksLoaded] = useState(false);
+
+  // Mobile detection
+  const isMobile = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }, []);
 
   /* ===============================
      LOAD TEAM MEMBERS

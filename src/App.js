@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -8,40 +8,42 @@ import {
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TasksProvider } from './contexts/TasksContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { Navigation } from './components/Navigation';
+import './App.css';
 
 import { LoginPage } from './pages/LoginPage';
 import { Dashboard } from './pages/Dashboard';
-import AdminUsersPage from './pages/AdminUsersPage';
-import { FinancePage } from './pages/FinancePage';
-import { FinanceReportsPage } from './pages/FinanceReportsPage';
-import { OwnerSettlementsPage } from './pages/OwnerSettlementsPage';
 
-import { CommissionPage } from './pages/comission';
-import DescriptionPage from './pages/description';
+// Lazy load heavy pages for faster initial load on mobile
+const AdminUsersPage = React.lazy(() => import('./pages/AdminUsersPage'));
+const FinancePage = React.lazy(() => import('./pages/FinancePage'));
+const FinanceReportsPage = React.lazy(() => import('./pages/FinanceReportsPage'));
+const OwnerSettlementsPage = React.lazy(() => import('./pages/OwnerSettlementsPage'));
+const CommissionPage = React.lazy(() => import('./pages/comission'));
+const DescriptionPage = React.lazy(() => import('./pages/description'));
+const SalesDealsPage = React.lazy(() => import('./pages/SalesDealsPage'));
+const SalesReportsPage = React.lazy(() => import('./pages/SalesReportsPage'));
+const AchievementsPage = React.lazy(() => import('./pages/AchievementsPage'));
+const TeamManagementPage = React.lazy(() => import('./pages/TeamManagementPage'));
+const AIHelper = React.lazy(() => import('./pages/aiHelper'));
+const FollowUpsPage = React.lazy(() => import('./pages/FollowUpsPage'));
+const ClientProfilePage = React.lazy(() => import('./pages/ClientProfilePage'));
+const VisitsPage = React.lazy(() => import('./pages/VisitsPage'));
+const ContactsPage = React.lazy(() => import('./pages/Contactspage'));
+const TasksPageV2 = React.lazy(() => import('./pages/TasksPageV2'));
+const CreateTaskPage = React.lazy(() => import('./pages/CreateTaskPage'));
+const PerformancePage = React.lazy(() => import('./pages/PerformancePage'));
 
-import SalesDealsPage from './pages/SalesDealsPage';
-import { SalesReportsPage } from './pages/SalesReportsPage';
-import { AchievementsPage } from './pages/AchievementsPage';
-import { TeamManagementPage } from './pages/TeamManagementPage';
-
-/* ✅ JONIX AI */
-import AIHelper from './pages/aiHelper';
-
-/* ✅ NEW PAGES - FOLLOW-UPS & CLIENT PROFILE & VISITS & CONTACTS */
-import FollowUpsPage from './pages/FollowUpsPage';
-import ClientProfilePage from './pages/ClientProfilePage';
-import VisitsPage from './pages/VisitsPage';
-import ContactsPage from './pages/Contactspage';
-
-/* ✅ NEW PAGES - TASKS & PERFORMANCE */
-import TasksPageV2 from './pages/TasksPageV2';
-import CreateTaskPage from './pages/CreateTaskPage';
-import PerformancePage from './pages/PerformancePage';
-
-import { ProtectedRoute } from './components/ProtectedRoute';
-import { Navigation } from './components/Navigation';
-
-import './App.css';
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-screen">
+    <div className="text-center">
+      <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+      <p className="text-gray-600">Loading...</p>
+    </div>
+  </div>
+);
 
 /* =============================
    APP CONTENT
@@ -99,7 +101,9 @@ const AppContent = () => {
             ]}>
 
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <DescriptionPage />
+                <Suspense fallback={<LoadingFallback />}>
+                  <DescriptionPage />
+                </Suspense>
               </div>
 
             </ProtectedRoute>
@@ -112,7 +116,9 @@ const AppContent = () => {
           element={
             <ProtectedRoute requiredRoles={['admin']}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <AdminUsersPage />
+                <Suspense fallback={<LoadingFallback />}>
+                  <AdminUsersPage />
+                </Suspense>
               </div>
             </ProtectedRoute>
           }
@@ -124,7 +130,9 @@ const AppContent = () => {
           element={
             <ProtectedRoute requiredRoles={['admin', 'finance_manager']}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <FinancePage />
+                <Suspense fallback={<LoadingFallback />}>
+                  <FinancePage />
+                </Suspense>
               </div>
             </ProtectedRoute>
           }
@@ -136,7 +144,9 @@ const AppContent = () => {
           element={
             <ProtectedRoute requiredRoles={['admin', 'finance_manager']}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <CommissionPage />
+                <Suspense fallback={<LoadingFallback />}>
+                  <CommissionPage />
+                </Suspense>
               </div>
             </ProtectedRoute>
           }
@@ -148,7 +158,9 @@ const AppContent = () => {
           element={
             <ProtectedRoute requiredRoles={['admin', 'finance_manager']}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <FinanceReportsPage />
+                <Suspense fallback={<LoadingFallback />}>
+                  <FinanceReportsPage />
+                </Suspense>
               </div>
             </ProtectedRoute>
           }
@@ -160,7 +172,9 @@ const AppContent = () => {
           element={
             <ProtectedRoute requiredRoles={['admin']}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <OwnerSettlementsPage />
+                <Suspense fallback={<LoadingFallback />}>
+                  <OwnerSettlementsPage />
+                </Suspense>
               </div>
             </ProtectedRoute>
           }
@@ -177,7 +191,9 @@ const AppContent = () => {
               'sales_member'
             ]}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <ContactsPage />
+                <Suspense fallback={<LoadingFallback />}>
+                  <ContactsPage />
+                </Suspense>
               </div>
             </ProtectedRoute>
           }
@@ -194,7 +210,9 @@ const AppContent = () => {
               'sales_member'
             ]}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <SalesDealsPage />
+                <Suspense fallback={<LoadingFallback />}>
+                  <SalesDealsPage />
+                </Suspense>
               </div>
             </ProtectedRoute>
           }
@@ -211,7 +229,9 @@ const AppContent = () => {
               'sales_member'
             ]}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <FollowUpsPage />
+                <Suspense fallback={<LoadingFallback />}>
+                  <FollowUpsPage />
+                </Suspense>
               </div>
             </ProtectedRoute>
           }
@@ -228,7 +248,9 @@ const AppContent = () => {
               'sales_member'
             ]}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <VisitsPage />
+                <Suspense fallback={<LoadingFallback />}>
+                  <VisitsPage />
+                </Suspense>
               </div>
             </ProtectedRoute>
           }
@@ -245,7 +267,9 @@ const AppContent = () => {
               'sales_member'
             ]}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <ClientProfilePage />
+                <Suspense fallback={<LoadingFallback />}>
+                  <ClientProfilePage />
+                </Suspense>
               </div>
             </ProtectedRoute>
           }
@@ -262,7 +286,9 @@ const AppContent = () => {
               'sales_member'
             ]}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <AchievementsPage />
+                <Suspense fallback={<LoadingFallback />}>
+                  <AchievementsPage />
+                </Suspense>
               </div>
             </ProtectedRoute>
           }
@@ -278,7 +304,9 @@ const AppContent = () => {
               'team_leader'
             ]}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <TeamManagementPage />
+                <Suspense fallback={<LoadingFallback />}>
+                  <TeamManagementPage />
+                </Suspense>
               </div>
             </ProtectedRoute>
           }
@@ -295,7 +323,9 @@ const AppContent = () => {
               'sales_member'
             ]}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <SalesReportsPage />
+                <Suspense fallback={<LoadingFallback />}>
+                  <SalesReportsPage />
+                </Suspense>
               </div>
             </ProtectedRoute>
           }
@@ -312,7 +342,9 @@ const AppContent = () => {
               'sales_member'
             ]}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <AIHelper />
+                <Suspense fallback={<LoadingFallback />}>
+                  <AIHelper />
+                </Suspense>
               </div>
             </ProtectedRoute>
           }
@@ -328,7 +360,9 @@ const AppContent = () => {
               'team_leader',
               'sales_member'
             ]}>
-              <TasksPageV2 />
+              <Suspense fallback={<LoadingFallback />}>
+                <TasksPageV2 />
+              </Suspense>
             </ProtectedRoute>
           }
         />
@@ -342,7 +376,9 @@ const AppContent = () => {
               'sales_manager',
               'team_leader'
             ]}>
-              <CreateTaskPage />
+              <Suspense fallback={<LoadingFallback />}>
+                <CreateTaskPage />
+              </Suspense>
             </ProtectedRoute>
           }
         />
@@ -355,7 +391,9 @@ const AppContent = () => {
               'admin',
               'team_leader'
             ]}>
-              <PerformancePage />
+              <Suspense fallback={<LoadingFallback />}>
+                <PerformancePage />
+              </Suspense>
             </ProtectedRoute>
           }
         />
