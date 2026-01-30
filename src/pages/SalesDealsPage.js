@@ -68,26 +68,36 @@ export default function SalesDealsPage() {
       setLoading(true);
       setError(null);
       
-      let dealsQuery;
+      let snapshot;
       
       // Admin and sales_manager can see all deals
       if (userRole === 'admin' || userRole === 'sales_manager') {
-        // Simple query without composite index requirement
-        dealsQuery = query(
+        // Simple query - get all deals ordered by creation date
+        const dealsQuery = query(
           collection(db, 'sales'),
           orderBy('createdAt', 'desc')
         );
+        snapshot = await getDocs(dealsQuery);
       } else {
-        // Regular users see only their deals
-        dealsQuery = query(
+        // Regular users: Get all their deals without ordering first
+        // Then sort in memory to avoid composite index
+        const dealsQuery = query(
           collection(db, 'sales'),
-          where('createdBy', '==', currentUser.uid),
-          orderBy('createdAt', 'desc')
+          where('createdBy', '==', currentUser.uid)
         );
+        snapshot = await getDocs(dealsQuery);
       }
 
-      const snapshot = await getDocs(dealsQuery);
-      const allDeals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      let allDeals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      
+      // For non-admin users, sort by createdAt in memory
+      if (userRole !== 'admin' && userRole !== 'sales_manager') {
+        allDeals.sort((a, b) => {
+          const dateA = a.createdAt?.toMillis?.() || 0;
+          const dateB = b.createdAt?.toMillis?.() || 0;
+          return dateB - dateA; // Descending order (newest first)
+        });
+      }
       
       // Filter archived deals in memory instead of in query
       const activeDeals = allDeals.filter(deal => !deal.archived);
