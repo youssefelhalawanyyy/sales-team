@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { TasksProvider } from './contexts/TasksContext';
 
 import { LoginPage } from './pages/LoginPage';
 import { Dashboard } from './pages/Dashboard';
@@ -31,6 +32,11 @@ import FollowUpsPage from './pages/FollowUpsPage';
 import ClientProfilePage from './pages/ClientProfilePage';
 import VisitsPage from './pages/VisitsPage';
 import ContactsPage from './pages/Contactspage';
+
+/* ✅ NEW PAGES - TASKS & PERFORMANCE */
+import TasksPage from './pages/TasksPage';
+import CreateTaskPage from './pages/CreateTaskPage';
+import PerformancePage from './pages/PerformancePage';
 
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navigation } from './components/Navigation';
@@ -312,6 +318,48 @@ const AppContent = () => {
           }
         />
 
+        {/* ================= TASKS ================= */}
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <TasksPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= CREATE TASK ================= */}
+        <Route
+          path="/tasks/create"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader'
+            ]}>
+              <CreateTaskPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= PERFORMANCE ================= */}
+        <Route
+          path="/admin/performance"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'team_leader'
+            ]}>
+              <PerformancePage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* ================= SALES DEFAULT ================= */}
         <Route
           path="/sales"
@@ -342,7 +390,9 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppContent />
+        <TasksProvider>
+          <AppContent />
+        </TasksProvider>
       </AuthProvider>
     </Router>
   );

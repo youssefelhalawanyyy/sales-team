@@ -27,6 +27,55 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
+    match /deals/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /tasks/{taskId} {
+      // Read rules
+      allow read: if 
+        request.auth != null && (
+          // Users can read tasks assigned to them
+          resource.data.assignedTo == request.auth.uid ||
+          // Users can read tasks they created
+          resource.data.createdBy == request.auth.uid ||
+          // Admins can read all tasks
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        );
+
+      // Write rules for creating tasks
+      allow create: if 
+        request.auth != null && (
+          // Admins can create tasks
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          // Sales managers can create tasks
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'sales_manager' ||
+          // Team leaders can create tasks
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'team_leader'
+        );
+
+      // Update rules
+      allow update: if 
+        request.auth != null && (
+          // Task creator can update their own tasks
+          resource.data.createdBy == request.auth.uid ||
+          // Assigned user can submit/update status (partial update)
+          (resource.data.assignedTo == request.auth.uid && 
+           (request.resource.data.status != resource.data.status || 
+            request.resource.data.submissions != resource.data.submissions ||
+            request.resource.data.notes != resource.data.notes)) ||
+          // Admins can update any task
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        );
+
+      // Delete rules (only creators and admins)
+      allow delete: if 
+        request.auth != null && (
+          resource.data.createdBy == request.auth.uid ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        );
+    }
+
     match /{document=**} {
       allow read, write: if request.auth != null;
     }

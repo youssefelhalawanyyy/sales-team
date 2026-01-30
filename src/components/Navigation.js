@@ -16,7 +16,9 @@ import {
   Info,
   Calculator,
   Bell,
-  MapPin
+  MapPin,
+  CheckSquare,
+  TrendingUp
 } from 'lucide-react';
 
 export const Navigation = ({ userRole }) => {
@@ -116,6 +118,15 @@ export const Navigation = ({ userRole }) => {
         ]
       },
 
+      {
+        label: 'Tasks & Performance',
+        icon: CheckSquare,
+        children: [
+          { label: 'Tasks', path: '/tasks', icon: CheckSquare },
+          { label: 'Performance', path: '/admin/performance', icon: TrendingUp }
+        ]
+      },
+
       informationItem,
 
       {
@@ -184,6 +195,15 @@ export const Navigation = ({ userRole }) => {
         ]
       },
 
+      {
+        label: 'Tasks & Performance',
+        icon: CheckSquare,
+        children: [
+          { label: 'Tasks', path: '/tasks', icon: CheckSquare },
+          { label: 'Performance', path: '/admin/performance', icon: TrendingUp }
+        ]
+      },
+
       informationItem
     ],
 
@@ -203,6 +223,12 @@ export const Navigation = ({ userRole }) => {
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
         ]
+      },
+
+      {
+        label: 'Tasks',
+        path: '/tasks',
+        icon: CheckSquare
       },
 
       informationItem
