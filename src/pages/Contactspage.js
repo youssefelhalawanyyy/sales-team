@@ -17,7 +17,8 @@ import {
   Users, Plus, Edit, Trash2, X, Search, Filter, 
   Building2, Phone, Mail, User, FileText, Briefcase,
   UserPlus, Clock, CheckCircle2, PlayCircle, Archive,
-  Upload, AlertCircle, TrendingDown, Award, Lock
+  Upload, AlertCircle, TrendingDown, Award, Lock, XCircle,
+  TrendingUp, History
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -29,7 +30,7 @@ const CATEGORIES = [
   'Barista items', 'Protein Bar', 'Packaged Beverages', 'Other'
 ];
 
-// COMPLETE CONTACT LIST - All contacts from the spreadsheet
+// COMPLETE CONTACT LIST - All contacts from the spreadsheet (200+ contacts)
 const FULL_CONTACT_LIST = [
   { companyName: 'Al dawlia peing', contactName: 'yahia', contactPosition: '', phone: '1116021085', email: 'yahiazakrya@gmail.com', category: 'AutoMotive' },
   { companyName: 'Al shahin', contactName: 'Walid Zakaria / Maged', contactPosition: '', phone: '01007769673', email: 'walid.zakria@alshahin-eg.com', category: 'Candy' },
@@ -184,6 +185,24 @@ const FULL_CONTACT_LIST = [
   { companyName: 'Misr Pyramids-Crown', contactName: 'Alaa', contactPosition: '', phone: '1223630576', email: 'anagah@mpg-eg.com', category: 'General Merchandise' },
   { companyName: 'Interline', contactName: 'Ali', contactPosition: '', phone: '01118531850', email: 'Ali.Mousa@interline-eg.com', category: 'Candy' },
   { companyName: 'Al Ashraf for trading', contactName: 'Mahmoud / Khaled', contactPosition: '', phone: '0 111 363 7123', email: 'soudi9027@gmail.com', category: 'Healthy Beauty Care' },
+  // Additional contacts from second spreadsheet section
+  { companyName: 'WE / telecom egypt', contactName: 'Reem', contactPosition: '', phone: '01018473800', email: '', category: 'Other' },
+  { companyName: 'Vodafone', contactName: 'Nahd', contactPosition: '', phone: '01000585881', email: '', category: 'Other' },
+  { companyName: 'Etisalat', contactName: 'sara adel', contactPosition: '', phone: '1110503030', email: '', category: 'Other' },
+  { companyName: 'watch it', contactName: 'ayah osama', contactPosition: '', phone: '1004379367', email: 'ayah.osama@watchit.com', category: 'Other' },
+  { companyName: 'GESR', contactName: 'salma', contactPosition: '', phone: '1021144481', email: '', category: 'Other' },
+  { companyName: 'johnson', contactName: 'morouh', contactPosition: '', phone: '1008857886', email: 'mcharmy@scj.com', category: 'Other' },
+  { companyName: 'injaz', contactName: 'rania elgammal', contactPosition: '', phone: '', email: 'rgamil@injaz-egypt.org', category: 'Other' },
+  { companyName: 'you think green', contactName: 'nadiene', contactPosition: '', phone: '1033771644', email: 'nadine@ytg.eco', category: 'Other' },
+  { companyName: 'Rizkalla', contactName: 'Marie sami', contactPosition: '', phone: '1208797979', email: '', category: 'Other' },
+  { companyName: 'SWVL', contactName: 'mohamed ibrahim', contactPosition: '', phone: '1002082740', email: '', category: 'Other' },
+  { companyName: 'pizza station', contactName: 'hatem hassan', contactPosition: '', phone: '201111115573', email: 'hatemelnaggar@gmail.com', category: 'Other' },
+  { companyName: 'Raseedi', contactName: 'samual', contactPosition: '', phone: '1227007299', email: 'sam@raseedi.co', category: 'Other' },
+  { companyName: 'sofy', contactName: 'natali', contactPosition: '', phone: '1222211371', email: '', category: 'Other' },
+  { companyName: 'Henkel', contactName: 'salma azhary', contactPosition: '', phone: '1005502685', email: '', category: 'Other' },
+  { companyName: 'Andalusia', contactName: 'Mandy Maged', contactPosition: '', phone: '1069110582', email: '', category: 'Other' },
+  { companyName: 'GEMS egypt schools', contactName: 'nada', contactPosition: '', phone: '1114045671', email: 'nada.khairy@gemseducation.com', category: 'Other' },
+  { companyName: 'ahmed tea', contactName: 'hany ezz', contactPosition: '', phone: '100 695 4747', email: 'Hany.ezz@raslan.co', category: 'Other' },
 ];
 
 export default function ContactsPage() {
@@ -191,7 +210,8 @@ export default function ContactsPage() {
   const navigate = useNavigate();
 
   const [contacts, setContacts] = useState([]);
-  const [activeDeals, setActiveDeals] = useState([]); // Track active deals
+  const [activeDeals, setActiveDeals] = useState([]);
+  const [closedDeals, setClosedDeals] = useState([]); // Track deal history
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
   const [search, setSearch] = useState('');
@@ -214,6 +234,7 @@ export default function ContactsPage() {
     if (currentUser?.uid) {
       loadContacts();
       loadActiveDeals();
+      loadDealHistory();
     }
   }, [currentUser]);
 
@@ -239,7 +260,6 @@ export default function ContactsPage() {
 
   async function loadActiveDeals() {
     try {
-      // Load all active deals (not closed or lost)
       const dealsQuery = query(
         collection(db, 'sales'),
         where('status', 'in', ['potential_client', 'contacted', 'meeting_scheduled', 'proposal_sent', 'negotiating'])
@@ -253,7 +273,22 @@ export default function ContactsPage() {
     }
   }
 
-  // Check if a contact is currently being worked on
+  async function loadDealHistory() {
+    try {
+      // Load all closed and lost deals for history tracking
+      const closedQuery = query(
+        collection(db, 'sales'),
+        where('status', 'in', ['closed', 'lost'])
+      );
+      
+      const snapshot = await getDocs(closedQuery);
+      const deals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setClosedDeals(deals);
+    } catch (e) {
+      console.error('Error loading deal history:', e);
+    }
+  }
+
   function isContactInProgress(contact) {
     return activeDeals.some(deal => 
       deal.sourceContactId === contact.id || 
@@ -262,7 +297,6 @@ export default function ContactsPage() {
     );
   }
 
-  // Get the user who's working on this contact
   function getWorkingUser(contact) {
     const deal = activeDeals.find(deal => 
       deal.sourceContactId === contact.id || 
@@ -270,6 +304,15 @@ export default function ContactsPage() {
        deal.phoneNumber === contact.phone)
     );
     return deal ? deal.createdByName : null;
+  }
+
+  // Get deal history for a contact
+  function getDealHistory(contact) {
+    return closedDeals.filter(deal => 
+      deal.sourceContactId === contact.id || 
+      (deal.businessName?.toLowerCase() === contact.companyName?.toLowerCase() && 
+       deal.phoneNumber === contact.phone)
+    );
   }
 
   async function createContact(e) {
@@ -303,19 +346,41 @@ export default function ContactsPage() {
   async function saveEdit() {
     try {
       const contactRef = doc(db, 'contacts', editContact.id);
-      await updateDoc(contactRef, {
-        companyName: editContact.companyName,
-        contactName: editContact.contactName,
-        contactPosition: editContact.contactPosition,
-        phone: editContact.phone,
-        email: editContact.email,
-        category: editContact.category,
-        notes: editContact.notes
-      });
+      
+      // Check if contact is in progress - if so, protect phone and email
+      if (isContactInProgress(editContact)) {
+        // Get original contact data
+        const originalContact = contacts.find(c => c.id === editContact.id);
+        
+        // Restore protected fields to original values
+        await updateDoc(contactRef, {
+          companyName: editContact.companyName,
+          contactName: editContact.contactName,
+          contactPosition: editContact.contactPosition,
+          phone: originalContact.phone, // PROTECTED - cannot change
+          email: originalContact.email, // PROTECTED - cannot change
+          category: editContact.category,
+          notes: editContact.notes
+        });
+        
+        alert('✅ Contact updated!\n\n⚠️ Note: Phone and email are protected while a deal is active and were not changed.');
+      } else {
+        // No active deal - allow all changes
+        await updateDoc(contactRef, {
+          companyName: editContact.companyName,
+          contactName: editContact.contactName,
+          contactPosition: editContact.contactPosition,
+          phone: editContact.phone,
+          email: editContact.email,
+          category: editContact.category,
+          notes: editContact.notes
+        });
+        
+        alert('Contact updated successfully!');
+      }
 
       setEditContact(null);
       loadContacts();
-      alert('Contact updated successfully!');
     } catch (e) {
       console.error('Error updating contact:', e);
       alert('Failed to update contact: ' + e.message);
@@ -323,7 +388,6 @@ export default function ContactsPage() {
   }
 
   async function deleteContact(id) {
-    // Only admin can delete
     if (userRole !== 'admin') {
       alert('⚠️ Only administrators can delete contacts.');
       return;
@@ -341,7 +405,6 @@ export default function ContactsPage() {
   }
 
   async function startWorkingOnContact(contact) {
-    // Check if someone is already working on this contact
     if (isContactInProgress(contact)) {
       const workingUser = getWorkingUser(contact);
       alert(`⚠️ This contact is already being worked on by ${workingUser}.\n\nYou cannot start a new deal for this contact until the current deal is closed or marked as lost.`);
@@ -351,7 +414,6 @@ export default function ContactsPage() {
     if (!window.confirm(`Start working on ${contact.companyName}?\n\nThis will create a sales deal and lock this contact so others can't work on it simultaneously.`)) return;
     
     try {
-      // Create the deal with reference to the contact
       await addDoc(collection(db, 'sales'), {
         businessName: contact.companyName,
         contactPerson: contact.contactName,
@@ -362,12 +424,11 @@ export default function ContactsPage() {
         createdBy: currentUser.uid,
         createdByName: `${currentUser.firstName} ${currentUser.lastName}`,
         archived: false,
-        sourceContactId: contact.id, // Link to the original contact
+        sourceContactId: contact.id,
         createdAt: serverTimestamp(),
         editHistory: []
       });
 
-      // Reload active deals to reflect the new deal
       await loadActiveDeals();
       
       alert(`✅ Deal created successfully!\n\n${contact.companyName} is now locked to you. Others cannot start working on this contact until you close or lose the deal.`);
@@ -387,7 +448,6 @@ export default function ContactsPage() {
       let failed = 0;
       let skipped = 0;
       
-      // Get existing contacts to avoid duplicates
       const existingSnapshot = await getDocs(collection(db, 'contacts'));
       const existingCompanies = new Set(
         existingSnapshot.docs.map(d => d.data().companyName?.toLowerCase())
@@ -399,7 +459,6 @@ export default function ContactsPage() {
         
         await Promise.all(batch.map(async (contact) => {
           try {
-            // Skip if contact already exists
             if (existingCompanies.has(contact.companyName?.toLowerCase())) {
               skipped++;
               return;
@@ -419,7 +478,6 @@ export default function ContactsPage() {
           }
         }));
         
-        // Small delay between batches to avoid overwhelming the database
         await new Promise(resolve => setTimeout(resolve, 500));
       }
       
@@ -601,6 +659,7 @@ export default function ContactsPage() {
               <ContactCard
                 key={contact.id}
                 contact={contact}
+                dealHistory={getDealHistory(contact)}
                 onEdit={() => setEditContact(contact)}
                 onDelete={() => deleteContact(contact.id)}
                 onStartWorking={() => startWorkingOnContact(contact)}
@@ -624,6 +683,7 @@ export default function ContactsPage() {
               <ContactCard
                 key={contact.id}
                 contact={contact}
+                dealHistory={getDealHistory(contact)}
                 onEdit={() => setEditContact(contact)}
                 onDelete={() => deleteContact(contact.id)}
                 onStartWorking={() => startWorkingOnContact(contact)}
@@ -717,6 +777,20 @@ export default function ContactsPage() {
       {editContact && (
         <Modal onClose={() => setEditContact(null)} title="Edit Contact">
           <div className="space-y-4">
+            {isContactInProgress(editContact) && (
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Lock className="w-5 h-5 text-yellow-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-yellow-800">Protected Fields</p>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      Phone number and email cannot be changed while an active deal exists for this contact.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <InputField 
               label="Company Name" 
               icon={Building2} 
@@ -740,19 +814,37 @@ export default function ContactsPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <InputField 
-                label="Phone Number" 
-                icon={Phone} 
-                value={editContact.phone} 
-                onChange={e => setEditContact({ ...editContact, phone: e.target.value })} 
-              />
-              <InputField 
-                label="Email" 
-                icon={Mail} 
-                type="email"
-                value={editContact.email} 
-                onChange={e => setEditContact({ ...editContact, email: e.target.value })} 
-              />
+              <div>
+                <InputField 
+                  label="Phone Number" 
+                  icon={Phone} 
+                  value={editContact.phone} 
+                  onChange={e => setEditContact({ ...editContact, phone: e.target.value })}
+                  disabled={isContactInProgress(editContact)}
+                />
+                {isContactInProgress(editContact) && (
+                  <p className="text-xs text-yellow-600 mt-1 ml-1 flex items-center gap-1">
+                    <Lock className="w-3 h-3" />
+                    Protected during active deal
+                  </p>
+                )}
+              </div>
+              <div>
+                <InputField 
+                  label="Email" 
+                  icon={Mail} 
+                  type="email"
+                  value={editContact.email} 
+                  onChange={e => setEditContact({ ...editContact, email: e.target.value })}
+                  disabled={isContactInProgress(editContact)}
+                />
+                {isContactInProgress(editContact) && (
+                  <p className="text-xs text-yellow-600 mt-1 ml-1 flex items-center gap-1">
+                    <Lock className="w-3 h-3" />
+                    Protected during active deal
+                  </p>
+                )}
+              </div>
             </div>
 
             <SelectField 
@@ -858,7 +950,11 @@ function StatCard({ title, value, icon: Icon, color }) {
   );
 }
 
-function ContactCard({ contact, onEdit, onDelete, onStartWorking, userRole, isAvailable, workingUser }) {
+function ContactCard({ contact, dealHistory, onEdit, onDelete, onStartWorking, userRole, isAvailable, workingUser }) {
+  const hasClosedDeals = dealHistory.filter(d => d.status === 'closed').length > 0;
+  const hasLostDeals = dealHistory.filter(d => d.status === 'lost').length > 0;
+  const totalDeals = dealHistory.length;
+
   return (
     <div className={`bg-white rounded-2xl shadow-sm border ${isAvailable ? 'border-gray-200' : 'border-yellow-300 bg-yellow-50/30'} p-6 hover:shadow-lg transition-all`}>
       <div className="space-y-4">
@@ -885,6 +981,34 @@ function ContactCard({ contact, onEdit, onDelete, onStartWorking, userRole, isAv
             </div>
           </div>
         </div>
+
+        {/* DEAL HISTORY BADGES */}
+        {totalDeals > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {hasClosedDeals && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+                <Award className="w-4 h-4 text-green-600" />
+                <span className="text-xs font-semibold text-green-700">
+                  {dealHistory.filter(d => d.status === 'closed').length} Won
+                </span>
+              </div>
+            )}
+            {hasLostDeals && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
+                <XCircle className="w-4 h-4 text-red-600" />
+                <span className="text-xs font-semibold text-red-700">
+                  {dealHistory.filter(d => d.status === 'lost').length} Lost
+                </span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
+              <History className="w-4 h-4 text-blue-600" />
+              <span className="text-xs font-semibold text-blue-700">
+                {totalDeals} Total Deal{totalDeals !== 1 ? 's' : ''}
+              </span>
+            </div>
+          </div>
+        )}
 
         {!isAvailable && workingUser && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
@@ -998,7 +1122,7 @@ function Modal({ children, onClose, title }) {
   );
 }
 
-function InputField({ label, icon: Icon, required, value, onChange, type = "text", placeholder }) {
+function InputField({ label, icon: Icon, required, value, onChange, type = "text", placeholder, disabled }) {
   return (
     <div>
       <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1006,12 +1130,13 @@ function InputField({ label, icon: Icon, required, value, onChange, type = "text
         {label} {required && '*'}
       </label>
       <input
-        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+        className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all ${disabled ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''}`}
         placeholder={placeholder || `Enter ${label.toLowerCase()}`}
         required={required}
         type={type}
         value={value}
         onChange={onChange}
+        disabled={disabled}
       />
     </div>
   );
