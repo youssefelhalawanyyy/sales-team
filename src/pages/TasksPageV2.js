@@ -54,20 +54,33 @@ const TasksPageV2 = () => {
   =============================== */
 
   useEffect(() => {
-    const loadTasks = async () => {
+    let unsubscribe;
+
+    const setupListeners = () => {
       try {
         if (activeTab === 'assigned') {
-          await getAssignedTasks();
+          // Subscribe to real-time updates
+          unsubscribe = getAssignedTasks(null, (updatedTasks) => {
+            // Tasks will be updated automatically via context
+          });
         } else {
-          const created = await getCreatedTasks();
-          setCreatedTasks(created);
+          // Subscribe to real-time updates for created tasks
+          unsubscribe = getCreatedTasks(null, (updatedTasks) => {
+            setCreatedTasks(updatedTasks);
+          });
         }
       } catch (error) {
-        console.error('Error loading tasks:', error);
+        console.error('Error setting up listeners:', error);
       }
     };
 
-    loadTasks();
+    setupListeners();
+
+    return () => {
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, [activeTab, getAssignedTasks, getCreatedTasks]);
 
   // Load user names for display

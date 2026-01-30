@@ -18,7 +18,8 @@ import {
   doc,
   getDoc,
   setDoc,
-  serverTimestamp
+  serverTimestamp,
+  onSnapshot
 } from 'firebase/firestore';
 
 /* ===============================
@@ -52,7 +53,9 @@ export const AuthProvider = ({ children }) => {
     if (initialized.current) return;
     initialized.current = true;
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let unsubscribeUserData = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
 
       try {
 
@@ -60,6 +63,7 @@ export const AuthProvider = ({ children }) => {
         if (!user) {
           setCurrentUser(null);
           setUserRole(null);
+          if (unsubscribeUserData) unsubscribeUserData();
           setLoading(false);
           return;
         }
@@ -72,7 +76,30 @@ export const AuthProvider = ({ children }) => {
 
         setCurrentUser(baseUser);
 
-        await loadUserData(user);
+        // Set up real-time listener for user data updates
+        const userRef = doc(db, 'users', user.uid);
+        unsubscribeUserData = onSnapshot(userRef, (snap) => {
+          if (snap.exists()) {
+            const userData = snap.data();
+            
+            // Check if account is disabled
+            if (userData.isActive === false) {
+              alert('Account disabled');
+              forceLogout();
+              return;
+            }
+
+            setUserRole(userData.role);
+            setCurrentUser(prev => ({
+              ...prev,
+              ...userData
+            }));
+          }
+          setLoading(false);
+        }, (error) => {
+          console.error('Real-time listener error:', error);
+          loadUserData(user);
+        });
 
       } catch (err) {
 
@@ -83,7 +110,10 @@ export const AuthProvider = ({ children }) => {
 
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeUserData) unsubscribeUserData();
+    };
 
   }, []);
 
@@ -99,19 +129,21 @@ export const AuthProvider = ({ children }) => {
 
       const snap = await getDoc(ref);
 
-      /* AUTO-REPAIR MISSING USER */
+      /* AUTO-CREATE ONCE (prevent duplicates) */
       if (!snap.exists()) {
 
         console.warn('Auto creating user profile');
 
         const profile = {
+          uid: authUser.uid,
           email: authUser.email,
           role: 'sales_member', // default
           isActive: true,
           createdAt: serverTimestamp()
         };
 
-        await setDoc(ref, profile);
+        // Use setDoc with merge to prevent duplicates
+        await setDoc(ref, profile, { merge: false });
 
         setUserRole(profile.role);
 

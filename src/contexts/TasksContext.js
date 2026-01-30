@@ -85,10 +85,10 @@ export const TasksProvider = ({ children }) => {
   }, [currentUser, userRole]);
 
   /* ===============================
-     GET ASSIGNED TASKS
+     GET ASSIGNED TASKS WITH REAL-TIME
   =============================== */
 
-  const getAssignedTasks = useCallback(async (userId = null) => {
+  const getAssignedTasks = useCallback((userId = null, onUpdate = null) => {
     try {
       setError(null);
       setLoading(true);
@@ -100,27 +100,36 @@ export const TasksProvider = ({ children }) => {
         where('assignedTo', '==', targetUserId)
       );
 
-      const snapshot = await getDocs(q);
-      const taskList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      // Real-time listener
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const taskList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
 
-      setTasks(taskList);
-      return taskList;
+        setTasks(taskList);
+        if (onUpdate) onUpdate(taskList);
+        setLoading(false);
+      }, (error) => {
+        console.error('Error in real-time listener:', error);
+        setError(error.message);
+        setLoading(false);
+      });
+
+      // Return unsubscribe function
+      return unsubscribe;
     } catch (err) {
       setError(err.message);
-      throw err;
-    } finally {
       setLoading(false);
+      throw err;
     }
   }, [currentUser]);
 
   /* ===============================
-     GET CREATED TASKS
+     GET CREATED TASKS WITH REAL-TIME
   =============================== */
 
-  const getCreatedTasks = useCallback(async (creatorId = null) => {
+  const getCreatedTasks = useCallback((creatorId = null, onUpdate = null) => {
     try {
       setError(null);
       setLoading(true);
@@ -132,18 +141,28 @@ export const TasksProvider = ({ children }) => {
         where('createdBy', '==', targetCreatorId)
       );
 
-      const snapshot = await getDocs(q);
-      const taskList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      // Real-time listener
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const taskList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
 
-      return taskList;
+        // Don't override main tasks state for created tasks
+        if (onUpdate) onUpdate(taskList);
+        setLoading(false);
+      }, (error) => {
+        console.error('Error in real-time listener:', error);
+        setError(error.message);
+        setLoading(false);
+      });
+
+      // Return unsubscribe function
+      return unsubscribe;
     } catch (err) {
       setError(err.message);
-      throw err;
-    } finally {
       setLoading(false);
+      throw err;
     }
   }, [currentUser]);
 

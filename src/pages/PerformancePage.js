@@ -7,7 +7,8 @@ import {
   where,
   getDocs,
   doc,
-  getDoc
+  getDoc,
+  onSnapshot
 } from 'firebase/firestore';
 import {
   Users,
@@ -19,7 +20,9 @@ import {
   Target,
   Zap,
   Calendar,
-  Download
+  Download,
+  Briefcase,
+  FileText
 } from 'lucide-react';
 
 const PerformancePage = () => {
@@ -28,9 +31,12 @@ const PerformancePage = () => {
   const [selectedMember, setSelectedMember] = useState(null);
   const [teamMembers, setTeamMembers] = useState([]);
   const [memberStats, setMemberStats] = useState(null);
+  const [memberProjects, setMemberProjects] = useState([]);
+  const [memberTasks, setMemberTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [activeTab, setActiveTab] = useState('overview');
 
   /* ===============================
      LOAD TEAM MEMBERS
@@ -94,7 +100,7 @@ const PerformancePage = () => {
   }, [currentUser, userRole]);
 
   /* ===============================
-     LOAD MEMBER STATS
+     LOAD MEMBER STATS WITH REAL-TIME
   =============================== */
 
   useEffect(() => {
@@ -104,64 +110,103 @@ const PerformancePage = () => {
       try {
         setLoading(true);
         setError('');
+        let unsubscribeDeal, unsubscribeTask, unsubscribeProject;
 
-        // Get all deals for the member
+        // Real-time listener for deals
         const dealsQuery = query(
-          collection(db, 'deals'),
-          where('assignedTo', '==', selectedMember.id)
+          collection(db, 'sales'),
+          where('createdBy', '==', selectedMember.id)
         );
-        const dealsSnapshot = await getDocs(dealsQuery);
-        const deals = dealsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        unsubscribeDeal = onSnapshot(dealsQuery, (snapshot) => {
+          const deals = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
 
-        // Get all tasks for the member
+          const closedDeals = deals.filter(d => d.status === 'closed');
+          const wonDeals = deals.filter(d => d.status === 'won' || d.status === 'closed');
+          const receivedPaymentDeals = deals.filter(d => d.paymentReceived);
+          const totalRevenue = receivedPaymentDeals.reduce((sum, d) => sum + (parseFloat(d.price) || 0), 0);
+
+          setMemberStats({
+            deals,
+            statistics: {
+              totalDeals: deals.length,
+              closedDeals: closedDeals.length,
+              wonDeals: wonDeals.length,
+              dealsWithPayment: receivedPaymentDeals.length,
+              totalRevenue,
+              paymentReceiveRate: deals.length > 0 ? Math.round((receivedPaymentDeals.length / deals.length) * 100) : 0,
+              conversionRate: deals.length > 0 ? Math.round((wonDeals.length / deals.length) * 100) : 0
+            }
+          });
+        });
+
+        // Real-time listener for tasks
         const tasksQuery = query(
           collection(db, 'tasks'),
           where('assignedTo', '==', selectedMember.id)
         );
-        const tasksSnapshot = await getDocs(tasksQuery);
-        const tasks = tasksSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        unsubscribeTask = onSnapshot(tasksQuery, (snapshot) => {
+          const tasks = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
 
-        // Calculate statistics
-        const closedDeals = deals.filter(d => d.status === 'closed');
-        const wonDeals = deals.filter(d => d.status === 'won');
-        const receivedPaymentDeals = deals.filter(d => d.paymentReceived);
-        const totalRevenue = receivedPaymentDeals.reduce((sum, d) => sum + (parseFloat(d.value) || 0), 0);
+          const approvedTasks = tasks.filter(t => t.status === 'approved');
+          const pendingTasks = tasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
+          const overdueTasks = tasks.filter(t => {
+            const deadline = t.deadline?.toDate ? t.deadline.toDate() : new Date(t.deadline);
+            return new Date() > deadline && (t.status === 'pending' || t.status === 'in_progress');
+          });
 
-        const approvedTasks = tasks.filter(t => t.status === 'approved');
-        const completedTasks = tasks.filter(t => t.status === 'approved' && t.paymentReceived);
-        const pendingTasks = tasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
-
-        setMemberStats({
-          deals,
-          tasks,
-          statistics: {
-            totalDeals: deals.length,
-            closedDeals: closedDeals.length,
-            wonDeals: wonDeals.length,
-            dealsWithPayment: receivedPaymentDeals.length,
-            totalRevenue,
-            approvedTasks: approvedTasks.length,
-            completedTasks: completedTasks.length,
-            pendingTasks: pendingTasks.length,
-            totalTasks: tasks.length,
-            taskCompletionRate: tasks.length > 0 ? Math.round((approvedTasks.length / tasks.length) * 100) : 0
-          }
+          setMemberTasks(tasks);
+          setMemberStats(prev => ({
+            ...prev,
+            statistics: {
+              ...prev?.statistics,
+              totalTasks: tasks.length,
+              approvedTasks: approvedTasks.length,
+              pendingTasks: pendingTasks.length,
+              overdueTasks: overdueTasks.length,
+              taskCompletionRate: tasks.length > 0 ? Math.round((approvedTasks.length / tasks.length) * 100) : 0
+            }
+          }));
         });
+
+        // Real-time listener for projects
+        const projectsQuery = query(
+          collection(db, 'projects'),
+          where('assignedTo', '==', selectedMember.id)
+        );
+        unsubscribeProject = onSnapshot(projectsQuery, (snapshot) => {
+          const projects = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          setMemberProjects(projects);
+        });
+
+        setLoading(false);
+
+        // Cleanup function
+        return () => {
+          if (unsubscribeDeal) unsubscribeDeal();
+          if (unsubscribeTask) unsubscribeTask();
+          if (unsubscribeProject) unsubscribeProject();
+        };
+
       } catch (err) {
         console.error('Error loading member stats:', err);
         setError('Failed to load member statistics');
-      } finally {
         setLoading(false);
       }
     };
 
-    loadMemberStats();
+    const cleanup = loadMemberStats();
+    return () => {
+      if (cleanup) cleanup();
+    };
   }, [selectedMember]);
 
   /* ===============================
@@ -322,6 +367,23 @@ Created: ${new Date(deal.createdAt?.toDate ? deal.createdAt.toDate() : deal.crea
                       Export Report
                     </button>
                   </div>
+
+                  {/* Tabs */}
+                  <div className="flex gap-2 border-b border-gray-200 mt-4">
+                    {['overview', 'deals', 'projects', 'tasks'].map(tab => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-4 py-2 font-medium border-b-2 transition ${
+                          activeTab === tab
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {loading ? (
@@ -333,129 +395,263 @@ Created: ${new Date(deal.createdAt?.toDate ? deal.createdAt.toDate() : deal.crea
                   </div>
                 ) : memberStats ? (
                   <>
-                    {/* Deals Statistics */}
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Target size={20} className="mr-2" />
-                        Deals Performance
-                      </h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <div className="bg-white rounded-lg shadow-md p-4">
-                          <div className="text-gray-600 text-sm font-medium">Total Deals</div>
-                          <div className="text-3xl font-bold text-gray-900 mt-2">{memberStats.statistics.totalDeals}</div>
+                    {/* OVERVIEW TAB */}
+                    {activeTab === 'overview' && (
+                      <>
+                        {/* Deals Statistics */}
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <Target size={20} className="mr-2" />
+                            Deals Performance
+                          </h3>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-600">
+                              <div className="text-gray-600 text-sm font-medium">Total Deals</div>
+                              <div className="text-3xl font-bold text-blue-600 mt-2">{memberStats.statistics.totalDeals}</div>
+                            </div>
+
+                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-600">
+                              <div className="text-gray-600 text-sm font-medium">Won Deals</div>
+                              <div className="text-3xl font-bold text-green-600 mt-2">{memberStats.statistics.wonDeals}</div>
+                              <div className="text-xs text-gray-600 mt-1">{memberStats.statistics.conversionRate}% conversion</div>
+                            </div>
+
+                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-purple-600">
+                              <div className="text-gray-600 text-sm font-medium">Paid Deals</div>
+                              <div className="text-3xl font-bold text-purple-600 mt-2">{memberStats.statistics.dealsWithPayment}</div>
+                              <div className="text-xs text-gray-600 mt-1">{memberStats.statistics.paymentReceiveRate}% payment rate</div>
+                            </div>
+
+                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-emerald-600">
+                              <div className="text-gray-600 text-sm font-medium">Total Revenue</div>
+                              <div className="text-2xl font-bold text-emerald-600 mt-2">{formatCurrency(memberStats.statistics.totalRevenue)}</div>
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="bg-white rounded-lg shadow-md p-4">
-                          <div className="text-gray-600 text-sm font-medium">Closed</div>
-                          <div className="text-3xl font-bold text-blue-600 mt-2">{memberStats.statistics.closedDeals}</div>
-                        </div>
+                        {/* Tasks Statistics */}
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <Zap size={20} className="mr-2" />
+                            Tasks Performance
+                          </h3>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-gray-600">
+                              <div className="text-gray-600 text-sm font-medium">Total Tasks</div>
+                              <div className="text-3xl font-bold text-gray-900 mt-2">{memberStats.statistics.totalTasks}</div>
+                            </div>
 
-                        <div className="bg-white rounded-lg shadow-md p-4">
-                          <div className="text-gray-600 text-sm font-medium">Won</div>
-                          <div className="text-3xl font-bold text-green-600 mt-2">{memberStats.statistics.wonDeals}</div>
-                        </div>
+                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-600">
+                              <div className="text-gray-600 text-sm font-medium">Approved</div>
+                              <div className="text-3xl font-bold text-green-600 mt-2">{memberStats.statistics.approvedTasks}</div>
+                            </div>
 
-                        <div className="bg-white rounded-lg shadow-md p-4">
-                          <div className="text-gray-600 text-sm font-medium">Paid Deals</div>
-                          <div className="text-3xl font-bold text-purple-600 mt-2">{memberStats.statistics.dealsWithPayment}</div>
-                        </div>
+                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-yellow-600">
+                              <div className="text-gray-600 text-sm font-medium">Pending</div>
+                              <div className="text-3xl font-bold text-yellow-600 mt-2">{memberStats.statistics.pendingTasks}</div>
+                            </div>
 
-                        <div className="bg-white rounded-lg shadow-md p-4 md:col-span-2">
-                          <div className="text-gray-600 text-sm font-medium">Total Revenue</div>
-                          <div className="text-3xl font-bold text-green-700 mt-2">{formatCurrency(memberStats.statistics.totalRevenue)}</div>
-                        </div>
-                      </div>
-                    </div>
+                            <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-600">
+                              <div className="text-gray-600 text-sm font-medium">Overdue</div>
+                              <div className="text-3xl font-bold text-red-600 mt-2">{memberStats.statistics.overdueTasks}</div>
+                            </div>
+                          </div>
 
-                    {/* Tasks Statistics */}
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Zap size={20} className="mr-2" />
-                        Tasks Performance
-                      </h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <div className="bg-white rounded-lg shadow-md p-4">
-                          <div className="text-gray-600 text-sm font-medium">Total Tasks</div>
-                          <div className="text-3xl font-bold text-gray-900 mt-2">{memberStats.statistics.totalTasks}</div>
-                        </div>
-
-                        <div className="bg-white rounded-lg shadow-md p-4">
-                          <div className="text-gray-600 text-sm font-medium">Approved</div>
-                          <div className="text-3xl font-bold text-green-600 mt-2">{memberStats.statistics.approvedTasks}</div>
-                        </div>
-
-                        <div className="bg-white rounded-lg shadow-md p-4">
-                          <div className="text-gray-600 text-sm font-medium">Pending</div>
-                          <div className="text-3xl font-bold text-yellow-600 mt-2">{memberStats.statistics.pendingTasks}</div>
-                        </div>
-
-                        <div className="bg-white rounded-lg shadow-md p-4 md:col-span-3">
-                          <div className="text-gray-600 text-sm font-medium">Completion Rate</div>
-                          <div className="mt-2">
+                          {/* Completion Rate */}
+                          <div className="bg-white rounded-lg shadow-md p-4 mt-4">
+                            <div className="text-gray-600 text-sm font-medium mb-2">Task Completion Rate</div>
                             <div className="flex items-center">
-                              <div className="flex-1 bg-gray-200 rounded-full h-2 mr-3">
+                              <div className="flex-1 bg-gray-200 rounded-full h-3 mr-3">
                                 <div
-                                  className="bg-blue-600 h-2 rounded-full transition-all"
+                                  className="bg-blue-600 h-3 rounded-full transition-all"
                                   style={{ width: `${memberStats.statistics.taskCompletionRate}%` }}
                                 ></div>
                               </div>
-                              <span className="text-xl font-bold text-gray-900">{memberStats.statistics.taskCompletionRate}%</span>
+                              <span className="text-2xl font-bold text-gray-900">{memberStats.statistics.taskCompletionRate}%</span>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
 
-                    {/* Deals List */}
-                    <div>
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                          <DollarSign size={20} className="mr-2" />
-                          All Deals
-                        </h3>
-                        <select
-                          value={filterStatus}
-                          onChange={(e) => setFilterStatus(e.target.value)}
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        >
-                          <option value="all">All Deals</option>
-                          <option value="paid">Paid</option>
-                          <option value="unpaid">Unpaid</option>
-                          <option value="closed">Closed</option>
-                          <option value="won">Won</option>
-                        </select>
-                      </div>
-
-                      <div className="space-y-3 max-h-96 overflow-y-auto">
-                        {filteredDeals.length === 0 ? (
-                          <div className="bg-white rounded-lg p-8 text-center">
-                            <AlertCircle className="mx-auto text-gray-400 mb-2" size={32} />
-                            <p className="text-gray-600">No deals found</p>
-                          </div>
-                        ) : (
-                          filteredDeals.map(deal => (
-                            <div key={deal.id} className="bg-white rounded-lg border border-gray-200 p-4">
-                              <div className="flex justify-between items-start mb-2">
-                                <div>
-                                  <h4 className="font-semibold text-gray-900">{deal.title}</h4>
-                                  <p className="text-sm text-gray-600">{deal.clientName}</p>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-lg font-bold text-gray-900">{formatCurrency(parseFloat(deal.value))}</div>
-                                  <span className={`inline-block text-xs font-medium mt-1 px-2 py-1 rounded ${deal.paymentReceived ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                    {deal.paymentReceived ? '✓ Paid' : '✗ Unpaid'}
+                        {/* Projects Summary */}
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <Briefcase size={20} className="mr-2" />
+                            Active Projects: {memberProjects.length}
+                          </h3>
+                          {memberProjects.length === 0 ? (
+                            <div className="bg-white rounded-lg shadow-md p-8 text-center">
+                              <Briefcase className="mx-auto text-gray-400 mb-2" size={32} />
+                              <p className="text-gray-600">No projects assigned</p>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {memberProjects.slice(0, 4).map(project => (
+                                <div key={project.id} className="bg-white rounded-lg shadow-md p-4">
+                                  <h4 className="font-semibold text-gray-900">{project.name}</h4>
+                                  <p className="text-sm text-gray-600 mt-1">{project.description}</p>
+                                  <span className={`inline-block text-xs font-medium mt-2 px-2 py-1 rounded ${
+                                    project.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                    project.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {project.status}
                                   </span>
                                 </div>
-                              </div>
-                              <div className="flex justify-between text-sm text-gray-600">
-                                <span>Status: <span className="font-medium capitalize">{deal.status}</span></span>
-                                <span>{formatDate(deal.createdAt)}</span>
-                              </div>
+                              ))}
                             </div>
-                          ))
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* DEALS TAB */}
+                    {activeTab === 'deals' && (
+                      <div>
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                            <DollarSign size={20} className="mr-2" />
+                            All Deals ({filteredDeals.length})
+                          </h3>
+                          <select
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          >
+                            <option value="all">All Deals</option>
+                            <option value="paid">Paid</option>
+                            <option value="unpaid">Unpaid</option>
+                            <option value="closed">Closed</option>
+                            <option value="won">Won</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                          {filteredDeals.length === 0 ? (
+                            <div className="bg-white rounded-lg p-8 text-center">
+                              <AlertCircle className="mx-auto text-gray-400 mb-2" size={32} />
+                              <p className="text-gray-600">No deals found</p>
+                            </div>
+                          ) : (
+                            filteredDeals.map(deal => (
+                              <div key={deal.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div>
+                                    <h4 className="font-semibold text-gray-900">{deal.businessName}</h4>
+                                    <p className="text-sm text-gray-600">{deal.status}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-lg font-bold text-gray-900">{formatCurrency(parseFloat(deal.price))}</div>
+                                    <span className={`inline-block text-xs font-medium mt-1 px-2 py-1 rounded ${deal.paymentReceived ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                      {deal.paymentReceived ? '✓ Paid' : '✗ Unpaid'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex justify-between text-sm text-gray-600">
+                                  <span>Contact: {deal.contactPerson}</span>
+                                  <span>{formatDate(deal.createdAt)}</span>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* PROJECTS TAB */}
+                    {activeTab === 'projects' && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <Briefcase size={20} className="mr-2" />
+                          Projects ({memberProjects.length})
+                        </h3>
+                        {memberProjects.length === 0 ? (
+                          <div className="bg-white rounded-lg p-12 text-center">
+                            <Briefcase className="mx-auto text-gray-400 mb-4" size={48} />
+                            <p className="text-gray-600 text-lg">No projects assigned</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {memberProjects.map(project => (
+                              <div key={project.id} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-600">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div>
+                                    <h4 className="text-lg font-semibold text-gray-900">{project.name}</h4>
+                                    <p className="text-sm text-gray-600 mt-1">{project.description}</p>
+                                  </div>
+                                  <span className={`text-xs font-medium px-3 py-1 rounded-full ${
+                                    project.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                    project.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-yellow-100 text-yellow-800'
+                                  }`}>
+                                    {project.status}
+                                  </span>
+                                </div>
+                                {project.deadline && (
+                                  <div className="text-sm text-gray-600 mt-3 flex items-center">
+                                    <Calendar size={16} className="mr-2" />
+                                    Due: {formatDate(project.deadline)}
+                                  </div>
+                                )}
+                                {project.progress !== undefined && (
+                                  <div className="mt-3">
+                                    <div className="text-xs text-gray-600 mb-1">Progress</div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                      <div
+                                        className="bg-blue-600 h-2 rounded-full transition-all"
+                                        style={{ width: `${project.progress}%` }}
+                                      ></div>
+                                    </div>
+                                    <div className="text-xs text-gray-600 mt-1">{project.progress}%</div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
-                    </div>
+                    )}
+
+                    {/* TASKS TAB */}
+                    {activeTab === 'tasks' && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <Zap size={20} className="mr-2" />
+                          Tasks ({memberTasks.length})
+                        </h3>
+                        {memberTasks.length === 0 ? (
+                          <div className="bg-white rounded-lg p-12 text-center">
+                            <Zap className="mx-auto text-gray-400 mb-4" size={48} />
+                            <p className="text-gray-600 text-lg">No tasks assigned</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3 max-h-96 overflow-y-auto">
+                            {memberTasks.map(task => (
+                              <div key={task.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div>
+                                    <h4 className="font-semibold text-gray-900">{task.title}</h4>
+                                    <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                                  </div>
+                                  <span className={`text-xs font-medium px-3 py-1 rounded ${
+                                    task.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                    task.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                    task.status === 'submitted' ? 'bg-blue-100 text-blue-800' :
+                                    task.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {task.status}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between text-sm text-gray-600">
+                                  <span>Priority: <span className="font-medium capitalize">{task.priority}</span></span>
+                                  <span>Due: {formatDate(task.deadline)}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </>
                 ) : null}
               </div>
