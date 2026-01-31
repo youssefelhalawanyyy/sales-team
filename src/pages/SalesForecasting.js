@@ -150,8 +150,8 @@ export const SalesForecasting = () => {
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      {/* Key Metrics - Enhanced */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
           <p className="text-xs font-semibold text-gray-500 uppercase">Monthly Revenue</p>
           <p className="text-2xl font-bold text-gray-900 mt-2">€{metrics.monthlyRevenue.toLocaleString()}</p>
@@ -165,9 +165,21 @@ export const SalesForecasting = () => {
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-          <p className="text-xs font-semibold text-gray-500 uppercase">Close Rate</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase">Close Rate (M)</p>
           <p className="text-2xl font-bold text-gray-900 mt-2">{metrics.monthlyClosedRate}%</p>
           <p className="text-xs text-gray-600 mt-2">This month</p>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+          <p className="text-xs font-semibold text-gray-500 uppercase">Close Rate (Q)</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">{metrics.quarterlyClosedRate}%</p>
+          <p className="text-xs text-gray-600 mt-2">This quarter</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 p-4">
+          <p className="text-xs font-semibold text-blue-600 uppercase">Active Deals</p>
+          <p className="text-2xl font-bold text-blue-900 mt-2">{deals.filter(d => d.status !== 'closed').length}</p>
+          <p className="text-xs text-blue-700 mt-2">In pipeline</p>
         </div>
       </div>
 

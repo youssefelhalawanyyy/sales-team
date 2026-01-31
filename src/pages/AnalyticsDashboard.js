@@ -184,12 +184,33 @@ export const AnalyticsDashboard = () => {
         ))}
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={DollarSign} label="Total Revenue" value={metrics.totalRevenue} format="currency" />
+      {/* Key Metrics - Enhanced */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <StatCard icon={DollarSign} label="Total Revenue" value={Math.round(metrics.totalRevenue)} format="currency" />
         <StatCard icon={Target} label="Total Deals" value={metrics.totalDeals} />
         <StatCard icon={TrendingUp} label="Closed Deals" value={metrics.closedDeals} />
         <StatCard icon={Users} label="Win Rate" value={metrics.winRate} format="percent" />
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Avg Deal Value</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">€{Math.round(metrics.avgDealValue).toLocaleString()}</p>
+          <p className="text-xs text-gray-600 mt-2">Per closed deal</p>
+        </div>
+      </div>
+
+      {/* Additional Metrics Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 p-4 shadow-sm">
+          <p className="text-xs font-semibold text-green-600 uppercase tracking-wide">Commission Earned</p>
+          <p className="text-2xl font-bold text-green-900 mt-2">€{Math.round(metrics.totalCommission).toLocaleString()}</p>
+        </div>
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 p-4 shadow-sm">
+          <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Open Deals</p>
+          <p className="text-2xl font-bold text-blue-900 mt-2">{metrics.openDeals}</p>
+        </div>
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200 p-4 shadow-sm">
+          <p className="text-xs font-semibold text-purple-600 uppercase tracking-wide">Close Rate</p>
+          <p className="text-2xl font-bold text-purple-900 mt-2">{metrics.winRate}%</p>
+        </div>
       </div>
 
       {/* Charts Grid */}

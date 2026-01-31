@@ -50,8 +50,8 @@ export const CalendarView = () => {
         orderBy('createdAt', 'desc')
       );
     } else {
-      // Regular users see only their deals
-      console.log('📊 User: Loading only user deals (createdBy = ' + currentUser.uid + ')');
+      // Regular users see deals created by them + assigned to them
+      console.log('📊 User: Loading user deals (createdBy or assigned to = ' + currentUser.uid + ')');
       dealsQuery = query(
         collection(db, 'sales'),
         where('createdBy', '==', currentUser.uid),
@@ -59,7 +59,7 @@ export const CalendarView = () => {
       );
     }
 
-    // Tasks Query - Users see tasks assigned to them
+    // Tasks Query - Users see tasks assigned to them AND created by them
     console.log('✅ Tasks: Loading assigned tasks (assignedTo = ' + currentUser.uid + ')');
     tasksQuery = query(
       collection(db, 'tasks'),
