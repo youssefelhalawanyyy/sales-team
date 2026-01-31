@@ -200,6 +200,7 @@ export const Navigation = React.memo(({ userRole }) => {
         children: [
           { label: 'Finance', path: '/finance', icon: DollarSign },
           { label: 'Commissions', path: '/finance/commissions', icon: Users },
+          { label: 'My Commissions', path: '/my/commissions', icon: DollarSign },
           { label: 'Reports', path: '/finance/reports', icon: BarChart3 },
           { label: 'Settlements', path: '/finance/settlements', icon: DollarSign }
         ]
@@ -234,6 +235,12 @@ export const Navigation = React.memo(({ userRole }) => {
       },
 
       {
+        label: 'My Commissions',
+        path: '/my/commissions',
+        icon: DollarSign
+      },
+
+      {
         label: 'Tasks & Performance',
         icon: CheckSquare,
         children: [
@@ -265,6 +272,12 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell }
         ]
+      },
+
+      {
+        label: 'My Commissions',
+        path: '/my/commissions',
+        icon: DollarSign
       },
 
       {

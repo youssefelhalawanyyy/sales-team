@@ -16,6 +16,7 @@ import './App.css';
 
 import { LoginPage } from './pages/LoginPage';
 import { Dashboard } from './pages/Dashboard';
+import { MemberCommissionPage } from './pages/MemberCommissionPage';
 
 // Lazy load heavy pages for faster initial load on mobile
 const AdminUsersPage = React.lazy(() => import('./pages/AdminUsersPage'));
@@ -158,6 +159,18 @@ const AppContent = React.memo(() => {
                   <CommissionPage />
                 </Suspense>
               </div>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= MEMBER COMMISSIONS ================= */}
+        <Route
+          path="/my/commissions"
+          element={
+            <ProtectedRoute requiredRoles={['sales_member', 'team_leader', 'sales_manager']}>
+              <Suspense fallback={<LoadingFallback />}>
+                <MemberCommissionPage />
+              </Suspense>
             </ProtectedRoute>
           }
         />

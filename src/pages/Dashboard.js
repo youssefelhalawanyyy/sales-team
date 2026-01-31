@@ -4,6 +4,7 @@ import { useTasks } from '../contexts/TasksContext';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import { MemberCommissionView } from '../components/MemberCommissionView';
 
 import {
   Users,
@@ -624,6 +625,14 @@ export const Dashboard = () => {
                 );
               })}
             </div>
+          </div>
+        )}
+
+
+        {/* MEMBER COMMISSION VIEW - Show for non-admin users */}
+        {userRole !== 'admin' && (
+          <div className="animate-fadeInUp" style={{ animationDelay: '0.35s' }}>
+            <MemberCommissionView />
           </div>
         )}
 
