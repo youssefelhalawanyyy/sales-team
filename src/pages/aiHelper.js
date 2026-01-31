@@ -895,7 +895,7 @@ function App() {
               {recommendations.map((rec, idx) => {
                 const isBest = idx === 0;
                 const generatorCost = rec.device 
-                  ? rec.device.generatorCount * 100 * rec.totalUnits
+                  ? rec.device.generatorCount * 50 * rec.totalUnits
                   : rec.rooms.reduce((sum, r) => {
                       const devices = r.device ? [r.device] : [];
                       return sum + devices.reduce((s, d) => {
