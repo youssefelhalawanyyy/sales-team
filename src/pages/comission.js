@@ -34,6 +34,7 @@ import {
 
 import { useAuth } from "../contexts/AuthContext";
 import { formatCurrency } from "../utils/currency";
+import { notifyCommissionEarned } from "../services/notificationService";
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -145,6 +146,13 @@ export const CommissionPage = () => {
         createdAt: serverTimestamp(),
         createdBy: currentUser.uid,
         paidAt: null,
+      });
+
+      // Send commission notification to user
+      await notifyCommissionEarned(user.id, {
+        id: user.id,
+        amount: Number(form.amount),
+        dealName: form.offer || 'Commission'
       });
 
       setForm({ userId: "", offer: "", amount: "" });

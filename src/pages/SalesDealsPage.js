@@ -23,6 +23,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../utils/currency';
 import DealHistory from '../components/DealHistory';
+import { notifyDealUpdated, notifyDealClosed } from '../services/notificationService';
 
 const STATUSES = [
   { value: 'potential_client', label: 'Potential Client', color: 'blue', icon: Users },
@@ -147,6 +148,15 @@ export default function SalesDealsPage() {
       // Handle contact when deal is closed or lost
       const statusChanged = originalDeal.status !== editDeal.status;
       const isClosedOrLost = editDeal.status === 'closed' || editDeal.status === 'lost';
+      
+      // Send notifications
+      if (statusChanged) {
+        if (isClosedOrLost) {
+          await notifyDealClosed(currentUser.uid, editDeal, editDeal.status === 'closed' ? 'Won' : 'Lost');
+        } else {
+          await notifyDealUpdated(currentUser.uid, editDeal);
+        }
+      }
       
       if (statusChanged && isClosedOrLost && originalDeal.sourceContactId) {
         try {

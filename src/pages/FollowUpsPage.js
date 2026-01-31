@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDate, isOverdue } from '../utils/dateHelpers';
+import { notifyFollowUpDue, notifyFollowUpCompleted } from '../services/notificationService';
 
 /* ============================= */
 
@@ -229,10 +230,21 @@ export default function FollowUpsPage() {
 
   async function markAsDone(id) {
     try {
+      const followup = followups.find(f => f.id === id);
+      
       await updateDoc(doc(db, 'followups', id), {
         status: 'done',
         completedAt: serverTimestamp()
       });
+      
+      // Send completion notification
+      if (followup) {
+        await notifyFollowUpCompleted(currentUser.uid, {
+          id: followup.id,
+          clientName: followup.businessName
+        });
+      }
+      
       loadFollowups();
     } catch (e) {
       console.error('Error marking as done:', e);

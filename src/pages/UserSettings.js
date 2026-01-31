@@ -1,130 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { db } from '../firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { Settings, Sun, Moon, Bell, Mail, Clock, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { useSettings } from '../contexts/SettingsContext';
+import { Settings, Sun, Moon, Bell, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 
 export const UserSettings = () => {
-  const { currentUser } = useAuth();
-  const [settings, setSettings] = useState({
-    theme: 'light',
-    notifications: {
-      email: true,
-      push: true,
-      deals: true,
-      tasks: true,
-      commissions: true
-    },
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    language: 'en',
-    emailDigest: 'daily', // daily, weekly, never
-    darkMode: false
-  });
-  const [loading, setLoading] = useState(true);
+  const { settings, updateSetting, updateNestedSetting, loading } = useSettings();
   const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
 
-  // Load settings
-  useEffect(() => {
-    const loadSettings = async () => {
-      if (!currentUser?.uid) return;
-      try {
-        const docRef = doc(db, 'userSettings', currentUser.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const loadedSettings = { ...settings, ...docSnap.data() };
-          setSettings(loadedSettings);
-          // Apply dark mode on load
-          applyDarkMode(loadedSettings.darkMode);
-        } else {
-          // Apply current dark mode setting
-          applyDarkMode(settings.darkMode);
-        }
-      } catch (err) {
-        console.error('Error loading settings:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadSettings();
-  }, [currentUser?.uid]);
-
-  // Apply dark mode to DOM
-  const applyDarkMode = (isDark) => {
-    const htmlElement = document.documentElement;
-    if (isDark) {
-      htmlElement.classList.add('dark');
-    } else {
-      htmlElement.classList.remove('dark');
-    }
-  };
-
-  // Auto-save settings when they change
-  const saveSettingsToDb = async (newSettings) => {
-    if (!currentUser?.uid) return;
-    try {
-      await setDoc(doc(db, 'userSettings', currentUser.uid), newSettings, { merge: true });
-    } catch (err) {
-      console.error('Error saving settings:', err);
-    }
-  };
-
-  // Handle dark mode change
-  const handleDarkModeChange = (isDark) => {
-    const newSettings = { ...settings, darkMode: isDark };
-    setSettings(newSettings);
-    applyDarkMode(isDark);
-    saveSettingsToDb(newSettings);
-    showSaveMessage();
-  };
-
-  // Handle language change
-  const handleLanguageChange = (lang) => {
-    const newSettings = { ...settings, language: lang };
-    setSettings(newSettings);
-    saveSettingsToDb(newSettings);
-    // Trigger language change globally if i18n is set up
-    if (window.i18n) {
-      window.i18n.changeLanguage(lang);
-    }
-    showSaveMessage();
-  };
-
-  // Handle timezone change
-  const handleTimezoneChange = (tz) => {
-    const newSettings = { ...settings, timezone: tz };
-    setSettings(newSettings);
-    saveSettingsToDb(newSettings);
-    showSaveMessage();
-  };
-
-  // Handle notification change
-  const handleNotificationChange = (key) => {
-    const newSettings = {
-      ...settings,
-      notifications: {
-        ...settings.notifications,
-        [key]: !settings.notifications[key]
-      }
-    };
-    setSettings(newSettings);
-    saveSettingsToDb(newSettings);
-    showSaveMessage();
-  };
-
-  // Handle email digest change
-  const handleEmailDigestChange = (value) => {
-    const newSettings = { ...settings, emailDigest: value };
-    setSettings(newSettings);
-    saveSettingsToDb(newSettings);
-    showSaveMessage();
-  };
-
-  // Show save message
   const showSaveMessage = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleDarkModeChange = (isDark) => {
+    updateSetting('darkMode', isDark);
+    showSaveMessage();
+  };
+
+  const handleLanguageChange = (lang) => {
+    updateSetting('language', lang);
+    showSaveMessage();
+  };
+
+  const handleTimezoneChange = (tz) => {
+    updateSetting('timezone', tz);
+    showSaveMessage();
+  };
+
+  const handleNotificationChange = (key) => {
+    updateNestedSetting('notifications', key, !settings.notifications[key]);
+    showSaveMessage();
+  };
+
+  const handleEmailDigestChange = (value) => {
+    updateSetting('emailDigest', value);
+    showSaveMessage();
   };
 
   if (loading) {
@@ -152,14 +61,6 @@ export const UserSettings = () => {
       </div>
 
       <div className="max-w-3xl">
-        {/* Alerts */}
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-            <AlertCircle size={20} className="text-red-600" />
-            <p className="text-red-800">{error}</p>
-          </div>
-        )}
-
         {saved && (
           <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 animate-slideDown">
             <CheckCircle size={20} className="text-green-600" />

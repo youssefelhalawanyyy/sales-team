@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -9,6 +9,7 @@ import {
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TasksProvider } from './contexts/TasksContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navigation } from './components/Navigation';
 import './App.css';
@@ -59,6 +60,15 @@ const LoadingFallback = React.memo(() => (
 const AppContent = React.memo(() => {
 
   const { currentUser, userRole, loading } = useAuth();
+
+  // Initialize push notifications
+  useEffect(() => {
+    if (currentUser && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js').catch(err => {
+        console.log('Service Worker registration failed:', err);
+      });
+    }
+  }, [currentUser]);
 
   /* Loading Screen */
   if (loading) {
@@ -510,11 +520,13 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <NotificationProvider>
-          <TasksProvider>
-            <AppContent />
-          </TasksProvider>
-        </NotificationProvider>
+        <SettingsProvider>
+          <NotificationProvider>
+            <TasksProvider>
+              <AppContent />
+            </TasksProvider>
+          </NotificationProvider>
+        </SettingsProvider>
       </AuthProvider>
     </Router>
   );

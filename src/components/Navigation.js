@@ -268,6 +268,12 @@ export const Navigation = React.memo(({ userRole }) => {
       },
 
       {
+        label: 'Tasks',
+        path: '/tasks',
+        icon: CheckSquare
+      },
+
+      {
         label: 'Calendar',
         path: '/calendar',
         icon: Calendar
