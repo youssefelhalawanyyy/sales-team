@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
-import { Settings, Sun, Moon, Bell, Mail, AlertCircle, CheckCircle, Globe, Clock } from 'lucide-react';
+import { Settings, Sun, Moon, Bell, Mail, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 
 export const UserSettings = () => {
   const { settings, updateSetting, updateNestedSetting, loading } = useSettings();
@@ -18,21 +18,6 @@ export const UserSettings = () => {
     }
   }, [settings.darkMode]);
 
-  // ✅ APPLY LANGUAGE TO DOCUMENT
-  useEffect(() => {
-    console.log('🌍 Applying language:', settings.language);
-    document.documentElement.lang = settings.language || 'en';
-    
-    // Apply RTL for Arabic
-    if (settings.language === 'ar') {
-      document.documentElement.dir = 'rtl';
-      document.body.dir = 'rtl';
-    } else {
-      document.documentElement.dir = 'ltr';
-      document.body.dir = 'ltr';
-    }
-  }, [settings.language]);
-
   const showSaveMessage = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
@@ -49,23 +34,6 @@ export const UserSettings = () => {
     } else {
       document.documentElement.classList.remove('dark');
       document.body.classList.remove('dark');
-    }
-    
-    showSaveMessage();
-  };
-
-  const handleLanguageChange = async (lang) => {
-    console.log('🌍 Changing language to:', lang);
-    await updateSetting('language', lang);
-    
-    // Immediately apply to DOM
-    document.documentElement.lang = lang;
-    if (lang === 'ar') {
-      document.documentElement.dir = 'rtl';
-      document.body.dir = 'rtl';
-    } else {
-      document.documentElement.dir = 'ltr';
-      document.body.dir = 'ltr';
     }
     
     showSaveMessage();
@@ -173,30 +141,6 @@ export const UserSettings = () => {
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 Current: {settings.darkMode ? '🌙 Dark Mode Active' : '☀️ Light Mode Active'}
-              </p>
-            </div>
-
-            {/* Language Selection */}
-            <div>
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                <Globe size={18} />
-                Language
-              </label>
-              <select
-                value={settings.language}
-                onChange={(e) => handleLanguageChange(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              >
-                <option value="en">🇬🇧 English</option>
-                <option value="es">🇪🇸 Spanish (Español)</option>
-                <option value="fr">🇫🇷 French (Français)</option>
-                <option value="de">🇩🇪 German (Deutsch)</option>
-                <option value="it">🇮🇹 Italian (Italiano)</option>
-                <option value="ar">🇸🇦 Arabic (العربية)</option>
-              </select>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                {settings.language === 'ar' && 'Text direction: Right-to-Left (RTL)'}
-                {settings.language !== 'ar' && 'Text direction: Left-to-Right (LTR)'}
               </p>
             </div>
 
@@ -360,19 +304,19 @@ export const UserSettings = () => {
             <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl border-2 border-blue-200 dark:border-blue-800">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                 <Mail size={18} className="text-blue-600 dark:text-blue-400" />
-                Email Digest Frequency
+                Notification Delivery
               </label>
               <select
                 value={settings.emailDigest}
                 onChange={(e) => handleEmailDigestChange(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-blue-300 dark:border-blue-700 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium"
               >
-                <option value="daily">📅 Daily Summary</option>
+                <option value="immediate">⚡ Immediately</option>
                 <option value="weekly">📆 Weekly Summary</option>
                 <option value="never">🚫 Never (Disabled)</option>
               </select>
               <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                {settings.emailDigest === 'daily' && 'You will receive a daily email summary'}
+                {settings.emailDigest === 'immediate' && 'You will receive notifications immediately'}
                 {settings.emailDigest === 'weekly' && 'You will receive a weekly email summary'}
                 {settings.emailDigest === 'never' && 'Email digests are disabled'}
               </p>
@@ -385,7 +329,6 @@ export const UserSettings = () => {
           <p className="font-semibold mb-2">Current Settings:</p>
           <ul className="space-y-1">
             <li>• Dark Mode: {settings.darkMode ? '✓ Enabled' : '✗ Disabled'}</li>
-            <li>• Language: {settings.language}</li>
             <li>• Timezone: {settings.timezone}</li>
             <li>• Notifications: {Object.values(settings.notifications).filter(Boolean).length} enabled</li>
           </ul>

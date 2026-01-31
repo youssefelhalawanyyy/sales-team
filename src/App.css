@@ -862,3 +862,251 @@ html.dark * {
   transition-property: background-color, border-color, color;
   transition-duration: 200ms;
 }
+
+/* ===========================
+   ADDITIONAL DARK MODE FIXES FOR ALL SHEETS
+=========================== */
+
+/* Recharts (charts library) dark mode */
+html.dark .recharts-wrapper {
+  background-color: #1e293b !important;
+}
+
+html.dark .recharts-text {
+  color: #e2e8f0 !important;
+}
+
+html.dark .recharts-legend-wrapper {
+  background-color: #334155 !important;
+  border-color: #475569 !important;
+}
+
+html.dark .recharts-tooltip {
+  background-color: #0f172a !important;
+  border-color: #475569 !important;
+}
+
+html.dark .recharts-tooltip-wrapper {
+  background-color: #1e293b !important;
+}
+
+html.dark .recharts-default-tooltip {
+  background-color: #1e293b !important;
+  border: 1px solid #475569 !important;
+}
+
+html.dark .recharts-tooltip-label {
+  color: #e2e8f0 !important;
+}
+
+/* Grid lines in charts */
+html.dark .recharts-cartesian-axis-line {
+  stroke: #475569 !important;
+}
+
+html.dark .recharts-cartesian-axis-tick {
+  color: #94a3b8 !important;
+}
+
+html.dark .recharts-cartesian-grid-horizontal line,
+html.dark .recharts-cartesian-grid-vertical line {
+  stroke: #475569 !important;
+}
+
+/* PDF export and sheets */
+html.dark .sheet,
+html.dark .excel-export,
+html.dark .pdf-export {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+/* Data tables and grids */
+html.dark .ag-root,
+html.dark [role="grid"],
+html.dark [role="presentation"] {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark .ag-header-cell {
+  background-color: #334155 !important;
+  color: #e2e8f0 !important;
+  border-color: #475569 !important;
+}
+
+html.dark .ag-cell {
+  border-color: #475569 !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark .ag-row-even {
+  background-color: #1e293b !important;
+}
+
+html.dark .ag-row-odd {
+  background-color: #1e293b !important;
+}
+
+html.dark .ag-row:hover {
+  background-color: #334155 !important;
+}
+
+/* Tabs and sections */
+html.dark [role="tablist"],
+html.dark [role="tab"] {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #475569 !important;
+}
+
+html.dark [role="tab"][aria-selected="true"] {
+  background-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Progress bars */
+html.dark progress {
+  background-color: #334155 !important;
+  color: #3b82f6 !important;
+}
+
+html.dark .progress-bar {
+  background-color: #3b82f6 !important;
+}
+
+/* Dividers and separators */
+html.dark hr,
+html.dark .divider,
+html.dark .separator {
+  background-color: #475569 !important;
+  border-color: #475569 !important;
+}
+
+/* Sidebars */
+html.dark .sidebar,
+html.dark aside {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+html.dark .sidebar a,
+html.dark aside a {
+  color: #e2e8f0 !important;
+}
+
+html.dark .sidebar a:hover,
+html.dark aside a:hover {
+  background-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Navbars and headers */
+html.dark nav,
+html.dark header {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+html.dark nav a,
+html.dark header a {
+  color: #e2e8f0 !important;
+}
+
+html.dark nav a:hover,
+html.dark header a:hover {
+  color: #f1f5f9 !important;
+}
+
+/* Buttons in dark mode - ensure visibility */
+html.dark button {
+  background-color: #334155 !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+html.dark button:hover {
+  background-color: #475569 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark button:disabled {
+  background-color: #1e293b !important;
+  color: #64748b !important;
+}
+
+/* Gradient backgrounds in dark mode */
+html.dark .bg-gradient-to-r,
+html.dark .bg-gradient-to-b,
+html.dark .bg-gradient-to-l,
+html.dark .bg-gradient-to-t {
+  background-color: #1e293b !important;
+}
+
+/* Loading skeletons */
+html.dark .skeleton,
+html.dark .loading {
+  background-color: #334155 !important;
+  background-image: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%) !important;
+}
+
+/* Popovers and dropdowns - extra fix */
+html.dark .popover,
+html.dark .dropdown-menu,
+html.dark [role="tooltip"] {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #475569 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Select options */
+html.dark option {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark optgroup {
+  background-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Checkboxes and radio buttons */
+html.dark input[type="checkbox"],
+html.dark input[type="radio"] {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  accent-color: #3b82f6 !important;
+}
+
+/* Labels */
+html.dark label {
+  color: #e2e8f0 !important;
+}
+
+/* Legends for forms */
+html.dark fieldset {
+  border-color: #475569 !important;
+  background-color: #1e293b !important;
+}
+
+html.dark fieldset > legend {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+/* Ensure all text shadows are removed in dark mode */
+html.dark * {
+  text-shadow: none !important;
+}
+
+/* Fix for recharts pie charts */
+html.dark .recharts-surface {
+  background-color: #1e293b !important;
+}
+
+html.dark .recharts-pie-sector {
+  filter: brightness(1.1);
+}

@@ -17,7 +17,6 @@ export const SettingsProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const [settings, setSettings] = useState({
     theme: 'light',
-    language: 'en',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     darkMode: false,
     notifications: {
@@ -27,7 +26,7 @@ export const SettingsProvider = ({ children }) => {
       tasks: true,
       commissions: true
     },
-    emailDigest: 'daily'
+    emailDigest: 'immediate'
   });
   const [loading, setLoading] = useState(true);
 
@@ -46,8 +45,6 @@ export const SettingsProvider = ({ children }) => {
           setSettings(prev => ({ ...prev, ...loadedSettings }));
           // Apply dark mode globally
           applyDarkMode(loadedSettings.darkMode || false);
-          // Apply language globally
-          applyLanguage(loadedSettings.language || 'en');
         }
       } catch (err) {
         console.error('Error loading settings:', err);
@@ -70,14 +67,6 @@ export const SettingsProvider = ({ children }) => {
     }
   };
 
-  // Apply language globally
-  const applyLanguage = (lang) => {
-    document.documentElement.lang = lang;
-    localStorage.setItem('language', lang);
-    // Trigger global language change event
-    window.dispatchEvent(new CustomEvent('languageChange', { detail: { language: lang } }));
-  };
-
   // Update settings both locally and in Firestore
   const updateSetting = async (key, value) => {
     try {
@@ -87,8 +76,6 @@ export const SettingsProvider = ({ children }) => {
       // Apply specific settings globally
       if (key === 'darkMode') {
         applyDarkMode(value);
-      } else if (key === 'language') {
-        applyLanguage(value);
       }
 
       // Save to Firestore
