@@ -5,7 +5,7 @@ import { db } from '../firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 
-export const GlobalSearch = () => {
+export const GlobalSearch = React.memo(() => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState(null);
@@ -269,6 +269,6 @@ export const GlobalSearch = () => {
       )}
     </div>
   );
-};
+});
 
 export default GlobalSearch;

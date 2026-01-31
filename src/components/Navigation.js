@@ -28,7 +28,7 @@ import {
   Database
 } from 'lucide-react';
 
-export const Navigation = ({ userRole }) => {
+export const Navigation = React.memo(({ userRole }) => {
 
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
@@ -751,4 +751,4 @@ export const Navigation = ({ userRole }) => {
 
     </header>
   );
-};
+});

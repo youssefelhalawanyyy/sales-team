@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Bell, X, Check, CheckCheck, TrendingUp } from 'lucide-react';
 import { useNotifications } from '../contexts/NotificationContext';
 
-export const NotificationsPanel = () => {
+export const NotificationsPanel = React.memo(() => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -179,6 +179,6 @@ export const NotificationsPanel = () => {
       )}
     </div>
   );
-};
+});
 
 export default NotificationsPanel;

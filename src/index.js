@@ -5,11 +5,13 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+
+// Skip StrictMode in production for faster renders
+const AppComponent = process.env.NODE_ENV === 'production' ? 
+  <App /> : 
+  <React.StrictMode><App /></React.StrictMode>;
+
+root.render(AppComponent);
 
 // Report vitals asynchronously to avoid blocking render
 if (typeof requestIdleCallback !== 'undefined') {
