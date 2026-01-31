@@ -596,3 +596,269 @@ textarea {
   background-color: #ffffff !important;
   color: #0f172a !important;
 }
+
+/* ===========================
+   DARK MODE COMPREHENSIVE STYLES
+=========================== */
+
+/* Enable dark mode on html element */
+html.dark {
+  color-scheme: dark;
+}
+
+/* Main background and text */
+html.dark,
+html.dark body {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+}
+
+/* Dark mode for all elements */
+html.dark * {
+  background-color: inherit;
+}
+
+/* Cards and containers - Dark */
+html.dark .bg-white,
+html.dark .bg-gray-50,
+html.dark .bg-blue-50,
+html.dark .bg-green-50,
+html.dark .bg-red-50,
+html.dark .bg-yellow-50,
+html.dark .bg-purple-50,
+html.dark .bg-indigo-50 {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+/* Darker containers */
+html.dark .bg-gray-100,
+html.dark .bg-gray-200 {
+  background-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Text in dark mode */
+html.dark .text-gray-900,
+html.dark .text-gray-800 {
+  color: #f1f5f9 !important;
+}
+
+html.dark .text-gray-700 {
+  color: #e2e8f0 !important;
+}
+
+html.dark .text-gray-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+html.dark .text-gray-400 {
+  color: #64748b !important;
+}
+
+/* Borders in dark mode */
+html.dark .border-gray-200,
+html.dark .border-gray-300 {
+  border-color: #475569 !important;
+}
+
+html.dark .border-gray-100 {
+  border-color: #334155 !important;
+}
+
+/* Inputs and form elements */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  background-color: #334155 !important;
+  border-color: #3b82f6 !important;
+}
+
+/* Buttons - maintain color */
+html.dark .bg-blue-600,
+html.dark .bg-blue-500 {
+  background-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+html.dark .bg-green-600,
+html.dark .bg-green-500 {
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
+html.dark .bg-red-600,
+html.dark .bg-red-500 {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+html.dark .bg-yellow-600,
+html.dark .bg-yellow-500 {
+  background-color: #eab308 !important;
+  color: #000000 !important;
+}
+
+html.dark .bg-purple-600,
+html.dark .bg-purple-500 {
+  background-color: #a855f7 !important;
+  color: #ffffff !important;
+}
+
+/* Tables in dark mode */
+html.dark table {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark thead th {
+  background-color: #334155 !important;
+  color: #e2e8f0 !important;
+  border-color: #475569 !important;
+}
+
+html.dark tbody tr {
+  border-color: #475569 !important;
+}
+
+html.dark tbody td {
+  color: #e2e8f0 !important;
+}
+
+html.dark tbody tr:hover {
+  background-color: #334155 !important;
+}
+
+/* Modals in dark mode */
+html.dark .modal-box,
+html.dark .modal,
+html.dark .fixed.inset-0 > div > div {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+/* Dropdowns and popovers */
+html.dark .absolute,
+html.dark [role="dialog"],
+html.dark [role="menu"],
+html.dark [role="listbox"] {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+/* Scrollbars in dark mode */
+html.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Code blocks */
+html.dark code {
+  background-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Links - keep visible */
+html.dark a {
+  color: #60a5fa !important;
+}
+
+html.dark a:hover {
+  color: #93c5fd !important;
+}
+
+/* Lists */
+html.dark li {
+  color: #e2e8f0 !important;
+}
+
+/* Badges and tags */
+html.dark .badge,
+html.dark .tag {
+  background-color: #334155 !important;
+  color: #e2e8f0 !important;
+  border-color: #475569 !important;
+}
+
+/* Alert boxes */
+html.dark .alert {
+  background-color: #334155 !important;
+  color: #e2e8f0 !important;
+  border-color: #475569 !important;
+}
+
+/* Tooltips and popovers */
+html.dark .tooltip {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+/* Cards with specific colors */
+html.dark .bg-blue-100 {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  color: #60a5fa !important;
+}
+
+html.dark .bg-green-100 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  color: #4ade80 !important;
+}
+
+html.dark .bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  color: #f87171 !important;
+}
+
+html.dark .bg-yellow-100 {
+  background-color: rgba(234, 179, 8, 0.1) !important;
+  color: #facc15 !important;
+}
+
+/* Shadows */
+html.dark {
+  --tw-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+/* Ensure placeholder text is visible */
+html.dark ::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Ensure transitions work smoothly */
+html.dark * {
+  transition-property: background-color, border-color, color;
+  transition-duration: 200ms;
+}
