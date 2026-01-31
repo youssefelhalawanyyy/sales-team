@@ -43,6 +43,14 @@ const UserSettings = React.lazy(() => import('./pages/UserSettings'));
 const AuditLog = React.lazy(() => import('./pages/AuditLog'));
 const DataImportExport = React.lazy(() => import('./pages/DataImportExport'));
 const SalesForecasting = React.lazy(() => import('./pages/SalesForecasting'));
+const QuoteGeneratorPage = React.lazy(() => import('./pages/QuoteGeneratorPage'));
+const EmailTemplatesPage = React.lazy(() => import('./pages/EmailTemplatesPage'));
+const ClientHealthScoringPage = React.lazy(() => import('./pages/ClientHealthScoringPage'));
+const ClientCommunicationHistoryPage = React.lazy(() => import('./pages/ClientCommunicationHistoryPage'));
+const TeamPerformanceLeaderboardPage = React.lazy(() => import('./pages/TeamPerformanceLeaderboardPage'));
+const RevenuePipelineForecastPage = React.lazy(() => import('./pages/RevenuePipelineForecastPage'));
+const WinLossAnalysisPage = React.lazy(() => import('./pages/WinLossAnalysisPage'));
+const SalesVelocityMetricsPage = React.lazy(() => import('./pages/SalesVelocityMetricsPage'));
 
 // Loading fallback component - lightweight for fast rendering
 const LoadingFallback = React.memo(() => (
@@ -486,6 +494,139 @@ const AppContent = React.memo(() => {
             <ProtectedRoute requiredRoles={['admin']}>
               <Suspense fallback={<LoadingFallback />}>
                 <AuditLog />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= ADVANCED FEATURES ================= */}
+
+        {/* QUOTE GENERATOR */}
+        <Route
+          path="/quotes"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <Suspense fallback={<LoadingFallback />}>
+                <QuoteGeneratorPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* EMAIL TEMPLATES */}
+        <Route
+          path="/email-templates"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <Suspense fallback={<LoadingFallback />}>
+                <EmailTemplatesPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* CLIENT HEALTH SCORING */}
+        <Route
+          path="/client-health"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <Suspense fallback={<LoadingFallback />}>
+                <ClientHealthScoringPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* CLIENT COMMUNICATION HISTORY */}
+        <Route
+          path="/communication-history"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <Suspense fallback={<LoadingFallback />}>
+                <ClientCommunicationHistoryPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* TEAM PERFORMANCE LEADERBOARD */}
+        <Route
+          path="/team-leaderboard"
+          element={
+            <ProtectedRoute requiredRoles={['admin']}>
+              <Suspense fallback={<LoadingFallback />}>
+                <TeamPerformanceLeaderboardPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* REVENUE PIPELINE FORECAST */}
+        <Route
+          path="/revenue-forecast"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <Suspense fallback={<LoadingFallback />}>
+                <RevenuePipelineForecastPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* WIN/LOSS ANALYSIS */}
+        <Route
+          path="/win-loss"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <Suspense fallback={<LoadingFallback />}>
+                <WinLossAnalysisPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* SALES VELOCITY METRICS */}
+        <Route
+          path="/sales-velocity"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <Suspense fallback={<LoadingFallback />}>
+                <SalesVelocityMetricsPage />
               </Suspense>
             </ProtectedRoute>
           }

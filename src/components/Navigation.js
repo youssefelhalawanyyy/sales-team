@@ -25,7 +25,12 @@ import {
   Calendar,
   Settings,
   History,
-  Database
+  Database,
+  FileText,
+  Mail,
+  Heart,
+  MessageSquare,
+  Zap
 } from 'lucide-react';
 
 export const Navigation = React.memo(({ userRole }) => {
@@ -132,6 +137,21 @@ export const Navigation = React.memo(({ userRole }) => {
         children: [
           { label: 'Tasks', path: '/tasks', icon: CheckSquare },
           { label: 'Performance', path: '/admin/performance', icon: TrendingUp }
+        ]
+      },
+
+      {
+        label: 'Advanced',
+        icon: TrendingUp,
+        children: [
+          { label: 'Quote Generator', path: '/quotes', icon: FileText },
+          { label: 'Email Templates', path: '/email-templates', icon: Mail },
+          { label: 'Client Health', path: '/client-health', icon: Heart },
+          { label: 'Communication History', path: '/communication-history', icon: MessageSquare },
+          { label: 'Team Leaderboard', path: '/team-leaderboard', icon: Trophy },
+          { label: 'Revenue Forecast', path: '/revenue-forecast', icon: TrendingUp },
+          { label: 'Win/Loss Analysis', path: '/win-loss', icon: BarChart3 },
+          { label: 'Sales Velocity', path: '/sales-velocity', icon: Zap }
         ]
       },
 
