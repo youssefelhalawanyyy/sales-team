@@ -70,12 +70,12 @@ export const LoginPage = () => {
             </div>
             <div className="brand-divider" />
             <div className="brand-stat">
-              <span className="brand-stat-val">256</span>
-              <span className="brand-stat-label">Clients</span>
+              <span className="brand-stat-val">Jonix</span>
+              <span className="brand-stat-label">Arabia</span>
             </div>
             <div className="brand-divider" />
             <div className="brand-stat">
-              <span className="brand-stat-val">24/7</span>
+              <span className="brand-stat-val">Full</span>
               <span className="brand-stat-label">Support</span>
             </div>
           </div>
@@ -159,7 +159,7 @@ export const LoginPage = () => {
             </form>
 
             <p className="card-footer">
-              Secured with Firebase Authentication
+             
             </p>
           </div>
         </div>
