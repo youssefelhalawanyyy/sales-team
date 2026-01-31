@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TasksContext';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where, limit } from 'firebase/firestore';
 import { MemberCommissionView } from '../components/MemberCommissionView';
 
 import {
@@ -64,7 +64,7 @@ export const Dashboard = () => {
     fetchMyTasks();
   }, [userRole, currentUser?.uid]);
 
-  const fetchMyTasks = async () => {
+  const fetchMyTasks = useCallback(async () => {
     try {
       const tasks = await getAssignedTasks();
       const pending = tasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
@@ -72,94 +72,75 @@ export const Dashboard = () => {
     } catch (error) {
       console.error('Error fetching tasks:', error);
     }
-  };
+  }, [getAssignedTasks]);
 
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
+      setLoading(true);
+      
+      // Fetch all data in parallel for better performance
+      const [usersSnap, salesSnap, financeSnap] = await Promise.all([
+        getDocs(collection(db, 'users')),
+        getDocs(collection(db, 'sales')),
+        userRole === 'admin' ? getDocs(collection(db, 'finances')) : Promise.resolve(null)
+      ]);
+
       let totalDeals = 0;
       let totalIncome = 0;
       let activeUsers = 0;
       let myDeals = 0;
       let myIncome = 0;
+      let userClosedDeals = 0;
       let closedDeals = 0;
       let pendingDeals = 0;
       let myActiveDeals = 0;
 
+      /* Process USERS */
+      activeUsers = usersSnap.docs.length;
+      const me = usersSnap.docs.find(doc => doc.data().uid === currentUser?.uid);
 
-      /* ---------------- USERS ---------------- */
+      if (me?.data()?.createdAt) {
+        const created = me.data().createdAt;
+        if (created.seconds) {
+          setJoinedDate(new Date(created.seconds * 1000));
+        } else {
+          setJoinedDate(new Date(created));
+        }
+      }
 
-      try {
-        const usersSnap = await getDocs(collection(db, 'users'));
-        activeUsers = usersSnap.docs.length;
+      /* Process DEALS */
+      totalDeals = salesSnap.docs.length;
+      salesSnap.docs.forEach((doc) => {
+        const data = doc.data();
 
-        const me = usersSnap.docs.find(
-          (doc) => doc.data().uid === currentUser?.uid
-        );
-
-        if (me?.data()?.createdAt) {
-          const created = me.data().createdAt;
-
-          if (created.seconds) {
-            setJoinedDate(new Date(created.seconds * 1000));
-          } else {
-            setJoinedDate(new Date(created));
+        if (data.createdBy === currentUser?.uid) {
+          myDeals++;
+          if (data.status === 'closed') {
+            userClosedDeals++;
+          }
+          if (data.status === 'pending_approval' || data.status === 'in_progress') {
+            myActiveDeals++;
           }
         }
 
-      } catch {}
+        if (data.status === 'closed') {
+          closedDeals++;
+        }
 
+        if (data.status === 'pending_approval' || data.status === 'in_progress') {
+          pendingDeals++;
+        }
+      });
 
-      /* ---------------- DEALS ---------------- */
-
-      let userClosedDeals = 0;
-
-      try {
-        const salesSnap = await getDocs(collection(db, 'sales'));
-        totalDeals = salesSnap.docs.length;
-
-        salesSnap.docs.forEach((doc) => {
+      /* Process FINANCE (ADMIN ONLY) */
+      if (userRole === 'admin' && financeSnap) {
+        financeSnap.docs.forEach((doc) => {
           const data = doc.data();
-
-          if (data.createdBy === currentUser?.uid) {
-            myDeals++;
-
-            if (data.status === 'closed') {
-              userClosedDeals++;
-            }
-
-            if (data.status === 'pending' || data.status === 'in_progress') {
-              myActiveDeals++;
-            }
-          }
-
-          if (data.status === 'closed') {
-            closedDeals++;
-          }
-
-          if (data.status === 'pending' || data.status === 'in_progress') {
-            pendingDeals++;
-          }
+          const amount = data.amount || 0;
+          totalIncome += amount;
         });
-
-      } catch {}
-
-
-      /* ---------------- FINANCE (ADMIN ONLY) ---------------- */
-
-      if (userRole === 'admin') {
-        try {
-          const financeSnap = await getDocs(collection(db, 'finances'));
-
-          financeSnap.docs.forEach((doc) => {
-            const data = doc.data();
-            const amount = data.amount || 0;
-            totalIncome += amount;
-          });
-
-        } catch {}
       }
-
 
       const newStats = {
         totalDeals,
@@ -173,16 +154,14 @@ export const Dashboard = () => {
       };
 
       setStats(newStats);
-
       calculateAchievements(newStats, userClosedDeals);
 
     } catch (err) {
-      console.error(err);
-
+      console.error('Error fetching dashboard data:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userRole, currentUser?.uid]);
 
 
   /* ===================================
