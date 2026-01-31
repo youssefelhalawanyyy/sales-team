@@ -152,10 +152,14 @@ export default function SalesDealsPage() {
       // Send notifications
       if (statusChanged) {
         try {
+          console.log('Sending notification for deal update...');
+          // Notify the deal creator (current user)
           if (isClosedOrLost) {
-            await notifyDealClosed(currentUser.uid, editDeal, editDeal.status === 'closed' ? 'Won' : 'Lost');
+            const result = await notifyDealClosed(currentUser.uid, editDeal, editDeal.status === 'closed' ? 'Won' : 'Lost');
+            console.log('Deal closed notification result:', result);
           } else {
-            await notifyDealUpdated(currentUser.uid, editDeal);
+            const result = await notifyDealUpdated(currentUser.uid, editDeal);
+            console.log('Deal updated notification result:', result);
           }
         } catch (notifError) {
           console.error('Error sending notification:', notifError);

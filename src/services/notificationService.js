@@ -32,13 +32,16 @@ export const NOTIFICATION_PRIORITY = {
  */
 export async function sendNotification(userId, payload) {
   if (!userId || !payload?.message) {
-    console.error('Missing userId or message');
+    console.error('Missing userId or message', { userId, message: payload?.message });
     return null;
   }
 
   try {
+    console.log('📢 Sending notification to user:', userId);
+    
     const notification = {
       userId,
+      title: payload.title || 'Notification',
       message: payload.message,
       type: payload.type || NOTIFICATION_TYPES.DEAL_CREATED,
       priority: payload.priority || NOTIFICATION_PRIORITY.MEDIUM,
@@ -50,7 +53,11 @@ export async function sendNotification(userId, payload) {
       icon: payload.icon || null
     };
 
+    console.log('Notification object:', notification);
+    
     const docRef = await addDoc(collection(db, 'notifications'), notification);
+    
+    console.log('✅ Notification created with ID:', docRef.id);
     
     // If push notifications are enabled, send push notification
     if (payload.sendPush) {
@@ -59,7 +66,8 @@ export async function sendNotification(userId, payload) {
 
     return docRef.id;
   } catch (error) {
-    console.error('Error sending notification:', error);
+    console.error('❌ Error sending notification:', error);
+    console.error('Error details:', { message: error.message, code: error.code });
     return null;
   }
 }
@@ -86,6 +94,7 @@ export async function notifyDealCreated(userId, dealData) {
   const amount = dealData.price ? `$${dealData.price.toLocaleString()}` : dealData.amount ? `$${dealData.amount.toLocaleString()}` : 'No amount';
 
   return sendNotification(userId, {
+    title: 'New Deal',
     message: `New deal created: ${clientName} - ${amount}`,
     type: NOTIFICATION_TYPES.DEAL_CREATED,
     priority: NOTIFICATION_PRIORITY.MEDIUM,
@@ -104,6 +113,7 @@ export async function notifyDealUpdated(userId, dealData) {
   const stage = dealData.stage || dealData.status || 'Updated';
 
   return sendNotification(userId, {
+    title: 'Deal Updated',
     message: `Deal updated: ${clientName} - Now in ${stage} stage`,
     type: NOTIFICATION_TYPES.DEAL_UPDATED,
     priority: NOTIFICATION_PRIORITY.MEDIUM,
@@ -122,6 +132,7 @@ export async function notifyDealClosed(userId, dealData, status) {
   const amount = dealData.price ? `$${dealData.price.toLocaleString()}` : dealData.amount ? `$${dealData.amount.toLocaleString()}` : '';
 
   return sendNotification(userId, {
+    title: `Deal ${status}`,
     message: `Deal ${status}: ${clientName} ${amount}`,
     type: NOTIFICATION_TYPES.DEAL_CLOSED,
     priority: NOTIFICATION_PRIORITY.HIGH,
@@ -144,6 +155,7 @@ export async function notifyFollowUpDue(userId, followUpData) {
   const type = followUpData.type || 'Follow-up';
 
   return sendNotification(userId, {
+    title: `${type} Due`,
     message: `${type} due for ${clientName}`,
     type: NOTIFICATION_TYPES.FOLLOW_UP_DUE,
     priority: NOTIFICATION_PRIORITY.HIGH,
@@ -161,6 +173,7 @@ export async function notifyFollowUpCompleted(userId, followUpData) {
   const clientName = followUpData.businessName || followUpData.clientName || 'Client';
 
   return sendNotification(userId, {
+    title: 'Follow-up Completed',
     message: `Follow-up completed with ${clientName}`,
     type: NOTIFICATION_TYPES.FOLLOW_UP_COMPLETED,
     priority: NOTIFICATION_PRIORITY.LOW,
@@ -181,6 +194,7 @@ export async function notifyCommissionEarned(userId, commissionData) {
   const dealName = commissionData.dealName || 'Deal';
 
   return sendNotification(userId, {
+    title: 'Commission Earned',
     message: `Commission earned: ${amount} for ${dealName}`,
     type: NOTIFICATION_TYPES.COMMISSION_EARNED,
     priority: NOTIFICATION_PRIORITY.HIGH,
@@ -199,6 +213,7 @@ export async function notifyCommissionEarned(userId, commissionData) {
  */
 export async function notifyAchievementUnlocked(userId, achievementData) {
   return sendNotification(userId, {
+    title: 'Achievement Unlocked',
     message: `Achievement unlocked: ${achievementData.name}`,
     type: NOTIFICATION_TYPES.ACHIEVEMENT_UNLOCKED,
     priority: NOTIFICATION_PRIORITY.MEDIUM,
@@ -219,6 +234,7 @@ export async function notifySettlementReady(userId, settlementData) {
   const amount = `$${settlementData.totalAmount.toLocaleString()}`;
 
   return sendNotification(userId, {
+    title: 'Settlement Ready',
     message: `Settlement ready for processing: ${amount}`,
     type: NOTIFICATION_TYPES.SETTLEMENT_READY,
     priority: NOTIFICATION_PRIORITY.HIGH,
