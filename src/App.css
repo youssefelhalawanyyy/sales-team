@@ -699,74 +699,456 @@ html.dark .bg-blue-500 {
   color: #ffffff !important;
 }
 
-html.dark .bg-green-600,
-html.dark .bg-green-500 {
-  background-color: #10b981 !important;
-  color: #ffffff !important;
+/* ===========================
+   COMPREHENSIVE DARK MODE
+=========================== */
+
+html.dark {
+  background-color: #0f172a;
+  color: #e2e8f0;
 }
 
-html.dark .bg-red-600,
-html.dark .bg-red-500 {
-  background-color: #ef4444 !important;
-  color: #ffffff !important;
+/* Body and containers */
+html.dark body {
+  background-color: #0f172a;
+  color: #e2e8f0;
 }
 
-html.dark .bg-yellow-600,
-html.dark .bg-yellow-500 {
-  background-color: #eab308 !important;
-  color: #000000 !important;
+html.dark #root {
+  background-color: #0f172a;
 }
 
-html.dark .bg-purple-600,
-html.dark .bg-purple-500 {
-  background-color: #a855f7 !important;
-  color: #ffffff !important;
+/* Main content areas */
+html.dark main,
+html.dark section,
+html.dark article {
+  background-color: #0f172a;
+  color: #e2e8f0;
 }
 
-/* Tables in dark mode */
+/* Pages and containers */
+html.dark div[class*="page"],
+html.dark div[class*="container"],
+html.dark div[class*="wrapper"] {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+/* Cards and panels */
+html.dark [class*="card"],
+html.dark [class*="panel"],
+html.dark [class*="box"] {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+/* Navigation */
+html.dark nav,
+html.dark header,
+html.dark .navbar,
+html.dark .header {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border-color: #334155;
+}
+
+html.dark nav a,
+html.dark header a,
+html.dark nav button,
+html.dark header button {
+  color: #e2e8f0;
+}
+
+html.dark nav a:hover,
+html.dark header a:hover,
+html.dark nav button:hover,
+html.dark header button:hover {
+  color: #f1f5f9;
+  background-color: #334155;
+}
+
+/* Sidebars */
+html.dark aside,
+html.dark .sidebar {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border-color: #334155;
+}
+
+html.dark aside a,
+html.dark .sidebar a {
+  color: #e2e8f0;
+}
+
+html.dark aside a:hover,
+html.dark .sidebar a:hover {
+  color: #f1f5f9;
+  background-color: #334155;
+}
+
+/* Buttons - CRITICAL FIX */
+html.dark button,
+html.dark [role="button"],
+html.dark input[type="button"],
+html.dark input[type="submit"],
+html.dark input[type="reset"] {
+  background-color: #3b82f6;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+html.dark button:hover,
+html.dark [role="button"]:hover,
+html.dark input[type="button"]:hover,
+html.dark input[type="submit"]:hover,
+html.dark input[type="reset"]:hover {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+html.dark button:active,
+html.dark [role="button"]:active,
+html.dark input[type="button"]:active,
+html.dark input[type="submit"]:active,
+html.dark input[type="reset"]:active {
+  background-color: #1d4ed8;
+}
+
+html.dark button:disabled,
+html.dark [role="button"][aria-disabled="true"],
+html.dark input[type="button"]:disabled,
+html.dark input[type="submit"]:disabled,
+html.dark input[type="reset"]:disabled {
+  background-color: #64748b;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Secondary buttons */
+html.dark button.secondary,
+html.dark button.outline,
+html.dark button.ghost {
+  background-color: #334155;
+  color: #f1f5f9;
+  border-color: #475569;
+}
+
+html.dark button.secondary:hover,
+html.dark button.outline:hover,
+html.dark button.ghost:hover {
+  background-color: #475569;
+  color: #ffffff;
+}
+
+/* Links */
+html.dark a {
+  color: #60a5fa;
+}
+
+html.dark a:hover {
+  color: #93c5fd;
+}
+
+/* Text and headings */
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark h5,
+html.dark h6 {
+  color: #f1f5f9;
+}
+
+html.dark p,
+html.dark span,
+html.dark div {
+  color: #e2e8f0;
+}
+
+/* Tables */
 html.dark table {
-  background-color: #1e293b !important;
-  color: #f1f5f9 !important;
+  background-color: #1e293b;
+  color: #e2e8f0;
 }
 
+html.dark thead,
 html.dark thead th {
-  background-color: #334155 !important;
-  color: #e2e8f0 !important;
-  border-color: #475569 !important;
+  background-color: #334155;
+  color: #f1f5f9;
+  border-color: #475569;
 }
 
 html.dark tbody tr {
-  border-color: #475569 !important;
+  border-color: #334155;
 }
 
 html.dark tbody td {
-  color: #e2e8f0 !important;
+  color: #e2e8f0;
 }
 
 html.dark tbody tr:hover {
-  background-color: #334155 !important;
+  background-color: #334155;
 }
 
-/* Modals in dark mode */
-html.dark .modal-box,
-html.dark .modal,
-html.dark .fixed.inset-0 > div > div {
-  background-color: #1e293b !important;
-  color: #f1f5f9 !important;
-  border-color: #475569 !important;
+/* Forms */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border-color: #475569;
 }
 
-/* Dropdowns and popovers */
-html.dark .absolute,
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #94a3b8;
+}
+
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Labels and form text */
+html.dark label {
+  color: #e2e8f0;
+}
+
+html.dark .form-text,
+html.dark .help-text {
+  color: #94a3b8;
+}
+
+/* Checkboxes and Radio */
+html.dark input[type="checkbox"],
+html.dark input[type="radio"] {
+  background-color: #1e293b;
+  border-color: #475569;
+  accent-color: #3b82f6;
+}
+
+html.dark input[type="checkbox"]:checked,
+html.dark input[type="radio"]:checked {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+/* Modals and Dialogs */
 html.dark [role="dialog"],
-html.dark [role="menu"],
-html.dark [role="listbox"] {
-  background-color: #1e293b !important;
-  color: #f1f5f9 !important;
-  border-color: #475569 !important;
+html.dark .modal,
+html.dark .dialog {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  border-color: #334155;
 }
 
-/* Scrollbars in dark mode */
+html.dark [role="dialog"] h1,
+html.dark [role="dialog"] h2,
+html.dark .modal h1,
+html.dark .modal h2 {
+  color: #f1f5f9;
+}
+
+/* Dropdown menus */
+html.dark [role="menu"],
+html.dark [role="listbox"],
+html.dark .dropdown,
+html.dark .menu {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+html.dark [role="menuitem"],
+html.dark [role="option"],
+html.dark .dropdown-item,
+html.dark .menu-item {
+  color: #e2e8f0;
+}
+
+html.dark [role="menuitem"]:hover,
+html.dark [role="option"]:hover,
+html.dark .dropdown-item:hover,
+html.dark .menu-item:hover {
+  background-color: #334155;
+  color: #f1f5f9;
+}
+
+/* Tooltips */
+html.dark [role="tooltip"],
+html.dark .tooltip {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border-color: #475569;
+}
+
+/* Badges */
+html.dark .badge,
+html.dark .tag,
+html.dark [class*="badge"],
+html.dark [class*="tag"] {
+  background-color: #334155;
+  color: #e2e8f0;
+  border-color: #475569;
+}
+
+/* Alerts and messages */
+html.dark .alert,
+html.dark .message,
+html.dark [role="alert"] {
+  background-color: #334155;
+  color: #e2e8f0;
+  border-color: #475569;
+}
+
+html.dark .alert-success {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #4ade80;
+  border-color: #10b981;
+}
+
+html.dark .alert-error,
+html.dark .alert-danger {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border-color: #ef4444;
+}
+
+html.dark .alert-warning {
+  background-color: rgba(234, 179, 8, 0.1);
+  color: #facc15;
+  border-color: #eab308;
+}
+
+html.dark .alert-info {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+  border-color: #3b82f6;
+}
+
+/* Progress bars */
+html.dark progress,
+html.dark .progress-bar {
+  background-color: #334155;
+}
+
+html.dark progress {
+  accent-color: #3b82f6;
+}
+
+/* Dividers */
+html.dark hr,
+html.dark .divider,
+html.dark .separator {
+  background-color: #334155;
+  border-color: #334155;
+}
+
+/* Tabs */
+html.dark [role="tablist"],
+html.dark .tabs {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+html.dark [role="tab"],
+html.dark .tab {
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+html.dark [role="tab"][aria-selected="true"],
+html.dark .tab.active {
+  background-color: #334155;
+  color: #f1f5f9;
+  border-color: #3b82f6;
+}
+
+/* Charts - Recharts */
+html.dark .recharts-wrapper {
+  background-color: #1e293b;
+}
+
+html.dark .recharts-text {
+  color: #e2e8f0;
+  fill: #e2e8f0;
+}
+
+html.dark .recharts-legend-wrapper {
+  background-color: #1e293b;
+  color: #e2e8f0;
+}
+
+html.dark .recharts-tooltip {
+  background-color: #1e293b;
+  border: 1px solid #475569;
+}
+
+html.dark .recharts-default-tooltip {
+  background-color: #1e293b;
+  border: 1px solid #475569;
+}
+
+html.dark .recharts-tooltip-label {
+  color: #e2e8f0;
+}
+
+html.dark .recharts-tooltip-item {
+  color: #e2e8f0;
+}
+
+html.dark .recharts-cartesian-axis-line {
+  stroke: #475569;
+}
+
+html.dark .recharts-cartesian-axis-tick {
+  fill: #94a3b8;
+  color: #94a3b8;
+}
+
+html.dark .recharts-cartesian-grid-horizontal line,
+html.dark .recharts-cartesian-grid-vertical line {
+  stroke: #334155;
+}
+
+html.dark .recharts-surface {
+  background-color: transparent;
+}
+
+html.dark .recharts-pie-sector {
+  opacity: 0.9;
+}
+
+/* Tables and grids */
+html.dark .ag-root,
+html.dark [role="grid"] {
+  background-color: #1e293b;
+  color: #e2e8f0;
+}
+
+html.dark .ag-header-cell,
+html.dark [role="columnheader"] {
+  background-color: #334155;
+  color: #f1f5f9;
+  border-color: #475569;
+}
+
+html.dark .ag-cell,
+html.dark [role="gridcell"] {
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+html.dark .ag-row:hover {
+  background-color: #334155;
+}
+
+/* Scrollbars */
 html.dark ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -786,327 +1168,97 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 }
 
 /* Code blocks */
-html.dark code {
-  background-color: #334155 !important;
-  color: #e2e8f0 !important;
+html.dark code,
+html.dark pre {
+  background-color: #334155;
+  color: #e2e8f0;
+  border-color: #475569;
 }
 
-/* Links - keep visible */
-html.dark a {
-  color: #60a5fa !important;
+/* Loading state */
+html.dark .skeleton,
+html.dark [aria-busy="true"],
+html.dark .loading {
+  background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
 }
 
-html.dark a:hover {
-  color: #93c5fd !important;
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Specific utility color classes in dark mode */
+html.dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1); }
+html.dark .bg-blue-100 { background-color: rgba(59, 130, 246, 0.15); }
+html.dark .bg-blue-500 { background-color: #3b82f6; color: #ffffff; }
+html.dark .bg-blue-600 { background-color: #2563eb; color: #ffffff; }
+
+html.dark .bg-green-50 { background-color: rgba(16, 185, 129, 0.1); }
+html.dark .bg-green-100 { background-color: rgba(16, 185, 129, 0.15); }
+html.dark .bg-green-500 { background-color: #10b981; color: #ffffff; }
+html.dark .bg-green-600 { background-color: #059669; color: #ffffff; }
+
+html.dark .bg-red-50 { background-color: rgba(239, 68, 68, 0.1); }
+html.dark .bg-red-100 { background-color: rgba(239, 68, 68, 0.15); }
+html.dark .bg-red-500 { background-color: #ef4444; color: #ffffff; }
+html.dark .bg-red-600 { background-color: #dc2626; color: #ffffff; }
+
+html.dark .bg-yellow-50 { background-color: rgba(234, 179, 8, 0.1); }
+html.dark .bg-yellow-100 { background-color: rgba(234, 179, 8, 0.15); }
+html.dark .bg-yellow-500 { background-color: #eab308; color: #000000; }
+html.dark .bg-yellow-600 { background-color: #ca8a04; color: #ffffff; }
+
+html.dark .bg-purple-50 { background-color: rgba(168, 85, 247, 0.1); }
+html.dark .bg-purple-100 { background-color: rgba(168, 85, 247, 0.15); }
+html.dark .bg-purple-500 { background-color: #a855f7; color: #ffffff; }
+html.dark .bg-purple-600 { background-color: #9333ea; color: #ffffff; }
+
+/* Text color utilities */
+html.dark .text-blue-500 { color: #60a5fa; }
+html.dark .text-green-500 { color: #4ade80; }
+html.dark .text-red-500 { color: #f87171; }
+html.dark .text-yellow-500 { color: #facc15; }
+
+/* Border colors */
+html.dark .border-blue-500 { border-color: #3b82f6; }
+html.dark .border-green-500 { border-color: #10b981; }
+html.dark .border-red-500 { border-color: #ef4444; }
+
+/* Accessibility and focus states */
+html.dark *:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+html.dark button:focus,
+html.dark a:focus,
+html.dark input:focus,
+html.dark select:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 /* Lists */
+html.dark ul,
+html.dark ol {
+  color: #e2e8f0;
+}
+
 html.dark li {
-  color: #e2e8f0 !important;
+  color: #e2e8f0;
 }
 
-/* Badges and tags */
-html.dark .badge,
-html.dark .tag {
-  background-color: #334155 !important;
-  color: #e2e8f0 !important;
-  border-color: #475569 !important;
-}
-
-/* Alert boxes */
-html.dark .alert {
-  background-color: #334155 !important;
-  color: #e2e8f0 !important;
-  border-color: #475569 !important;
-}
-
-/* Tooltips and popovers */
-html.dark .tooltip {
-  background-color: #1e293b !important;
-  color: #f1f5f9 !important;
-}
-
-/* Cards with specific colors */
-html.dark .bg-blue-100 {
-  background-color: rgba(59, 130, 246, 0.1) !important;
-  color: #60a5fa !important;
-}
-
-html.dark .bg-green-100 {
-  background-color: rgba(16, 185, 129, 0.1) !important;
-  color: #4ade80 !important;
-}
-
-html.dark .bg-red-100 {
-  background-color: rgba(239, 68, 68, 0.1) !important;
-  color: #f87171 !important;
-}
-
-html.dark .bg-yellow-100 {
-  background-color: rgba(234, 179, 8, 0.1) !important;
-  color: #facc15 !important;
-}
-
-/* Shadows */
+/* Shadows for depth */
 html.dark {
   --tw-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-}
-
-/* Ensure placeholder text is visible */
-html.dark ::placeholder {
-  color: #94a3b8 !important;
-}
-
-/* Ensure transitions work smoothly */
-html.dark * {
-  transition-property: background-color, border-color, color;
-  transition-duration: 200ms;
-}
-
-/* ===========================
-   ADDITIONAL DARK MODE FIXES FOR ALL SHEETS
-=========================== */
-
-/* Recharts (charts library) dark mode */
-html.dark .recharts-wrapper {
-  background-color: #1e293b !important;
-}
-
-html.dark .recharts-text {
-  color: #e2e8f0 !important;
-}
-
-html.dark .recharts-legend-wrapper {
-  background-color: #334155 !important;
-  border-color: #475569 !important;
-}
-
-html.dark .recharts-tooltip {
-  background-color: #0f172a !important;
-  border-color: #475569 !important;
-}
-
-html.dark .recharts-tooltip-wrapper {
-  background-color: #1e293b !important;
-}
-
-html.dark .recharts-default-tooltip {
-  background-color: #1e293b !important;
-  border: 1px solid #475569 !important;
-}
-
-html.dark .recharts-tooltip-label {
-  color: #e2e8f0 !important;
-}
-
-/* Grid lines in charts */
-html.dark .recharts-cartesian-axis-line {
-  stroke: #475569 !important;
-}
-
-html.dark .recharts-cartesian-axis-tick {
-  color: #94a3b8 !important;
-}
-
-html.dark .recharts-cartesian-grid-horizontal line,
-html.dark .recharts-cartesian-grid-vertical line {
-  stroke: #475569 !important;
-}
-
-/* PDF export and sheets */
-html.dark .sheet,
-html.dark .excel-export,
-html.dark .pdf-export {
-  background-color: #1e293b !important;
-  color: #f1f5f9 !important;
-}
-
-/* Data tables and grids */
-html.dark .ag-root,
-html.dark [role="grid"],
-html.dark [role="presentation"] {
-  background-color: #1e293b !important;
-  color: #e2e8f0 !important;
-}
-
-html.dark .ag-header-cell {
-  background-color: #334155 !important;
-  color: #e2e8f0 !important;
-  border-color: #475569 !important;
-}
-
-html.dark .ag-cell {
-  border-color: #475569 !important;
-  color: #e2e8f0 !important;
-}
-
-html.dark .ag-row-even {
-  background-color: #1e293b !important;
-}
-
-html.dark .ag-row-odd {
-  background-color: #1e293b !important;
-}
-
-html.dark .ag-row:hover {
-  background-color: #334155 !important;
-}
-
-/* Tabs and sections */
-html.dark [role="tablist"],
-html.dark [role="tab"] {
-  background-color: #1e293b !important;
-  color: #e2e8f0 !important;
-  border-color: #475569 !important;
-}
-
-html.dark [role="tab"][aria-selected="true"] {
-  background-color: #334155 !important;
-  color: #f1f5f9 !important;
-}
-
-/* Progress bars */
-html.dark progress {
-  background-color: #334155 !important;
-  color: #3b82f6 !important;
-}
-
-html.dark .progress-bar {
-  background-color: #3b82f6 !important;
-}
-
-/* Dividers and separators */
-html.dark hr,
-html.dark .divider,
-html.dark .separator {
-  background-color: #475569 !important;
-  border-color: #475569 !important;
-}
-
-/* Sidebars */
-html.dark .sidebar,
-html.dark aside {
-  background-color: #0f172a !important;
-  color: #f1f5f9 !important;
-  border-color: #475569 !important;
-}
-
-html.dark .sidebar a,
-html.dark aside a {
-  color: #e2e8f0 !important;
-}
-
-html.dark .sidebar a:hover,
-html.dark aside a:hover {
-  background-color: #334155 !important;
-  color: #f1f5f9 !important;
-}
-
-/* Navbars and headers */
-html.dark nav,
-html.dark header {
-  background-color: #0f172a !important;
-  color: #f1f5f9 !important;
-  border-color: #475569 !important;
-}
-
-html.dark nav a,
-html.dark header a {
-  color: #e2e8f0 !important;
-}
-
-html.dark nav a:hover,
-html.dark header a:hover {
-  color: #f1f5f9 !important;
-}
-
-/* Buttons in dark mode - ensure visibility */
-html.dark button {
-  background-color: #334155 !important;
-  color: #f1f5f9 !important;
-  border-color: #475569 !important;
-}
-
-html.dark button:hover {
-  background-color: #475569 !important;
-  color: #f1f5f9 !important;
-}
-
-html.dark button:disabled {
-  background-color: #1e293b !important;
-  color: #64748b !important;
-}
-
-/* Gradient backgrounds in dark mode */
-html.dark .bg-gradient-to-r,
-html.dark .bg-gradient-to-b,
-html.dark .bg-gradient-to-l,
-html.dark .bg-gradient-to-t {
-  background-color: #1e293b !important;
-}
-
-/* Loading skeletons */
-html.dark .skeleton,
-html.dark .loading {
-  background-color: #334155 !important;
-  background-image: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%) !important;
-}
-
-/* Popovers and dropdowns - extra fix */
-html.dark .popover,
-html.dark .dropdown-menu,
-html.dark [role="tooltip"] {
-  background-color: #1e293b !important;
-  color: #f1f5f9 !important;
-  border: 1px solid #475569 !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
-}
-
-/* Select options */
-html.dark option {
-  background-color: #1e293b !important;
-  color: #f1f5f9 !important;
-}
-
-html.dark optgroup {
-  background-color: #334155 !important;
-  color: #e2e8f0 !important;
-}
-
-/* Checkboxes and radio buttons */
-html.dark input[type="checkbox"],
-html.dark input[type="radio"] {
-  background-color: #1e293b !important;
-  border-color: #475569 !important;
-  accent-color: #3b82f6 !important;
-}
-
-/* Labels */
-html.dark label {
-  color: #e2e8f0 !important;
-}
-
-/* Legends for forms */
-html.dark fieldset {
-  border-color: #475569 !important;
-  background-color: #1e293b !important;
-}
-
-html.dark fieldset > legend {
-  background-color: #1e293b !important;
-  color: #f1f5f9 !important;
-}
-
-/* Ensure all text shadows are removed in dark mode */
-html.dark * {
-  text-shadow: none !important;
-}
-
-/* Fix for recharts pie charts */
-html.dark .recharts-surface {
-  background-color: #1e293b !important;
-}
-
-html.dark .recharts-pie-sector {
-  filter: brightness(1.1);
+  --tw-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --tw-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --tw-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --tw-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
 }
