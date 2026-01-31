@@ -95,6 +95,12 @@ export const Navigation = React.memo(({ userRole }) => {
     icon: Info
   };
 
+  const emailTemplatesItem = {
+    label: 'Email Templates',
+    path: '/email-templates',
+    icon: Mail
+  };
+
   /* =============================
      ROLE MENU
   ============================= */
@@ -145,7 +151,6 @@ export const Navigation = React.memo(({ userRole }) => {
         icon: TrendingUp,
         children: [
           { label: 'Quote Generator', path: '/quotes', icon: FileText },
-          { label: 'Email Templates', path: '/email-templates', icon: Mail },
           { label: 'Client Health', path: '/client-health', icon: Heart },
           { label: 'Communication History', path: '/communication-history', icon: MessageSquare },
           { label: 'Team Leaderboard', path: '/team-leaderboard', icon: Trophy },
@@ -168,6 +173,7 @@ export const Navigation = React.memo(({ userRole }) => {
         ]
       },
 
+      emailTemplatesItem,
       informationItem
     ],
 
@@ -186,6 +192,7 @@ export const Navigation = React.memo(({ userRole }) => {
         ]
       },
 
+      emailTemplatesItem,
       informationItem
     ],
 
@@ -226,6 +233,7 @@ export const Navigation = React.memo(({ userRole }) => {
         icon: Calendar
       },
 
+      emailTemplatesItem,
       informationItem
     ],
 
@@ -269,6 +277,13 @@ export const Navigation = React.memo(({ userRole }) => {
         icon: Calendar
       },
 
+      {
+        label: 'Team Leaderboard',
+        path: '/team-leaderboard',
+        icon: Trophy
+      },
+
+      emailTemplatesItem,
       informationItem
     ],
 
@@ -306,6 +321,7 @@ export const Navigation = React.memo(({ userRole }) => {
         icon: Calendar
       },
 
+      emailTemplatesItem,
       informationItem
     ]
   };
