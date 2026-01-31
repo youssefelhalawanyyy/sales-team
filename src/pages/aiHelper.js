@@ -488,7 +488,7 @@ function App() {
   return (
     <div className="min-h-screen bg-white font-sans">
       {/* Header */}
-      <header className="no-print border-b-2 border-gray-200 bg-white shadow-sm sticky top-0 z-50">
+      <header className="no-print border-b-2 border-gray-200 bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-5">
           <div className="flex items-center gap-3 lg:gap-4">
             <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 flex-shrink-0">
@@ -506,7 +506,8 @@ function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-12">
+      {/* FIX: position relative + z-20 so main content stacks above the sticky header's dropdown */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-12 relative z-20">
         {/* Progress Bar */}
         {step < 6 && (
           <div className="no-print mb-8 lg:mb-12">

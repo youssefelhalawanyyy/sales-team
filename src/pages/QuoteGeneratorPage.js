@@ -7,19 +7,9 @@ import {
   Plus,
   Download,
   Eye,
-  Copy,
   Search,
-  Filter,
-  DollarSign,
-  Calendar,
-  Building2,
-  User,
-  Mail,
-  Phone,
-  MapPin,
   Trash2,
-  ArrowRight,
-  CheckCircle2
+  Loader2
 } from 'lucide-react';
 
 export default function QuoteGeneratorPage() {
@@ -31,8 +21,9 @@ export default function QuoteGeneratorPage() {
   const [selectedDeal, setSelectedDeal] = useState(null);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [form, setForm] = useState({
+  const initialForm = {
     dealId: '',
     quoteNumber: '',
     title: '',
@@ -42,27 +33,38 @@ export default function QuoteGeneratorPage() {
     notes: '',
     validUntil: '',
     terms: 'Net 30'
-  });
+  };
 
+  const [form, setForm] = useState(initialForm);
+
+  // FIX 1: Guard against currentUser being null on initial render
   useEffect(() => {
-    loadDeals();
-    loadQuotes();
+    if (currentUser) {
+      loadDeals();
+      loadQuotes();
+    }
   }, [currentUser, userRole]);
 
   async function loadDeals() {
     try {
       let q;
       if (userRole === 'admin') {
-        q = query(collection(db, 'sales'), where('archived', '==', false));
+        // FIX 2: Removed hard 'archived == false' filter.
+        // Firestore does NOT match documents where the field is missing.
+        // If your sales docs don't have 'archived' set, the old query returned nothing.
+        // Now we fetch all, then filter in JS to safely handle missing fields.
+        q = query(collection(db, 'sales'));
       } else {
         q = query(
           collection(db, 'sales'),
-          where('createdBy', '==', currentUser.uid),
-          where('archived', '==', false)
+          where('createdBy', '==', currentUser.uid)
         );
       }
       const snap = await getDocs(q);
-      setDeals(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const allDeals = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Filter out archived deals in JS — treats missing 'archived' field as not archived
+      const activeDeals = allDeals.filter(d => d.archived !== true);
+      setDeals(activeDeals);
     } catch (e) {
       console.error('Error loading deals:', e);
     }
@@ -87,32 +89,60 @@ export default function QuoteGeneratorPage() {
   }
 
   async function handleCreateQuote() {
-    if (!form.dealId || !form.title || form.items.some(i => !i.description || !i.unitPrice)) {
-      alert('Please fill in all required fields');
+    // FIX 3: unitPrice validation — the old check `!i.unitPrice` treated 0 as invalid (falsy).
+    // Now we explicitly check for empty string / null / undefined only.
+    const hasInvalidItem = form.items.some(
+      (i) =>
+        !i.description ||
+        i.unitPrice === '' ||
+        i.unitPrice === null ||
+        i.unitPrice === undefined ||
+        isNaN(Number(i.unitPrice)) ||
+        Number(i.unitPrice) < 0
+    );
+
+    if (!form.dealId || !form.title || hasInvalidItem) {
+      alert('Please fill in all required fields correctly.');
       return;
     }
 
+    // Prevent double-submit
+    setIsSubmitting(true);
+
     try {
-      const deal = deals.find(d => d.id === form.dealId);
+      const deal = deals.find((d) => d.id === form.dealId);
       if (!deal) {
-        alert('Deal not found');
+        alert('Deal not found. Please select a valid deal.');
+        setIsSubmitting(false);
         return;
       }
 
-      const subtotal = form.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+      const subtotal = form.items.reduce(
+        (sum, item) => sum + Number(item.quantity) * Number(item.unitPrice),
+        0
+      );
       const discountAmount = subtotal * (form.discount / 100);
       const taxableAmount = subtotal - discountAmount;
       const taxAmount = taxableAmount * (form.tax / 100);
       const total = taxableAmount + taxAmount;
 
-      await addDoc(collection(db, 'quotes'), {
+      // FIX 4: Graceful fallback for client fields — handles any combination of field names
+      const clientName = deal.clientName || deal.businessName || deal.name || 'Unknown Client';
+      const clientEmail = deal.email || deal.clientEmail || '';
+      const clientPhone = deal.phone || deal.clientPhone || '';
+
+      const quoteData = {
         dealId: form.dealId,
-        clientName: deal.clientName || deal.businessName,
-        clientEmail: deal.email,
-        clientPhone: deal.phone,
+        clientName,
+        clientEmail,
+        clientPhone,
         quoteNumber: form.quoteNumber || `QT-${Date.now()}`,
         title: form.title,
-        items: form.items,
+        items: form.items.map((item) => ({
+          description: item.description,
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice)
+        })),
         subtotal,
         discount: form.discount,
         discountAmount,
@@ -126,25 +156,21 @@ export default function QuoteGeneratorPage() {
         createdBy: currentUser.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      });
+      };
 
-      setForm({
-        dealId: '',
-        quoteNumber: '',
-        title: '',
-        items: [{ description: '', quantity: 1, unitPrice: 0 }],
-        discount: 0,
-        tax: 10,
-        notes: '',
-        validUntil: '',
-        terms: 'Net 30'
-      });
+      await addDoc(collection(db, 'quotes'), quoteData);
+
+      setForm(initialForm);
+      setSelectedDeal(null);
       setShowForm(false);
-      loadQuotes();
+      await loadQuotes();
       alert('Quote created successfully!');
     } catch (e) {
-      console.error('Error creating quote:', e);
-      alert('Failed to create quote');
+      // FIX 5: Log the full error so you can see exactly what Firestore rejected
+      console.error('Error creating quote:', e.code, e.message, e);
+      alert(`Failed to create quote: ${e.message || 'Unknown error'}`);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -156,6 +182,7 @@ export default function QuoteGeneratorPage() {
   };
 
   const handleRemoveItem = (index) => {
+    if (form.items.length === 1) return; // Keep at least one item
     setForm({
       ...form,
       items: form.items.filter((_, i) => i !== index)
@@ -164,18 +191,26 @@ export default function QuoteGeneratorPage() {
 
   const handleItemChange = (index, field, value) => {
     const newItems = [...form.items];
-    newItems[index] = { ...newItems[index], [field]: field === 'description' ? value : Number(value) };
+    newItems[index] = {
+      ...newItems[index],
+      [field]: field === 'description' ? value : value === '' ? '' : Number(value)
+    };
     setForm({ ...form, items: newItems });
   };
 
-  const filteredQuotes = quotes.filter(q => {
-    const matchesSearch = q.clientName?.toLowerCase().includes(search.toLowerCase()) ||
-                         q.quoteNumber?.toLowerCase().includes(search.toLowerCase());
+  const filteredQuotes = quotes.filter((q) => {
+    const matchesSearch =
+      q.clientName?.toLowerCase().includes(search.toLowerCase()) ||
+      q.quoteNumber?.toLowerCase().includes(search.toLowerCase()) ||
+      q.title?.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = filterStatus === 'all' || q.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
-  const subtotal = form.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  const subtotal = form.items.reduce(
+    (sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0),
+    0
+  );
   const discountAmount = subtotal * (form.discount / 100);
   const taxableAmount = subtotal - discountAmount;
   const taxAmount = taxableAmount * (form.tax / 100);
@@ -185,7 +220,7 @@ export default function QuoteGeneratorPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 lg:p-8">
       {/* Header */}
       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 mb-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
             <div className="bg-gradient-to-br from-orange-500 to-red-600 p-3 rounded-xl">
               <FileText className="text-white" size={28} />
@@ -195,43 +230,52 @@ export default function QuoteGeneratorPage() {
               <p className="text-gray-500">Create and manage professional quotes</p>
             </div>
           </div>
-
           <button
             onClick={() => setShowForm(!showForm)}
             className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-red-700 transition-all shadow-lg"
           >
             <Plus size={20} />
-            New Quote
+            {showForm ? 'Close Form' : 'New Quote'}
           </button>
         </div>
       </div>
 
       {/* Form */}
       {showForm && (
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-6">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 lg:p-8 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Quote</h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Deal Selector */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Deal</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Deal <span className="text-red-500">*</span>
+              </label>
               <select
                 value={form.dealId}
                 onChange={(e) => {
+                  const deal = deals.find((d) => d.id === e.target.value);
                   setForm({ ...form, dealId: e.target.value });
-                  const deal = deals.find(d => d.id === e.target.value);
-                  if (deal) setSelectedDeal(deal);
+                  setSelectedDeal(deal || null);
                 }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
               >
                 <option value="">Select a deal</option>
-                {deals.map(deal => (
+                {deals.map((deal) => (
                   <option key={deal.id} value={deal.id}>
-                    {deal.businessName || deal.clientName} - ${deal.amount?.toLocaleString() || 0}
+                    {deal.businessName || deal.clientName || deal.name || 'Unknown'} —{' '}
+                    EGP {(deal.amount || 0).toLocaleString()}
                   </option>
                 ))}
               </select>
+              {deals.length === 0 && (
+                <p className="text-xs text-red-500 mt-1">
+                  No active deals found. Make sure deals exist in the Sales module.
+                </p>
+              )}
             </div>
 
+            {/* Quote Number */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Quote Number</label>
               <input
@@ -243,8 +287,11 @@ export default function QuoteGeneratorPage() {
               />
             </div>
 
+            {/* Quote Title */}
             <div className="lg:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Quote Title</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Quote Title <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 value={form.title}
@@ -255,22 +302,46 @@ export default function QuoteGeneratorPage() {
             </div>
           </div>
 
+          {/* Selected Deal Info Preview */}
+          {selectedDeal && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-sm font-semibold text-blue-800 mb-1">
+                Selected Deal: {selectedDeal.businessName || selectedDeal.clientName || selectedDeal.name}
+              </p>
+              <p className="text-xs text-blue-600">
+                {selectedDeal.email || selectedDeal.clientEmail || 'No email'} •{' '}
+                {selectedDeal.phone || selectedDeal.clientPhone || 'No phone'}
+              </p>
+            </div>
+          )}
+
           {/* Line Items */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Line Items</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Line Items <span className="text-red-500">*</span>
+            </h3>
+
+            {/* Column Headers */}
+            <div className="grid grid-cols-12 gap-3 mb-2 px-1">
+              <span className="col-span-5 text-xs font-semibold text-gray-500 uppercase">Description</span>
+              <span className="col-span-2 text-xs font-semibold text-gray-500 uppercase">Qty</span>
+              <span className="col-span-3 text-xs font-semibold text-gray-500 uppercase">Unit Price (EGP)</span>
+              <span className="col-span-2"></span>
+            </div>
+
             <div className="space-y-3">
               {form.items.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-3 items-end">
+                <div key={index} className="grid grid-cols-12 gap-3 items-center">
                   <input
                     type="text"
-                    placeholder="Description"
+                    placeholder="Item description"
                     value={item.description}
                     onChange={(e) => handleItemChange(index, 'description', e.target.value)}
                     className="col-span-5 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                   />
                   <input
                     type="number"
-                    placeholder="Qty"
+                    placeholder="1"
                     value={item.quantity}
                     onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
                     className="col-span-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
@@ -278,24 +349,29 @@ export default function QuoteGeneratorPage() {
                   />
                   <input
                     type="number"
-                    placeholder="Unit Price"
+                    placeholder="0.00"
                     value={item.unitPrice}
                     onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
                     className="col-span-3 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                     min="0"
+                    step="0.01"
                   />
                   <button
+                    type="button"
                     onClick={() => handleRemoveItem(index)}
-                    className="col-span-2 px-3 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    disabled={form.items.length === 1}
+                    className="col-span-2 flex justify-center px-3 py-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     <Trash2 size={18} />
                   </button>
                 </div>
               ))}
             </div>
+
             <button
+              type="button"
               onClick={handleAddItem}
-              className="mt-4 flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium"
+              className="mt-4 flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium text-sm"
             >
               <Plus size={18} />
               Add Item
@@ -303,7 +379,7 @@ export default function QuoteGeneratorPage() {
           </div>
 
           {/* Totals */}
-          <div className="bg-gray-50 rounded-lg p-6 mb-6">
+          <div className="bg-gray-50 rounded-lg p-6 mb-6 border border-gray-200">
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal:</span>
@@ -315,14 +391,16 @@ export default function QuoteGeneratorPage() {
                   <input
                     type="number"
                     value={form.discount}
-                    onChange={(e) => setForm({ ...form, discount: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setForm({ ...form, discount: Math.min(100, Math.max(0, Number(e.target.value))) })
+                    }
                     className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
                     min="0"
                     max="100"
                   />
                   <span className="text-gray-600">%</span>
                 </div>
-                <span className="font-semibold">-EGP {discountAmount.toFixed(2)}</span>
+                <span className="font-semibold text-red-600">-EGP {discountAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -330,22 +408,25 @@ export default function QuoteGeneratorPage() {
                   <input
                     type="number"
                     value={form.tax}
-                    onChange={(e) => setForm({ ...form, tax: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setForm({ ...form, tax: Math.min(100, Math.max(0, Number(e.target.value))) })
+                    }
                     className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
                     min="0"
                     max="100"
                   />
                   <span className="text-gray-600">%</span>
                 </div>
-                <span className="font-semibold">+EGP {taxAmount.toFixed(2)}</span>
+                <span className="font-semibold text-green-600">+EGP {taxAmount.toFixed(2)}</span>
               </div>
-              <div className="pt-3 border-t-2 border-gray-200 flex justify-between">
+              <div className="pt-3 border-t-2 border-gray-300 flex justify-between">
                 <span className="text-lg font-bold text-gray-900">Total:</span>
                 <span className="text-lg font-bold text-orange-600">EGP {total.toFixed(2)}</span>
               </div>
             </div>
           </div>
 
+          {/* Bottom Fields */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Valid Until</label>
@@ -362,7 +443,7 @@ export default function QuoteGeneratorPage() {
               <select
                 value={form.terms}
                 onChange={(e) => setForm({ ...form, terms: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
               >
                 <option value="Due Upon Receipt">Due Upon Receipt</option>
                 <option value="Net 7">Net 7</option>
@@ -385,15 +466,30 @@ export default function QuoteGeneratorPage() {
             </div>
           </div>
 
+          {/* Submit Buttons */}
           <div className="flex gap-3">
             <button
+              type="button"
               onClick={handleCreateQuote}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-red-700 transition-all shadow-md"
+              disabled={isSubmitting}
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-red-700 transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Create Quote
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Quote'
+              )}
             </button>
             <button
-              onClick={() => setShowForm(false)}
+              type="button"
+              onClick={() => {
+                setShowForm(false);
+                setForm(initialForm);
+                setSelectedDeal(null);
+              }}
               className="flex-1 px-6 py-3 bg-gray-200 text-gray-900 rounded-lg font-semibold hover:bg-gray-300 transition-all"
             >
               Cancel
@@ -405,23 +501,25 @@ export default function QuoteGeneratorPage() {
       {/* Filters */}
       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1">
+          <div className="flex-1 relative">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search quotes..."
+              placeholder="Search by client, quote number, or title..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
-          <div className="flex gap-2">
-            {['all', 'draft', 'sent', 'accepted'].map(status => (
+          <div className="flex gap-2 flex-wrap">
+            {['all', 'draft', 'sent', 'accepted'].map((status) => (
               <button
                 key={status}
+                type="button"
                 onClick={() => setFilterStatus(status)}
-                className={`px-4 py-3 rounded-lg font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${
                   filterStatus === status
-                    ? 'bg-orange-500 text-white'
+                    ? 'bg-orange-500 text-white shadow-md'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -435,52 +533,84 @@ export default function QuoteGeneratorPage() {
       {/* Quotes List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {loading ? (
-          <div className="col-span-2 text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <div className="col-span-2 text-center py-16">
+            <Loader2 size={44} className="animate-spin text-orange-500 mx-auto mb-4" />
             <p className="text-gray-500">Loading quotes...</p>
           </div>
         ) : filteredQuotes.length === 0 ? (
           <div className="col-span-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-12 text-center">
-            <FileText size={48} className="mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500 font-medium">No quotes yet</p>
-            <p className="text-gray-400 text-sm mt-1">Create your first quote to get started</p>
+            <div className="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+              <FileText size={40} className="text-gray-400" />
+            </div>
+            <p className="text-gray-700 font-semibold text-lg">
+              {search || filterStatus !== 'all' ? 'No matching quotes' : 'No quotes yet'}
+            </p>
+            <p className="text-gray-400 text-sm mt-1">
+              {search || filterStatus !== 'all'
+                ? 'Try adjusting your search or filter.'
+                : 'Click "New Quote" to create your first quote.'}
+            </p>
           </div>
         ) : (
-          filteredQuotes.map(quote => (
-            <div key={quote.id} className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-all">
+          filteredQuotes.map((quote) => (
+            <div
+              key={quote.id}
+              className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-all"
+            >
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">{quote.title}</h3>
                   <p className="text-sm text-gray-500">#{quote.quoteNumber}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                  quote.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                  quote.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-                  'bg-green-100 text-green-800'
-                }`}>
-                  {quote.status.toUpperCase()}
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                    quote.status === 'draft'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : quote.status === 'sent'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-green-100 text-green-800'
+                  }`}
+                >
+                  {quote.status}
                 </span>
               </div>
 
               <div className="space-y-2 mb-4">
-                <p className="text-sm text-gray-600"><strong>Client:</strong> {quote.clientName}</p>
-                <p className="text-sm text-gray-600"><strong>Items:</strong> {quote.items.length}</p>
-                <p className="text-sm text-gray-600"><strong>Valid Until:</strong> {quote.validUntil || 'Not set'}</p>
+                <p className="text-sm text-gray-600">
+                  <strong>Client:</strong> {quote.clientName || 'N/A'}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Items:</strong> {quote.items?.length || 0}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Terms:</strong> {quote.terms || 'N/A'}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Valid Until:</strong> {quote.validUntil || 'Not set'}
+                </p>
               </div>
 
               <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4 mb-4 border border-orange-200">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 font-medium">Total Amount:</span>
-                  <span className="text-2xl font-bold text-orange-600">EGP {quote.total?.toFixed(2) || '0.00'}</span>
+                  <span className="text-2xl font-bold text-orange-600">
+                    EGP {quote.total?.toFixed(2) || '0.00'}
+                  </span>
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors font-medium">
+                <button
+                  type="button"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors font-medium text-sm"
+                >
                   <Eye size={16} />
                   View
                 </button>
-                <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium">
+                <button
+                  type="button"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium text-sm"
+                >
                   <Download size={16} />
                   PDF
                 </button>
