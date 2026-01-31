@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { NotificationsPanel } from './NotificationsPanel';
+import { GlobalSearch } from './GlobalSearch';
 
 import {
   LogOut,
@@ -18,7 +20,12 @@ import {
   Bell,
   MapPin,
   CheckSquare,
-  TrendingUp
+  TrendingUp,
+  BarChart2,
+  Calendar,
+  Settings,
+  History,
+  Database
 } from 'lucide-react';
 
 export const Navigation = ({ userRole }) => {
@@ -127,12 +134,26 @@ export const Navigation = ({ userRole }) => {
         ]
       },
 
+      {
+        label: 'Analytics',
+        icon: BarChart2,
+        children: [
+          { label: 'Analytics Dashboard', path: '/analytics', icon: BarChart2 },
+          { label: 'Forecasting', path: '/forecasting', icon: TrendingUp },
+          { label: 'Calendar', path: '/calendar', icon: Calendar }
+        ]
+      },
+
       informationItem,
 
       {
-        label: 'Users',
-        path: '/admin/users',
-        icon: Users
+        label: 'Administration',
+        icon: Settings,
+        children: [
+          { label: 'Users', path: '/admin/users', icon: Users },
+          { label: 'Audit Log', path: '/admin/audit-log', icon: History },
+          { label: 'Data Import/Export', path: '/admin/data', icon: Database }
+        ]
       }
     ],
 
@@ -204,6 +225,16 @@ export const Navigation = ({ userRole }) => {
         ]
       },
 
+      {
+        label: 'Analytics',
+        icon: BarChart2,
+        children: [
+          { label: 'Analytics Dashboard', path: '/analytics', icon: BarChart2 },
+          { label: 'Forecasting', path: '/forecasting', icon: TrendingUp },
+          { label: 'Calendar', path: '/calendar', icon: Calendar }
+        ]
+      },
+
       informationItem
     ],
 
@@ -229,6 +260,16 @@ export const Navigation = ({ userRole }) => {
         label: 'Tasks',
         path: '/tasks',
         icon: CheckSquare
+      },
+
+      {
+        label: 'Analytics',
+        icon: BarChart2,
+        children: [
+          { label: 'Analytics Dashboard', path: '/analytics', icon: BarChart2 },
+          { label: 'Forecasting', path: '/forecasting', icon: TrendingUp },
+          { label: 'Calendar', path: '/calendar', icon: Calendar }
+        ]
       },
 
       informationItem
@@ -371,6 +412,14 @@ export const Navigation = ({ userRole }) => {
           {/* RIGHT SIDE - Compact */}
           <div className="flex items-center gap-2 lg:gap-3">
 
+            {/* Global Search - Desktop */}
+            <div className="hidden md:block">
+              <GlobalSearch />
+            </div>
+
+            {/* Notifications */}
+            <NotificationsPanel />
+
             {/* User Info - Desktop - Compact */}
             <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
               <div className="w-7 h-7 rounded-md bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center text-white font-bold text-xs shadow-md">
@@ -388,12 +437,33 @@ export const Navigation = ({ userRole }) => {
             </div>
 
             {/* Logout Button - Compact */}
+            {/* Settings - Desktop */}
+            <button
+              onClick={() => navigate('/settings')}
+              className="hidden lg:flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-md shadow-purple-500/30 transition-all duration-300 hover:shadow-purple-500/50 hover:scale-105 active:scale-95"
+            >
+              <Settings size={16} strokeWidth={2.5} />
+              <span>Settings</span>
+            </button>
+
+            {/* Logout */}
             <button
               onClick={handleLogout}
               className="hidden lg:flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-md shadow-red-500/30 transition-all duration-300 hover:shadow-red-500/50 hover:scale-105 active:scale-95"
             >
               <LogOut size={16} strokeWidth={2.5} />
               <span>Logout</span>
+            </button>
+
+            {/* Mobile Settings */}
+            <button
+              onClick={() => {
+                navigate('/settings');
+                setMobileOpen(false);
+              }}
+              className="lg:hidden p-2 rounded-lg hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100 text-gray-700 hover:text-purple-600 transition-all duration-300"
+            >
+              <Settings size={18} strokeWidth={2.5} />
             </button>
 
             {/* Mobile Logout */}

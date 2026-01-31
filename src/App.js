@@ -8,6 +8,7 @@ import {
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TasksProvider } from './contexts/TasksContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navigation } from './components/Navigation';
 import './App.css';
@@ -34,6 +35,12 @@ const ContactsPage = React.lazy(() => import('./pages/Contactspage'));
 const TasksPageV2 = React.lazy(() => import('./pages/TasksPageV2'));
 const CreateTaskPage = React.lazy(() => import('./pages/CreateTaskPage'));
 const PerformancePage = React.lazy(() => import('./pages/PerformancePage'));
+const AnalyticsDashboard = React.lazy(() => import('./pages/AnalyticsDashboard'));
+const CalendarView = React.lazy(() => import('./pages/CalendarView'));
+const UserSettings = React.lazy(() => import('./pages/UserSettings'));
+const AuditLog = React.lazy(() => import('./pages/AuditLog'));
+const DataImportExport = React.lazy(() => import('./pages/DataImportExport'));
+const SalesForecasting = React.lazy(() => import('./pages/SalesForecasting'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -398,6 +405,98 @@ const AppContent = () => {
           }
         />
 
+        {/* ================= ANALYTICS ================= */}
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <Suspense fallback={<LoadingFallback />}>
+                <AnalyticsDashboard />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= CALENDAR ================= */}
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <Suspense fallback={<LoadingFallback />}>
+                <CalendarView />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= FORECASTING ================= */}
+        <Route
+          path="/forecasting"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <Suspense fallback={<LoadingFallback />}>
+                <SalesForecasting />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= SETTINGS ================= */}
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <Suspense fallback={<LoadingFallback />}>
+                <UserSettings />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= AUDIT LOG ================= */}
+        <Route
+          path="/admin/audit-log"
+          element={
+            <ProtectedRoute requiredRoles={['admin']}>
+              <Suspense fallback={<LoadingFallback />}>
+                <AuditLog />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= DATA IMPORT/EXPORT ================= */}
+        <Route
+          path="/admin/data"
+          element={
+            <ProtectedRoute requiredRoles={['admin', 'sales_manager']}>
+              <Suspense fallback={<LoadingFallback />}>
+                <DataImportExport />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
         {/* ================= SALES DEFAULT ================= */}
         <Route
           path="/sales"
@@ -428,9 +527,11 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <TasksProvider>
-          <AppContent />
-        </TasksProvider>
+        <NotificationProvider>
+          <TasksProvider>
+            <AppContent />
+          </TasksProvider>
+        </NotificationProvider>
       </AuthProvider>
     </Router>
   );
