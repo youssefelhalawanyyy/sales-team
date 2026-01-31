@@ -17,10 +17,10 @@ export const AnalyticsDashboard = () => {
 
     const isAdmin = userRole === 'admin' || userRole === 'sales_manager';
     const q = isAdmin
-      ? query(collection(db, 'deals'), orderBy('createdAt', 'desc'))
+      ? query(collection(db, 'sales'), orderBy('createdAt', 'desc'))
       : query(
-          collection(db, 'deals'),
-          where('salesPersonId', '==', currentUser.uid),
+          collection(db, 'sales'),
+          where('createdBy', '==', currentUser.uid),
           orderBy('createdAt', 'desc')
         );
 
@@ -49,7 +49,7 @@ export const AnalyticsDashboard = () => {
     const periodDeals = deals.filter(d => new Date(d.createdAt) >= startDate);
     const closedDeals = periodDeals.filter(d => d.status === 'closed');
 
-    const totalRevenue = closedDeals.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+    const totalRevenue = closedDeals.reduce((sum, d) => sum + (parseFloat(d.price) || 0), 0);
     const totalCommission = closedDeals.reduce((sum, d) => sum + (parseFloat(d.commission) || 0), 0);
     const avgDealValue = closedDeals.length > 0 ? totalRevenue / closedDeals.length : 0;
     const winRate = periodDeals.length > 0 ? ((closedDeals.length / periodDeals.length) * 100).toFixed(1) : 0;
@@ -71,7 +71,7 @@ export const AnalyticsDashboard = () => {
     deals.forEach(deal => {
       if (deal.status === 'closed') {
         const month = new Date(deal.createdAt).toLocaleString('default', { month: 'short' });
-        data[month] = (data[month] || 0) + parseFloat(deal.amount || 0);
+        data[month] = (data[month] || 0) + parseFloat(deal.price || 0);
       }
     });
     return Object.entries(data).map(([month, revenue]) => ({ month, revenue })).slice(-12);
@@ -106,7 +106,7 @@ export const AnalyticsDashboard = () => {
     };
 
     deals.forEach(deal => {
-      const amount = parseFloat(deal.amount || 0);
+      const amount = parseFloat(deal.price || 0);
       if (amount < 1000) ranges['Under €1K']++;
       else if (amount < 5000) ranges['€1K - €5K']++;
       else if (amount < 10000) ranges['€5K - €10K']++;

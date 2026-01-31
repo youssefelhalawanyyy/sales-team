@@ -18,10 +18,10 @@ export const SalesForecasting = () => {
 
     const isAdmin = userRole === 'admin' || userRole === 'sales_manager';
     const q = isAdmin
-      ? query(collection(db, 'deals'), orderBy('createdAt', 'desc'))
+      ? query(collection(db, 'sales'), orderBy('createdAt', 'desc'))
       : query(
-          collection(db, 'deals'),
-          where('salesPersonId', '==', currentUser.uid),
+          collection(db, 'sales'),
+          where('createdBy', '==', currentUser.uid),
           orderBy('createdAt', 'desc')
         );
 
@@ -50,8 +50,8 @@ export const SalesForecasting = () => {
     const closedMonthly = thisMonthDeals.filter(d => d.status === 'closed');
     const closedQuarterly = thisQuarterDeals.filter(d => d.status === 'closed');
 
-    const avgMonthlyRevenue = thisMonthDeals.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
-    const avgQuarterlyRevenue = thisQuarterDeals.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+    const avgMonthlyRevenue = thisMonthDeals.reduce((sum, d) => sum + (parseFloat(d.price) || 0), 0);
+    const avgQuarterlyRevenue = thisQuarterDeals.reduce((sum, d) => sum + (parseFloat(d.price) || 0), 0);
 
     return {
       monthlyRevenue: avgMonthlyRevenue,
@@ -93,7 +93,7 @@ export const SalesForecasting = () => {
     const statuses = {};
     deals.forEach(deal => {
       const status = deal.status || 'unknown';
-      const amount = parseFloat(deal.amount) || 0;
+      const amount = parseFloat(deal.price) || 0;
       if (!statuses[status]) {
         statuses[status] = { count: 0, total: 0, deals: [] };
       }
@@ -259,7 +259,7 @@ export const SalesForecasting = () => {
                   <div
                     className="h-2 rounded-full transition-all"
                     style={{
-                      width: `${Math.min((stage.total / deals.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0) || 1) * 100, 100)}%`,
+                      width: `${Math.min((stage.total / deals.reduce((sum, d) => sum + (parseFloat(d.price) || 0), 0) || 1) * 100, 100)}%`,
                       backgroundColor: stage.color
                     }}
                   ></div>
