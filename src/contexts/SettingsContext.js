@@ -94,6 +94,7 @@ export const SettingsProvider = ({ children }) => {
       // Save to Firestore
       if (currentUser?.uid) {
         await setDoc(doc(db, 'userSettings', currentUser.uid), newSettings, { merge: true });
+        console.log('Settings saved successfully:', key, value);
       }
     } catch (err) {
       console.error('Error updating settings:', err);
@@ -112,6 +113,7 @@ export const SettingsProvider = ({ children }) => {
       // Save to Firestore
       if (currentUser?.uid) {
         await setDoc(doc(db, 'userSettings', currentUser.uid), newSettings, { merge: true });
+        console.log('Nested settings saved:', category, key, value);
       }
     } catch (err) {
       console.error('Error updating nested settings:', err);

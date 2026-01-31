@@ -82,8 +82,8 @@ export async function sendNotificationToMultiple(userIds, payload) {
  * Deal-related notifications
  */
 export async function notifyDealCreated(userId, dealData) {
-  const clientName = dealData.clientName || 'New Client';
-  const amount = dealData.amount ? `$${dealData.amount.toLocaleString()}` : 'No amount';
+  const clientName = dealData.businessName || dealData.clientName || 'New Client';
+  const amount = dealData.price ? `$${dealData.price.toLocaleString()}` : dealData.amount ? `$${dealData.amount.toLocaleString()}` : 'No amount';
 
   return sendNotification(userId, {
     message: `New deal created: ${clientName} - ${amount}`,
@@ -92,7 +92,7 @@ export async function notifyDealCreated(userId, dealData) {
     metadata: {
       dealId: dealData.id,
       clientName,
-      amount: dealData.amount
+      amount: dealData.price || dealData.amount
     },
     actionUrl: `/deals/${dealData.id}`,
     icon: '📊'
@@ -100,8 +100,8 @@ export async function notifyDealCreated(userId, dealData) {
 }
 
 export async function notifyDealUpdated(userId, dealData) {
-  const clientName = dealData.clientName || 'Client';
-  const stage = dealData.stage || 'Updated';
+  const clientName = dealData.businessName || dealData.clientName || 'Client';
+  const stage = dealData.stage || dealData.status || 'Updated';
 
   return sendNotification(userId, {
     message: `Deal updated: ${clientName} - Now in ${stage} stage`,
@@ -110,7 +110,7 @@ export async function notifyDealUpdated(userId, dealData) {
     metadata: {
       dealId: dealData.id,
       clientName,
-      stage: dealData.stage
+      stage: dealData.stage || dealData.status
     },
     actionUrl: `/deals/${dealData.id}`,
     icon: '✏️'
@@ -118,8 +118,8 @@ export async function notifyDealUpdated(userId, dealData) {
 }
 
 export async function notifyDealClosed(userId, dealData, status) {
-  const clientName = dealData.clientName || 'Client';
-  const amount = dealData.amount ? `$${dealData.amount.toLocaleString()}` : '';
+  const clientName = dealData.businessName || dealData.clientName || 'Client';
+  const amount = dealData.price ? `$${dealData.price.toLocaleString()}` : dealData.amount ? `$${dealData.amount.toLocaleString()}` : '';
 
   return sendNotification(userId, {
     message: `Deal ${status}: ${clientName} ${amount}`,
@@ -128,7 +128,7 @@ export async function notifyDealClosed(userId, dealData, status) {
     metadata: {
       dealId: dealData.id,
       clientName,
-      amount: dealData.amount,
+      amount: dealData.price || dealData.amount,
       status
     },
     actionUrl: `/deals/${dealData.id}`,
@@ -140,7 +140,7 @@ export async function notifyDealClosed(userId, dealData, status) {
  * Follow-up related notifications
  */
 export async function notifyFollowUpDue(userId, followUpData) {
-  const clientName = followUpData.clientName || 'Client';
+  const clientName = followUpData.businessName || followUpData.clientName || 'Client';
   const type = followUpData.type || 'Follow-up';
 
   return sendNotification(userId, {
@@ -158,7 +158,7 @@ export async function notifyFollowUpDue(userId, followUpData) {
 }
 
 export async function notifyFollowUpCompleted(userId, followUpData) {
-  const clientName = followUpData.clientName || 'Client';
+  const clientName = followUpData.businessName || followUpData.clientName || 'Client';
 
   return sendNotification(userId, {
     message: `Follow-up completed with ${clientName}`,

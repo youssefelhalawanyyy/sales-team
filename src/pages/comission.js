@@ -149,11 +149,15 @@ export const CommissionPage = () => {
       });
 
       // Send commission notification to user
-      await notifyCommissionEarned(user.id, {
-        id: user.id,
-        amount: Number(form.amount),
-        dealName: form.offer || 'Commission'
-      });
+      try {
+        await notifyCommissionEarned(user.id, {
+          id: user.id,
+          amount: Number(form.amount),
+          dealName: form.offer || 'Commission'
+        });
+      } catch (notifError) {
+        console.error('Error sending commission notification:', notifError);
+      }
 
       setForm({ userId: "", offer: "", amount: "" });
       setShowForm(false);

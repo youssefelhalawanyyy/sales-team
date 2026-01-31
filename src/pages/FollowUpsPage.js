@@ -239,10 +239,14 @@ export default function FollowUpsPage() {
       
       // Send completion notification
       if (followup) {
-        await notifyFollowUpCompleted(currentUser.uid, {
-          id: followup.id,
-          clientName: followup.businessName
-        });
+        try {
+          await notifyFollowUpCompleted(currentUser.uid, {
+            id: followup.id,
+            clientName: followup.businessName
+          });
+        } catch (notifError) {
+          console.error('Error sending follow-up notification:', notifError);
+        }
       }
       
       loadFollowups();

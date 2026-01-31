@@ -151,10 +151,14 @@ export default function SalesDealsPage() {
       
       // Send notifications
       if (statusChanged) {
-        if (isClosedOrLost) {
-          await notifyDealClosed(currentUser.uid, editDeal, editDeal.status === 'closed' ? 'Won' : 'Lost');
-        } else {
-          await notifyDealUpdated(currentUser.uid, editDeal);
+        try {
+          if (isClosedOrLost) {
+            await notifyDealClosed(currentUser.uid, editDeal, editDeal.status === 'closed' ? 'Won' : 'Lost');
+          } else {
+            await notifyDealUpdated(currentUser.uid, editDeal);
+          }
+        } catch (notifError) {
+          console.error('Error sending notification:', notifError);
         }
       }
       

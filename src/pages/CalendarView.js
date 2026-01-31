@@ -18,10 +18,10 @@ export const CalendarView = () => {
     const isAdmin = userRole === 'admin' || userRole === 'sales_manager';
     
     const dealsQuery = isAdmin
-      ? query(collection(db, 'deals'), orderBy('createdAt', 'desc'))
+      ? query(collection(db, 'sales'), orderBy('createdAt', 'desc'))
       : query(
-          collection(db, 'deals'),
-          where('salesPersonId', '==', currentUser.uid),
+          collection(db, 'sales'),
+          where('createdBy', '==', currentUser.uid),
           orderBy('createdAt', 'desc')
         );
 
@@ -32,23 +32,35 @@ export const CalendarView = () => {
     );
 
     const dealsUnsub = onSnapshot(dealsQuery, (snap) => {
-      const dealsData = snap.docs.map(doc => ({
-        id: doc.id,
-        type: 'deal',
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.() || new Date()
-      }));
+      const dealsData = snap.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          type: 'deal',
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+          title: `Deal: ${data.businessName || 'Unnamed'}`
+        };
+      });
       setDeals(dealsData);
+    }, (error) => {
+      console.error('Error fetching deals:', error);
     });
 
     const tasksUnsub = onSnapshot(tasksQuery, (snap) => {
-      const tasksData = snap.docs.map(doc => ({
-        id: doc.id,
-        type: 'task',
-        ...doc.data(),
-        dueDate: doc.data().dueDate?.toDate?.() || new Date()
-      }));
+      const tasksData = snap.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          type: 'task',
+          ...data,
+          dueDate: data.dueDate?.toDate?.() || new Date(),
+          title: `Task: ${data.title || 'Unnamed'}`
+        };
+      });
       setTasks(tasksData);
+    }, (error) => {
+      console.error('Error fetching tasks:', error);
     });
 
     return () => {
