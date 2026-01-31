@@ -24,7 +24,10 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  UserCheck,
+  ListChecks,
+  Calendar
 } from 'lucide-react';
 
 import { formatCurrency } from '../utils/currency';
@@ -38,7 +41,9 @@ export const Dashboard = () => {
     activeUsers: 0,
     myDeals: 0,
     myIncome: 0,
-    closedDeals: 0
+    closedDeals: 0,
+    pendingDeals: 0,
+    myActiveDeals: 0
   });
 
   const [joinedDate, setJoinedDate] = useState(null);
@@ -78,6 +83,8 @@ export const Dashboard = () => {
       let myDeals = 0;
       let myIncome = 0;
       let closedDeals = 0;
+      let pendingDeals = 0;
+      let myActiveDeals = 0;
 
 
       /* ---------------- USERS ---------------- */
@@ -120,36 +127,38 @@ export const Dashboard = () => {
             if (data.status === 'closed') {
               userClosedDeals++;
             }
+
+            if (data.status === 'pending' || data.status === 'in_progress') {
+              myActiveDeals++;
+            }
           }
 
           if (data.status === 'closed') {
             closedDeals++;
           }
-        });
 
-      } catch {}
-
-
-      /* ---------------- FINANCE ---------------- */
-
-      try {
-        const financeSnap = await getDocs(collection(db, 'finances'));
-
-        financeSnap.docs.forEach((doc) => {
-          const data = doc.data();
-          const amount = data.amount || 0;
-
-          totalIncome += amount;
-
-          if (data.createdBy === currentUser?.uid) {
-
-            const percentage = userRole === 'admin' ? 0.2 : 0.05; // 20% admin, 5% others
-
-            myIncome += amount * percentage;
+          if (data.status === 'pending' || data.status === 'in_progress') {
+            pendingDeals++;
           }
         });
 
       } catch {}
+
+
+      /* ---------------- FINANCE (ADMIN ONLY) ---------------- */
+
+      if (userRole === 'admin') {
+        try {
+          const financeSnap = await getDocs(collection(db, 'finances'));
+
+          financeSnap.docs.forEach((doc) => {
+            const data = doc.data();
+            const amount = data.amount || 0;
+            totalIncome += amount;
+          });
+
+        } catch {}
+      }
 
 
       const newStats = {
@@ -158,7 +167,9 @@ export const Dashboard = () => {
         activeUsers,
         myDeals,
         myIncome,
-        closedDeals: userClosedDeals
+        closedDeals: userClosedDeals,
+        pendingDeals,
+        myActiveDeals
       };
 
       setStats(newStats);
@@ -209,27 +220,6 @@ export const Dashboard = () => {
         desc: 'Closed 30+ deals',
         icon: Flame,
         color: 'from-orange-500 to-red-500'
-      });
-    }
-
-
-    /* ---- Revenue ---- */
-
-    if (data.myIncome >= 50000) {
-      list.push({
-        title: 'Big Earner',
-        desc: 'Generated 50K+ EGP (Commission)',
-        icon: DollarSign,
-        color: 'from-green-500 to-emerald-500'
-      });
-    }
-
-    if (data.myIncome >= 200000) {
-      list.push({
-        title: 'High Roller',
-        desc: 'Generated 200K+ EGP (Commission)',
-        icon: TrendingUp,
-        color: 'from-yellow-500 to-orange-500'
       });
     }
 
@@ -306,8 +296,11 @@ export const Dashboard = () => {
   };
 
 
-  const StatCard = ({ title, value, icon: Icon, gradient, trend }) => (
-    <div className="group relative bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden animate-fadeInUp">
+  const StatCard = ({ title, value, icon: Icon, gradient, trend, onClick }) => (
+    <div 
+      onClick={onClick}
+      className={`group relative bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden animate-fadeInUp ${onClick ? 'cursor-pointer hover:scale-[1.02]' : ''}`}
+    >
       
       {/* Background Gradient on Hover */}
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
@@ -437,7 +430,7 @@ export const Dashboard = () => {
                 value={stats.totalDeals}
                 icon={Briefcase}
                 gradient="from-blue-500 to-cyan-500"
-                trend="+12% this month"
+                onClick={() => navigate('/sales/deals')}
               />
 
               <StatCard
@@ -445,7 +438,7 @@ export const Dashboard = () => {
                 value={formatCurrency(stats.totalIncome)}
                 icon={DollarSign}
                 gradient="from-purple-500 to-pink-500"
-                trend="+8% this month"
+                onClick={() => navigate('/finance')}
               />
 
               <StatCard
@@ -453,14 +446,15 @@ export const Dashboard = () => {
                 value={stats.activeUsers}
                 icon={Users}
                 gradient="from-orange-500 to-red-500"
+                onClick={() => navigate('/admin/users')}
               />
 
               <StatCard
-                title="Closed Deals"
-                value={stats.closedDeals}
-                icon={Trophy}
+                title="Pending Deals"
+                value={stats.pendingDeals}
+                icon={Clock}
                 gradient="from-green-500 to-emerald-500"
-                trend="+15% this month"
+                onClick={() => navigate('/sales/deals')}
               />
 
             </div>
@@ -468,7 +462,7 @@ export const Dashboard = () => {
         )}
 
 
-        {/* USER STATS */}
+        {/* USER STATS - NO FINANCIAL DATA */}
         {userRole !== 'admin' && (
           <div className="space-y-6 animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
             
@@ -484,17 +478,11 @@ export const Dashboard = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
               <StatCard
-                title="My Deals"
+                title="Total Deals"
                 value={stats.myDeals}
                 icon={Briefcase}
                 gradient="from-blue-500 to-cyan-500"
-              />
-
-              <StatCard
-                title="My Commission"
-                value={formatCurrency(stats.myIncome)}
-                icon={DollarSign}
-                gradient="from-purple-500 to-pink-500"
+                onClick={() => navigate('/sales/deals')}
               />
 
               <StatCard
@@ -502,6 +490,15 @@ export const Dashboard = () => {
                 value={stats.closedDeals}
                 icon={Trophy}
                 gradient="from-green-500 to-emerald-500"
+                onClick={() => navigate('/sales/deals')}
+              />
+
+              <StatCard
+                title="Active Deals"
+                value={stats.myActiveDeals}
+                icon={Activity}
+                gradient="from-purple-500 to-pink-500"
+                onClick={() => navigate('/sales/deals')}
               />
 
             </div>
@@ -583,9 +580,10 @@ export const Dashboard = () => {
               </div>
               <button
                 onClick={() => navigate('/tasks')}
-                className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-semibold text-sm transition-colors"
+                className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-semibold text-sm transition-colors group"
               >
-                View All <ChevronRight size={16} />
+                View All 
+                <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
 
@@ -631,14 +629,14 @@ export const Dashboard = () => {
 
         {/* MEMBER COMMISSION VIEW - Show for non-admin users */}
         {userRole !== 'admin' && (
-          <div className="animate-fadeInUp" style={{ animationDelay: '0.35s' }}>
+          <div className="animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
             <MemberCommissionView />
           </div>
         )}
 
 
         {/* ACHIEVEMENTS */}
-        <div className="relative bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-2xl border-2 border-yellow-200 shadow-lg p-6 lg:p-8 overflow-hidden animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
+        <div className="relative bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-2xl border-2 border-yellow-200 shadow-lg p-6 lg:p-8 overflow-hidden animate-fadeInUp" style={{ animationDelay: '0.35s' }}>
 
           {/* Background Decoration */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-200/30 rounded-full blur-3xl"></div>
@@ -740,6 +738,17 @@ export const Dashboard = () => {
           }
         }
 
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
         @keyframes scaleIn {
           from {
             opacity: 0;
@@ -766,6 +775,11 @@ export const Dashboard = () => {
 
         .animate-fadeInUp {
           animation: fadeInUp 0.6s ease-out forwards;
+          opacity: 0;
+        }
+
+        .animate-slideInUp {
+          animation: slideInUp 0.5s ease-out forwards;
           opacity: 0;
         }
 
