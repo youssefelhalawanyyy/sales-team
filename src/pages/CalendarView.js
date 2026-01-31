@@ -27,7 +27,7 @@ export const CalendarView = () => {
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('all'); // all, deals, tasks, followups
 
-  // Real-time listeners - USERS SEE ONLY THEIR DATA
+  // Real-time listeners
   useEffect(() => {
     if (!currentUser?.uid) {
       console.log('❌ No current user');
@@ -38,23 +38,38 @@ export const CalendarView = () => {
     console.log('👔 User role:', userRole);
     setLoading(true);
     
-    // ✅ EVERYONE SEES ONLY THEIR OWN DATA
-    // Deals Query - Only user's deals
-    const dealsQuery = query(
-      collection(db, 'sales'),
-      where('createdBy', '==', currentUser.uid),
-      orderBy('createdAt', 'desc')
-    );
+    // Build queries based on role
+    // Admins see ALL data, others see only their own
+    let dealsQuery, tasksQuery, followUpsQuery;
+    
+    if (userRole === 'admin') {
+      // Admins see ALL deals
+      console.log('📊 Admin: Loading ALL deals');
+      dealsQuery = query(
+        collection(db, 'sales'),
+        orderBy('createdAt', 'desc')
+      );
+    } else {
+      // Regular users see only their deals
+      console.log('📊 User: Loading only user deals (createdBy = ' + currentUser.uid + ')');
+      dealsQuery = query(
+        collection(db, 'sales'),
+        where('createdBy', '==', currentUser.uid),
+        orderBy('createdAt', 'desc')
+      );
+    }
 
-    // Tasks Query - Only user's tasks
-    const tasksQuery = query(
+    // Tasks Query - Users see tasks assigned to them
+    console.log('✅ Tasks: Loading assigned tasks (assignedTo = ' + currentUser.uid + ')');
+    tasksQuery = query(
       collection(db, 'tasks'),
       where('assignedTo', '==', currentUser.uid),
       orderBy('dueDate', 'asc')
     );
 
-    // Follow-ups Query - Only user's follow-ups
-    const followUpsQuery = query(
+    // Follow-ups Query - Users see follow-ups assigned to them
+    console.log('📞 Follow-ups: Loading assigned follow-ups (assignedTo = ' + currentUser.uid + ')');
+    followUpsQuery = query(
       collection(db, 'followUps'),
       where('assignedTo', '==', currentUser.uid),
       orderBy('scheduledDate', 'asc')
