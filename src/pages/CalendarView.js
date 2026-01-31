@@ -69,7 +69,7 @@ export const CalendarView = () => {
     // Follow-ups Query - Users see follow-ups assigned to them
     console.log('📞 Follow-ups: Loading assigned follow-ups (assignedTo = ' + currentUser.uid + ')');
     followUpsQuery = query(
-      collection(db, 'followUps'),
+      collection(db, 'followups'),
       where('assignedTo', '==', currentUser.uid)
     );
 
