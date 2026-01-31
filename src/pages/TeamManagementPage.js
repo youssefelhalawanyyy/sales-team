@@ -34,6 +34,7 @@ const TeamManagementPage = () => {
   const [showAddMember, setShowAddMember] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [availableMembers, setAvailableMembers] = useState([]);
+  const [availableLeaders, setAvailableLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamLeader, setNewTeamLeader] = useState('');
@@ -45,6 +46,7 @@ const TeamManagementPage = () => {
     if (hasManagementAccess || userRole === 'team_leader') {
       fetchTeams();
       fetchAvailableMembers();
+      fetchAvailableLeaders();
     }
   }, [userRole, currentUser?.uid]);
 
@@ -112,12 +114,31 @@ const TeamManagementPage = () => {
     }
   };
 
+  const fetchAvailableLeaders = async () => {
+    try {
+      const leadersSnap = await getDocs(
+        query(
+          collection(db, 'users'),
+          where('role', '==', 'team_leader')
+        )
+      );
+      setAvailableLeaders(
+        leadersSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+      );
+    } catch (error) {
+      console.error('Error fetching available leaders:', error);
+    }
+  };
+
   const handleCreateTeam = async (e) => {
     e.preventDefault();
     if (!newTeamName.trim() || !newTeamLeader) return;
 
     try {
-      const leader = availableMembers.find(m => m.id === newTeamLeader);
+      const leader = availableLeaders.find(m => m.id === newTeamLeader);
       
       await addDoc(collection(db, 'teams'), {
         name: newTeamName,
@@ -316,9 +337,9 @@ const TeamManagementPage = () => {
                         required
                       >
                         <option value="">Select a team leader</option>
-                        {availableMembers.map(member => (
-                          <option key={member.id} value={member.id}>
-                            {member.firstName} {member.lastName} ({member.email})
+                        {availableLeaders.map(leader => (
+                          <option key={leader.id} value={leader.id}>
+                            {leader.firstName} {leader.lastName} ({leader.email})
                           </option>
                         ))}
                       </select>

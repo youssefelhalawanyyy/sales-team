@@ -33,15 +33,28 @@ export default function TeamPerformanceLeaderboardPage() {
     try {
       setLoading(true);
 
-      // Only admin can see team performance
-      if (userRole !== 'admin') {
+      // Only admin and team_leader can see team performance
+      if (userRole !== 'admin' && userRole !== 'team_leader') {
         setTeamMembers([]);
         setLoading(false);
         return;
       }
 
+      // Fetch all deals from the system
       const dealsSnap = await getDocs(collection(db, 'sales'));
       const deals = dealsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // Fetch all users to get real names
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const usersMap = {};
+      usersSnap.docs.forEach(doc => {
+        const userData = doc.data();
+        usersMap[doc.id] = {
+          name: userData.name || userData.email?.split('@')[0] || 'Unknown User',
+          email: userData.email,
+          role: userData.role
+        };
+      });
 
       // Filter by timeframe
       const now = new Date();
@@ -65,14 +78,20 @@ export default function TeamPerformanceLeaderboardPage() {
 
       filteredDeals.forEach(deal => {
         const repId = deal.createdBy;
+        if (!repId) return; // Skip deals without a creator
+
         if (!repMap[repId]) {
+          const userData = usersMap[repId] || {};
           repMap[repId] = {
             repId,
-            repName: deal.salesRep || deal.userName || `Rep ${repId.slice(0, 8)}`,
+            repName: userData.name || `User ${repId.slice(0, 8)}`,
+            repEmail: userData.email || '',
+            repRole: userData.role || '',
             deals: [],
             totalRevenue: 0,
             closedDeals: 0,
             openDeals: 0,
+            lostDeals: 0,
             avgDealValue: 0,
             winRate: 0,
             closeRate: 0
@@ -80,28 +99,37 @@ export default function TeamPerformanceLeaderboardPage() {
         }
 
         repMap[repId].deals.push(deal);
-        repMap[repId].totalRevenue += deal.amount || 0;
+        
+        // Calculate total revenue from deal amount
+        const dealAmount = parseFloat(deal.amount) || 0;
+        repMap[repId].totalRevenue += dealAmount;
 
-        if (deal.stage === 'closed' || deal.status === 'closed') {
+        // Count deals by status/stage
+        const dealStatus = (deal.status || deal.stage || '').toLowerCase();
+        if (dealStatus === 'closed' || dealStatus === 'won' || dealStatus === 'closed won') {
           repMap[repId].closedDeals += 1;
+        } else if (dealStatus === 'lost' || dealStatus === 'closed lost') {
+          repMap[repId].lostDeals += 1;
         } else {
           repMap[repId].openDeals += 1;
         }
       });
 
-      // Calculate metrics
+      // Calculate metrics for each rep
       const members = Object.values(repMap).map(rep => {
         const totalDeals = rep.deals.length;
+        const decisiveDeals = rep.closedDeals + rep.lostDeals; // Deals that have been closed (won or lost)
+        
         return {
           ...rep,
           avgDealValue: totalDeals > 0 ? Math.round(rep.totalRevenue / totalDeals) : 0,
-          winRate: totalDeals > 0 ? Math.round((rep.closedDeals / totalDeals) * 100) : 0,
+          winRate: decisiveDeals > 0 ? Math.round((rep.closedDeals / decisiveDeals) * 100) : 0,
           closeRate: totalDeals > 0 ? Math.round((rep.closedDeals / totalDeals) * 100) : 0,
           dealCount: totalDeals
         };
       });
 
-      // Sort by revenue
+      // Sort by revenue (highest first)
       members.sort((a, b) => b.totalRevenue - a.totalRevenue);
       setTeamMembers(members);
     } catch (e) {
@@ -151,13 +179,14 @@ export default function TeamPerformanceLeaderboardPage() {
     rank: idx + 1
   }));
 
-  if (userRole !== 'admin') {
+  // Check if user has access
+  if (userRole !== 'admin' && userRole !== 'team_leader') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 lg:p-8">
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-12 text-center">
           <Trophy size={48} className="mx-auto text-gray-300 mb-4" />
           <p className="text-gray-500 font-medium">Team Performance Leaderboard</p>
-          <p className="text-gray-400 text-sm mt-1">Admin access required</p>
+          <p className="text-gray-400 text-sm mt-1">Admin or Team Leader access required</p>
         </div>
       </div>
     );
@@ -265,7 +294,8 @@ export default function TeamPerformanceLeaderboardPage() {
         ) : teamMembers.length === 0 ? (
           <div className="text-center py-12">
             <Trophy size={48} className="mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500">No team data yet</p>
+            <p className="text-gray-500">No team data yet for this timeframe</p>
+            <p className="text-gray-400 text-sm mt-2">Try selecting a different time period</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -339,6 +369,7 @@ export default function TeamPerformanceLeaderboardPage() {
                 <th className="px-6 py-3 text-right font-bold text-gray-900">Deals</th>
                 <th className="px-6 py-3 text-right font-bold text-gray-900">Closed</th>
                 <th className="px-6 py-3 text-right font-bold text-gray-900">Open</th>
+                <th className="px-6 py-3 text-right font-bold text-gray-900">Lost</th>
                 <th className="px-6 py-3 text-right font-bold text-gray-900">Avg Deal</th>
                 <th className="px-6 py-3 text-right font-bold text-gray-900">Win Rate</th>
               </tr>
@@ -352,6 +383,7 @@ export default function TeamPerformanceLeaderboardPage() {
                   <td className="px-6 py-4 text-right text-gray-900">{member.dealCount}</td>
                   <td className="px-6 py-4 text-right font-semibold text-blue-600">{member.closedDeals}</td>
                   <td className="px-6 py-4 text-right text-gray-900">{member.openDeals}</td>
+                  <td className="px-6 py-4 text-right text-red-600">{member.lostDeals}</td>
                   <td className="px-6 py-4 text-right text-gray-900">${(member.avgDealValue / 1000).toFixed(1)}k</td>
                   <td className="px-6 py-4 text-right font-bold text-yellow-600">{member.winRate}%</td>
                 </tr>
