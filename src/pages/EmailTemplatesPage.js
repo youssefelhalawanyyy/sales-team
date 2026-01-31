@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   Clock,
   Eye,
-  Download
+  Download,
+  Shield
 } from 'lucide-react';
 
 export default function EmailTemplatesPage() {
@@ -33,7 +34,8 @@ export default function EmailTemplatesPage() {
     category: 'general',
     subject: '',
     body: '',
-    description: ''
+    description: '',
+    isAdminTemplate: true // Admin templates are available to all by default
   });
 
   const categories = [
@@ -66,7 +68,8 @@ I'd love to discuss how we could support your goals. Are you free for a brief ca
 Best regards,
 {{senderName}}
 {{senderTitle}}
-{{senderCompany}}`
+{{senderCompany}}`,
+      isAdminTemplate: true
     },
     {
       name: 'Follow-up After Meeting',
@@ -86,7 +89,8 @@ I'll send over the {{documentType}} by {{dueDate}}. Please let me know if you ha
 Looking forward to moving forward together.
 
 Best regards,
-{{senderName}}`
+{{senderName}}`,
+      isAdminTemplate: true
     },
     {
       name: 'Proposal Sent',
@@ -106,7 +110,8 @@ This proposal is valid until {{validDate}}. I'm happy to walk through any detail
 Can we schedule 15 minutes this week to discuss?
 
 Best regards,
-{{senderName}}`
+{{senderName}}`,
+      isAdminTemplate: true
     },
     {
       name: 'Overcoming Objections',
@@ -124,7 +129,8 @@ In fact, our clients typically see {{result}} after the first {{timeframe}}.
 I'd like to discuss how this specifically applies to {{company}}. Are you available for a quick call tomorrow or Wednesday?
 
 Best regards,
-{{senderName}}`
+{{senderName}}`,
+      isAdminTemplate: true
     },
     {
       name: 'Closing/Next Steps',
@@ -144,7 +150,8 @@ Once you're ready, I can have everything set up within {{timeframe}}.
 Should I go ahead and get the paperwork started?
 
 Best regards,
-{{senderName}}`
+{{senderName}}`,
+      isAdminTemplate: true
     },
     {
       name: 'Client Check-in',
@@ -164,7 +171,8 @@ I'd love to hear about {{company}}'s experience so far and see if there's anythi
 Free for a quick call next week?
 
 Best regards,
-{{senderName}}`
+{{senderName}}`,
+      isAdminTemplate: true
     },
     {
       name: 'Thank You After Close',
@@ -183,7 +191,8 @@ Welcome to the team!
 Best regards,
 {{senderName}}
 {{senderTitle}}
-{{senderCompany}}`
+{{senderCompany}}`,
+      isAdminTemplate: true
     }
   ];
 
@@ -194,17 +203,35 @@ Best regards,
   async function loadTemplates() {
     try {
       setLoading(true);
-      let q;
-      if (userRole === 'admin') {
-        q = query(collection(db, 'emailTemplates'));
-      } else {
-        q = query(
+      let allTemplates = [];
+      
+      // Always load admin-created templates (available to everyone)
+      const adminQuery = query(
+        collection(db, 'emailTemplates'),
+        where('isAdminTemplate', '==', true)
+      );
+      const adminSnap = await getDocs(adminQuery);
+      const adminTemplates = adminSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      allTemplates = [...adminTemplates];
+
+      // If not admin, also load user's personal templates
+      if (userRole !== 'admin') {
+        const userQuery = query(
           collection(db, 'emailTemplates'),
-          where('createdBy', '==', currentUser.uid)
+          where('createdBy', '==', currentUser.uid),
+          where('isAdminTemplate', '!=', true)
         );
+        const userSnap = await getDocs(userQuery);
+        const userTemplates = userSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        allTemplates = [...allTemplates, ...userTemplates];
+      } else {
+        // If admin, load all templates (admin and personal)
+        const allQuery = query(collection(db, 'emailTemplates'));
+        const allSnap = await getDocs(allQuery);
+        allTemplates = allSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       }
-      const snap = await getDocs(q);
-      setTemplates(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+
+      setTemplates(allTemplates);
     } catch (e) {
       console.error('Error loading templates:', e);
     } finally {
@@ -233,7 +260,7 @@ Best regards,
         });
       }
 
-      setForm({ name: '', category: 'general', subject: '', body: '', description: '' });
+      setForm({ name: '', category: 'general', subject: '', body: '', description: '', isAdminTemplate: true });
       setEditingId(null);
       setShowForm(false);
       loadTemplates();
@@ -261,7 +288,7 @@ Best regards,
     try {
       for (const template of defaultTemplates) {
         const existing = templates.find(
-          t => t.name === template.name && t.createdBy === currentUser.uid
+          t => t.name === template.name && t.isAdminTemplate === true
         );
         if (!existing) {
           await addDoc(collection(db, 'emailTemplates'), {
@@ -285,6 +312,11 @@ Best regards,
     t.name?.toLowerCase().includes(search.toLowerCase()) ||
     t.subject?.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Check if user can edit a template (admin or template creator)
+  const canEditTemplate = (template) => {
+    return isAdmin || template.createdBy === currentUser.uid;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 lg:p-8">
@@ -315,7 +347,7 @@ Best regards,
                 onClick={() => {
                   setShowForm(!showForm);
                   setEditingId(null);
-                  setForm({ name: '', category: 'general', subject: '', body: '', description: '' });
+                  setForm({ name: '', category: 'general', subject: '', body: '', description: '', isAdminTemplate: true });
                 }}
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-700 transition-all shadow-lg"
               >
@@ -357,6 +389,23 @@ Best regards,
                   <option key={cat.value} value={cat.value}>{cat.label}</option>
                 ))}
               </select>
+            </div>
+
+            <div className="lg:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <input
+                  type="checkbox"
+                  checked={form.isAdminTemplate}
+                  onChange={(e) => setForm({ ...form, isAdminTemplate: e.target.checked })}
+                  className="mr-2"
+                />
+                Make this template available to all users
+              </label>
+              <p className="text-xs text-gray-500 mt-1">
+                {form.isAdminTemplate 
+                  ? 'This template will be visible to all users' 
+                  : 'This template will only be visible to you'}
+              </p>
             </div>
 
             <div className="lg:col-span-2">
@@ -406,7 +455,7 @@ Best regards,
               onClick={() => {
                 setShowForm(false);
                 setEditingId(null);
-                setForm({ name: '', category: 'general', subject: '', body: '', description: '' });
+                setForm({ name: '', category: 'general', subject: '', body: '', description: '', isAdminTemplate: true });
               }}
               className="flex-1 px-6 py-3 bg-gray-200 text-gray-900 rounded-lg font-semibold hover:bg-gray-300 transition-all"
             >
@@ -438,14 +487,21 @@ Best regards,
           <div className="col-span-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-12 text-center">
             <Mail size={48} className="mx-auto text-gray-300 mb-4" />
             <p className="text-gray-500 font-medium">No templates yet</p>
-            <p className="text-gray-400 text-sm mt-1">Create your first template or load defaults</p>
+            <p className="text-gray-400 text-sm mt-1">
+              {isAdmin ? 'Create your first template or load defaults' : 'Ask your admin to create templates'}
+            </p>
           </div>
         ) : (
           filteredTemplates.map(template => (
             <div key={template.id} className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-all">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-900">{template.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-gray-900">{template.name}</h3>
+                    {template.isAdminTemplate && (
+                      <Shield size={16} className="text-blue-600" title="Available to all users" />
+                    )}
+                  </div>
                   <p className="text-xs text-blue-600 font-medium mt-1">
                     {categories.find(c => c.value === template.category)?.label}
                   </p>
@@ -470,7 +526,7 @@ Best regards,
                   <Eye size={16} />
                   Preview
                 </button>
-                {isAdmin && (
+                {canEditTemplate(template) && (
                   <button
                     onClick={() => {
                       setForm(template);
@@ -483,7 +539,7 @@ Best regards,
                     Edit
                   </button>
                 )}
-                {isAdmin && (
+                {canEditTemplate(template) && (
                   <button
                     onClick={() => handleDeleteTemplate(template.id)}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium text-sm"

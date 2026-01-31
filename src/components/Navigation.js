@@ -277,13 +277,6 @@ export const Navigation = React.memo(({ userRole }) => {
       },
 
       emailTemplatesItem,
-
-      {
-        label: 'Team Leaderboard',
-        path: '/team-leaderboard',
-        icon: Trophy
-      },
-
       informationItem
     ],
 
@@ -344,19 +337,19 @@ export const Navigation = React.memo(({ userRole }) => {
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm backdrop-blur-sm bg-white/95 safe-area-top">
 
-      <div className="w-full px-4 lg:px-6 xl:px-8">
+      <div className="w-full px-4 sm:px-4 lg:px-8 xl:px-12">
 
-        {/* TOP BAR - Fixed height for desktop */}
-        <div className="flex items-center justify-between h-14 lg:h-16">
+        {/* TOP BAR - Optimized for laptop screens */}
+        <div className="flex items-center justify-between h-14 sm:h-14 lg:h-16">
 
-          {/* LOGO */}
+          {/* LOGO - Larger on desktop */}
           <div
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2.5 cursor-pointer group transition-all duration-300 hover:scale-105 lg:min-w-[200px]"
+            className="flex items-center gap-2.5 cursor-pointer group transition-all duration-300 hover:scale-105 lg:min-w-[220px]"
           >
             <div className="relative">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-11 lg:h-11 rounded-xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all duration-300 group-hover:rotate-6">
-                <span className="text-sm sm:text-base lg:text-xl">J</span>
+              <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-12 lg:h-12 rounded-xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all duration-300 group-hover:rotate-6">
+                <span className="text-sm sm:text-base lg:text-2xl">J</span>
               </div>
             </div>
 
@@ -370,8 +363,8 @@ export const Navigation = React.memo(({ userRole }) => {
             </div>
           </div>
 
-          {/* DESKTOP NAV - Centered with proper spacing */}
-          <nav className="hidden lg:flex items-center justify-center gap-1.5 flex-1 px-6">
+          {/* DESKTOP NAV - Better spacing for laptop */}
+          <nav className="hidden lg:flex items-center justify-center gap-2 flex-1 px-8">
 
             {navItems.map((item, i) => {
 
@@ -396,10 +389,10 @@ export const Navigation = React.memo(({ userRole }) => {
                         }`}
                       title={item.label}
                     >
-                      <Icon size={18} strokeWidth={2.5} className="transition-transform duration-300 group-hover:rotate-12" />
+                      <Icon size={20} strokeWidth={2.5} className="transition-transform duration-300 group-hover:rotate-12" />
                       
                       {/* Tooltip */}
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-50">
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-50 shadow-lg">
                         {item.label}
                       </div>
                     </button>
@@ -413,14 +406,14 @@ export const Navigation = React.memo(({ userRole }) => {
                       navigate(item.path);
                       setOpenGroup(null);
                     }}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap transform hover:scale-105 active:scale-95
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap transform hover:scale-105 active:scale-95
                       ${
                         isActive(item.path)
                           ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/40 hover:shadow-blue-500/60'
                           : 'text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-600'
                       }`}
                   >
-                    <Icon size={17} strokeWidth={2.5} />
+                    <Icon size={18} strokeWidth={2.5} />
                     <span>{item.label}</span>
                   </button>
                 );
@@ -433,18 +426,18 @@ export const Navigation = React.memo(({ userRole }) => {
                     onClick={() =>
                       setOpenGroup(openGroup === i ? null : i)
                     }
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap transform hover:scale-105 active:scale-95
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap transform hover:scale-105 active:scale-95
                       ${
                         openGroup === i || groupActive
                           ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/40 hover:shadow-blue-500/60'
                           : 'text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-600'
                       }`}
                   >
-                    <Icon size={17} strokeWidth={2.5} />
+                    <Icon size={18} strokeWidth={2.5} />
                     <span>{item.label}</span>
 
                     <ChevronDown
-                      size={15}
+                      size={16}
                       strokeWidth={2.5}
                       className={`transition-transform duration-300 ${openGroup === i ? 'rotate-180' : ''}`}
                     />
@@ -452,7 +445,7 @@ export const Navigation = React.memo(({ userRole }) => {
 
                   {openGroup === i && (
 
-                    <div className="absolute top-full left-0 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-50 animate-dropdownFadeIn">
+                    <div className="absolute top-full left-0 mt-2 w-60 bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-50 animate-dropdownFadeIn">
 
                       <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 pointer-events-none"></div>
 
@@ -475,7 +468,7 @@ export const Navigation = React.memo(({ userRole }) => {
                               }`}
                             style={{ animationDelay: `${c * 30}ms` }}
                           >
-                            <ChildIcon size={17} strokeWidth={2} />
+                            <ChildIcon size={18} strokeWidth={2} />
                             <span>{child.label}</span>
                           </button>
                         );
@@ -490,15 +483,15 @@ export const Navigation = React.memo(({ userRole }) => {
 
           </nav>
 
-          {/* RIGHT SIDE */}
-          <div className="flex items-center gap-2 lg:gap-3">
+          {/* RIGHT SIDE - Better spacing */}
+          <div className="flex items-center gap-3 lg:gap-4">
 
             {/* Notifications */}
             <NotificationsPanel />
 
-            {/* User Info - Desktop */}
-            <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center text-white font-bold text-sm shadow-md">
+            {/* User Info - Desktop - Larger and more readable */}
+            <div className="hidden lg:flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center text-white font-bold text-base shadow-md">
                 {currentUser?.email?.charAt(0).toUpperCase()}
               </div>
               
@@ -506,22 +499,22 @@ export const Navigation = React.memo(({ userRole }) => {
                 <span className="text-sm font-semibold text-gray-900 leading-tight">
                   {currentUser?.email?.split('@')[0]}
                 </span>
-                <span className="text-xs text-gray-500 capitalize leading-tight font-medium">
+                <span className="text-xs text-gray-500 capitalize leading-tight font-medium mt-0.5">
                   {userRole?.replace('_', ' ')}
                 </span>
               </div>
             </div>
 
-            {/* Logout - Icon only */}
+            {/* Logout - Larger button */}
             <button
               onClick={handleLogout}
-              className="hidden lg:flex items-center justify-center p-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-lg shadow-lg shadow-red-500/30 transition-all duration-300 hover:shadow-red-500/50 hover:scale-110 active:scale-95 group relative"
+              className="hidden lg:flex items-center justify-center p-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-lg shadow-lg shadow-red-500/30 transition-all duration-300 hover:shadow-red-500/50 hover:scale-110 active:scale-95 group relative"
               title="Logout"
             >
               <LogOut size={18} strokeWidth={2.5} />
               
               {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-50">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-50 shadow-lg">
                 Logout
               </div>
             </button>
@@ -546,7 +539,7 @@ export const Navigation = React.memo(({ userRole }) => {
 
         </div>
 
-        {/* MOBILE MENU */}
+        {/* MOBILE MENU - Unchanged */}
         {mobileOpen && (
 
           <div className="lg:hidden border-t border-gray-200 bg-white animate-mobileSlideDown">
