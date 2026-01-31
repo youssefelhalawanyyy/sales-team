@@ -52,19 +52,16 @@ export const Navigation = React.memo(({ userRole }) => {
     }
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setOpenGroup(null);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileOpen(false);
     setOpenGroup(null);
@@ -106,11 +103,9 @@ export const Navigation = React.memo(({ userRole }) => {
 
   const roleBasedItems = {
 
-    /* ADMIN */
     admin: [
       dashboardItem,
       calculatorItem,
-
       {
         label: 'Sales',
         icon: Users2,
@@ -124,7 +119,6 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
         ]
       },
-
       {
         label: 'Finance',
         icon: DollarSign,
@@ -135,7 +129,6 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Settlements', path: '/finance/settlements', icon: DollarSign }
         ]
       },
-
       {
         label: 'Tasks',
         icon: CheckSquare,
@@ -144,7 +137,6 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Performance', path: '/admin/performance', icon: TrendingUp }
         ]
       },
-
       {
         label: 'Advanced',
         icon: TrendingUp,
@@ -158,7 +150,6 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Sales Velocity', path: '/sales-velocity', icon: Zap }
         ]
       },
-
       {
         label: 'Admin',
         icon: Settings,
@@ -171,16 +162,13 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Calendar', path: '/calendar', icon: Calendar }
         ]
       },
-
       emailTemplatesItem,
       informationItem
     ],
 
-    /* FINANCE MANAGER */
     finance_manager: [
       dashboardItem,
       calculatorItem,
-
       {
         label: 'Finance',
         icon: DollarSign,
@@ -190,16 +178,13 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Reports', path: '/finance/reports', icon: BarChart3 }
         ]
       },
-
       emailTemplatesItem,
       informationItem
     ],
 
-    /* SALES MANAGER */
     sales_manager: [
       dashboardItem,
       calculatorItem,
-
       {
         label: 'Sales',
         icon: Users2,
@@ -213,7 +198,6 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
         ]
       },
-
       {
         label: 'Finance',
         icon: DollarSign,
@@ -225,22 +209,14 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Settlements', path: '/finance/settlements', icon: DollarSign }
         ]
       },
-
-      {
-        label: 'Calendar',
-        path: '/calendar',
-        icon: Calendar
-      },
-
+      { label: 'Calendar', path: '/calendar', icon: Calendar },
       emailTemplatesItem,
       informationItem
     ],
 
-    /* TEAM LEADER */
     team_leader: [
       dashboardItem,
       calculatorItem,
-
       {
         label: 'Sales',
         icon: Users2,
@@ -254,13 +230,7 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
         ]
       },
-
-      {
-        label: 'Commissions',
-        path: '/my/commissions',
-        icon: DollarSign
-      },
-
+      { label: 'Commissions', path: '/my/commissions', icon: DollarSign },
       {
         label: 'Tasks',
         icon: CheckSquare,
@@ -269,22 +239,14 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Performance', path: '/admin/performance', icon: TrendingUp }
         ]
       },
-
-      {
-        label: 'Calendar',
-        path: '/calendar',
-        icon: Calendar
-      },
-
+      { label: 'Calendar', path: '/calendar', icon: Calendar },
       emailTemplatesItem,
       informationItem
     ],
 
-    /* SALES MEMBER */
     sales_member: [
       dashboardItem,
       calculatorItem,
-
       {
         label: 'Sales',
         icon: Users2,
@@ -295,25 +257,9 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell }
         ]
       },
-
-      {
-        label: 'Commissions',
-        path: '/my/commissions',
-        icon: DollarSign
-      },
-
-      {
-        label: 'Tasks',
-        path: '/tasks',
-        icon: CheckSquare
-      },
-
-      {
-        label: 'Calendar',
-        path: '/calendar',
-        icon: Calendar
-      },
-
+      { label: 'Commissions', path: '/my/commissions', icon: DollarSign },
+      { label: 'Tasks', path: '/tasks', icon: CheckSquare },
+      { label: 'Calendar', path: '/calendar', icon: Calendar },
       emailTemplatesItem,
       informationItem
     ]
@@ -337,34 +283,34 @@ export const Navigation = React.memo(({ userRole }) => {
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm backdrop-blur-sm bg-white/95 safe-area-top">
 
-      <div className="w-full px-4 sm:px-4 lg:px-8 xl:px-12">
+      <div className="w-full px-4 sm:px-4 lg:px-6">
 
-        {/* TOP BAR - Optimized for laptop screens */}
-        <div className="flex items-center justify-between h-14 sm:h-14 lg:h-16">
+        {/* TOP BAR */}
+        <div className="flex items-center justify-between h-14 sm:h-14 lg:h-12">
 
-          {/* LOGO - Larger on desktop */}
+          {/* LOGO */}
           <div
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2.5 cursor-pointer group transition-all duration-300 hover:scale-105 lg:min-w-[220px]"
+            className="flex items-center gap-2 cursor-pointer group transition-all duration-300 hover:scale-105 lg:min-w-[160px]"
           >
             <div className="relative">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-12 lg:h-12 rounded-xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all duration-300 group-hover:rotate-6">
-                <span className="text-sm sm:text-base lg:text-2xl">J</span>
+              <div className="w-8 h-8 sm:w-9 sm:h-9 lg:w-8 lg:h-8 rounded-lg bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all duration-300 group-hover:rotate-6">
+                <span className="text-sm sm:text-base lg:text-sm">J</span>
               </div>
             </div>
 
             <div className="hidden sm:block">
-              <h1 className="text-base sm:text-lg lg:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent tracking-tight leading-none">
+              <h1 className="text-base sm:text-lg lg:text-sm font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent tracking-tight leading-none">
                 JONIX
               </h1>
-              <p className="text-[10px] sm:text-[11px] lg:text-xs text-gray-500 font-medium leading-tight mt-0.5">
+              <p className="text-[10px] sm:text-[11px] lg:text-[9px] text-gray-500 font-medium leading-tight mt-0.5">
                 Management System
               </p>
             </div>
           </div>
 
-          {/* DESKTOP NAV - Better spacing for laptop */}
-          <nav className="hidden lg:flex items-center justify-center gap-2 flex-1 px-8">
+          {/* DESKTOP NAV */}
+          <nav className="hidden lg:flex items-center justify-center gap-1 flex-1 px-4">
 
             {navItems.map((item, i) => {
 
@@ -372,7 +318,6 @@ export const Navigation = React.memo(({ userRole }) => {
               const groupActive = isGroupActive(item);
 
               if (!item.children) {
-                // Icon-only button for dashboard
                 if (item.iconOnly) {
                   return (
                     <button
@@ -381,18 +326,17 @@ export const Navigation = React.memo(({ userRole }) => {
                         navigate(item.path);
                         setOpenGroup(null);
                       }}
-                      className={`p-2.5 rounded-lg transition-all duration-300 transform hover:scale-110 active:scale-95 group relative
+                      className={`p-1.5 rounded-md transition-all duration-300 transform hover:scale-110 active:scale-95 group relative
                         ${
                           isActive(item.path)
-                            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/40'
+                            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md shadow-blue-500/40'
                             : 'text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-600'
                         }`}
                       title={item.label}
                     >
-                      <Icon size={20} strokeWidth={2.5} className="transition-transform duration-300 group-hover:rotate-12" />
+                      <Icon size={16} strokeWidth={2.5} className="transition-transform duration-300 group-hover:rotate-12" />
                       
-                      {/* Tooltip */}
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-50 shadow-lg">
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-50 shadow-lg">
                         {item.label}
                       </div>
                     </button>
@@ -406,14 +350,14 @@ export const Navigation = React.memo(({ userRole }) => {
                       navigate(item.path);
                       setOpenGroup(null);
                     }}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap transform hover:scale-105 active:scale-95
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all duration-300 whitespace-nowrap transform hover:scale-105 active:scale-95
                       ${
                         isActive(item.path)
-                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/40 hover:shadow-blue-500/60'
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md shadow-blue-500/40 hover:shadow-blue-500/60'
                           : 'text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-600'
                       }`}
                   >
-                    <Icon size={18} strokeWidth={2.5} />
+                    <Icon size={13} strokeWidth={2.5} />
                     <span>{item.label}</span>
                   </button>
                 );
@@ -423,36 +367,29 @@ export const Navigation = React.memo(({ userRole }) => {
                 <div key={i} className="relative" ref={openGroup === i ? dropdownRef : null}>
 
                   <button
-                    onClick={() =>
-                      setOpenGroup(openGroup === i ? null : i)
-                    }
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 whitespace-nowrap transform hover:scale-105 active:scale-95
+                    onClick={() => setOpenGroup(openGroup === i ? null : i)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all duration-300 whitespace-nowrap transform hover:scale-105 active:scale-95
                       ${
                         openGroup === i || groupActive
-                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/40 hover:shadow-blue-500/60'
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md shadow-blue-500/40 hover:shadow-blue-500/60'
                           : 'text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-blue-600'
                       }`}
                   >
-                    <Icon size={18} strokeWidth={2.5} />
+                    <Icon size={13} strokeWidth={2.5} />
                     <span>{item.label}</span>
-
                     <ChevronDown
-                      size={16}
+                      size={11}
                       strokeWidth={2.5}
                       className={`transition-transform duration-300 ${openGroup === i ? 'rotate-180' : ''}`}
                     />
                   </button>
 
                   {openGroup === i && (
-
-                    <div className="absolute top-full left-0 mt-2 w-60 bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-50 animate-dropdownFadeIn">
-
+                    <div className="absolute top-full left-0 mt-1.5 w-48 bg-white border border-gray-200 rounded-lg shadow-2xl overflow-hidden z-50 animate-dropdownFadeIn">
                       <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 pointer-events-none"></div>
 
                       {item.children.map((child, c) => {
-
                         const ChildIcon = child.icon;
-
                         return (
                           <button
                             key={c}
@@ -460,61 +397,58 @@ export const Navigation = React.memo(({ userRole }) => {
                               navigate(child.path);
                               setOpenGroup(null);
                             }}
-                            className={`relative w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition-all duration-200
+                            className={`relative w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-all duration-200
                               ${
                                 isActive(child.path)
-                                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 font-semibold border-l-4 border-blue-600'
-                                  : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 border-l-4 border-transparent hover:border-blue-200'
+                                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 font-semibold border-l-[3px] border-blue-600'
+                                  : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 border-l-[3px] border-transparent hover:border-blue-200'
                               }`}
                             style={{ animationDelay: `${c * 30}ms` }}
                           >
-                            <ChildIcon size={18} strokeWidth={2} />
+                            <ChildIcon size={14} strokeWidth={2} />
                             <span>{child.label}</span>
                           </button>
                         );
                       })}
-
                     </div>
                   )}
-
                 </div>
               );
             })}
 
           </nav>
 
-          {/* RIGHT SIDE - Better spacing */}
-          <div className="flex items-center gap-3 lg:gap-4">
+          {/* RIGHT SIDE */}
+          <div className="flex items-center gap-2 lg:gap-2">
 
             {/* Notifications */}
             <NotificationsPanel />
 
-            {/* User Info - Desktop - Larger and more readable */}
-            <div className="hidden lg:flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center text-white font-bold text-base shadow-md">
+            {/* User Info - Desktop */}
+            <div className="hidden lg:flex items-center gap-2 px-2.5 py-1.5 bg-gradient-to-r from-gray-50 to-blue-50 rounded-md border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="w-7 h-7 rounded-md bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center text-white font-bold text-xs shadow-md">
                 {currentUser?.email?.charAt(0).toUpperCase()}
               </div>
               
               <div className="flex flex-col items-start">
-                <span className="text-sm font-semibold text-gray-900 leading-tight">
+                <span className="text-xs font-semibold text-gray-900 leading-tight">
                   {currentUser?.email?.split('@')[0]}
                 </span>
-                <span className="text-xs text-gray-500 capitalize leading-tight font-medium mt-0.5">
+                <span className="text-[9px] text-gray-500 capitalize leading-tight font-medium">
                   {userRole?.replace('_', ' ')}
                 </span>
               </div>
             </div>
 
-            {/* Logout - Larger button */}
+            {/* Logout - Desktop */}
             <button
               onClick={handleLogout}
-              className="hidden lg:flex items-center justify-center p-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-lg shadow-lg shadow-red-500/30 transition-all duration-300 hover:shadow-red-500/50 hover:scale-110 active:scale-95 group relative"
+              className="hidden lg:flex items-center justify-center p-1.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-md shadow-md shadow-red-500/30 transition-all duration-300 hover:shadow-red-500/50 hover:scale-110 active:scale-95 group relative"
               title="Logout"
             >
-              <LogOut size={18} strokeWidth={2.5} />
+              <LogOut size={14} strokeWidth={2.5} />
               
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-50 shadow-lg">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-50 shadow-lg">
                 Logout
               </div>
             </button>
@@ -539,18 +473,16 @@ export const Navigation = React.memo(({ userRole }) => {
 
         </div>
 
-        {/* MOBILE MENU - Unchanged */}
+        {/* MOBILE MENU - Untouched */}
         {mobileOpen && (
 
           <div className="lg:hidden border-t border-gray-200 bg-white animate-mobileSlideDown">
 
-            {/* User Info - Mobile */}
             <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg animate-pulse-slow">
                   {currentUser?.email?.charAt(0).toUpperCase()}
                 </div>
-                
                 <div>
                   <p className="text-sm font-semibold text-gray-900 truncate max-w-[200px]">
                     {currentUser?.email}
@@ -562,7 +494,6 @@ export const Navigation = React.memo(({ userRole }) => {
               </div>
             </div>
 
-            {/* Navigation Items */}
             <nav className="py-1 max-h-[calc(100vh-180px)] overflow-y-auto mobile-nav-scroll">
 
               {navItems.map((item, i) => {
@@ -596,9 +527,7 @@ export const Navigation = React.memo(({ userRole }) => {
                   <div key={i} className="border-b border-gray-100 last:border-0 animate-menuItemFadeIn" style={{ animationDelay: `${i * 50}ms` }}>
 
                     <button
-                      onClick={() =>
-                        setMobileOpenGroup(mobileOpenGroup === i ? null : i)
-                      }
+                      onClick={() => setMobileOpenGroup(mobileOpenGroup === i ? null : i)}
                       className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-all duration-200
                         ${
                           mobileOpenGroup === i || groupActive
@@ -610,7 +539,6 @@ export const Navigation = React.memo(({ userRole }) => {
                         <Icon size={20} strokeWidth={2.5} />
                         <span>{item.label}</span>
                       </div>
-
                       <ChevronDown
                         size={18}
                         strokeWidth={2.5}
@@ -619,13 +547,9 @@ export const Navigation = React.memo(({ userRole }) => {
                     </button>
 
                     {mobileOpenGroup === i && (
-
                       <div className="bg-gradient-to-r from-gray-50 to-blue-50/50 border-t border-gray-200 animate-mobileDropdownSlide">
-
                         {item.children.map((child, c) => {
-
                           const ChildIcon = child.icon;
-
                           return (
                             <button
                               key={c}
@@ -647,10 +571,8 @@ export const Navigation = React.memo(({ userRole }) => {
                             </button>
                           );
                         })}
-
                       </div>
                     )}
-
                   </div>
                 );
               })}
@@ -731,12 +653,8 @@ export const Navigation = React.memo(({ userRole }) => {
         }
 
         @keyframes pulse-slow {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.85;
-          }
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.85; }
         }
 
         .animate-dropdownFadeIn {

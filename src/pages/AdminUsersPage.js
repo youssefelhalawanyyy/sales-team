@@ -23,14 +23,14 @@ import {
 const ROLES = ['admin','sales_manager','team_leader','sales_member','finance_manager'];
 
 const ROLE_META = {
-  admin:           { label:'Admin',          color:'#f59e0b', bg:'rgba(245,158,11,0.12)',  text:'#f59e0b' },
-  sales_manager:   { label:'Sales Manager',  color:'#8b5cf6', bg:'rgba(139,92,246,0.12)',  text:'#8b5cf6' },
-  team_leader:     { label:'Team Leader',    color:'#06b6d4', bg:'rgba(6,182,212,0.12)',   text:'#06b6d4' },
-  sales_member:    { label:'Sales Member',   color:'#10b981', bg:'rgba(16,185,129,0.12)',  text:'#10b981' },
-  finance_manager: { label:'Finance Manager',color:'#ec4899', bg:'rgba(236,72,153,0.12)',  text:'#ec4899' },
+  admin:           { label:'Admin',          color:'#d97706', bg:'rgba(245,158,11,0.1)',   text:'#d97706' },
+  sales_manager:   { label:'Sales Manager',  color:'#7c3aed', bg:'rgba(139,92,246,0.1)',   text:'#7c3aed' },
+  team_leader:     { label:'Team Leader',    color:'#0891b2', bg:'rgba(6,182,212,0.1)',    text:'#0891b2' },
+  sales_member:    { label:'Sales Member',   color:'#059669', bg:'rgba(16,185,129,0.1)',   text:'#059669' },
+  finance_manager: { label:'Finance Manager',color:'#db2777', bg:'rgba(236,72,153,0.1)',   text:'#db2777' },
 };
 
-const AVATAR_COLORS = ['#1b8a8a','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#10b981','#e11d48','#6366f1'];
+const AVATAR_COLORS = ['#0d9488','#7c3aed','#d97706','#db2777','#0891b2','#059669','#e11d48','#4f46e5'];
 /* ═══════════════════════════════════════════ */
 
 export default function AdminUsersPage() {
@@ -131,10 +131,10 @@ export default function AdminUsersPage() {
 
       {/* ─── Analytics Cards ─── */}
       <div className="aup-analytics">
-        <StatCard icon={<Users size={20}/>}     label="Total Users"  value={users.length}    accent="#5ec3c3" sub={`${activeCount} active`}/>
-        <StatCard icon={<UserCheck size={20}/>} label="Active"       value={activeCount}     accent="#10b981" sub="currently enabled"/>
-        <StatCard icon={<Shield size={20}/>}    label="Disabled"     value={disabledCount}   accent="#f59e0b" sub="access restricted"/>
-        <StatCard icon={<Activity size={20}/>}  label="Admins"       value={roleCounts.admin||0} accent="#ec4899" sub="full access"/>
+        <StatCard icon={<Users size={20}/>}     label="Total Users"  value={users.length}    accent="#0d9488" sub={`${activeCount} active`}/>
+        <StatCard icon={<UserCheck size={20}/>} label="Active"       value={activeCount}     accent="#059669" sub="currently enabled"/>
+        <StatCard icon={<Shield size={20}/>}    label="Disabled"     value={disabledCount}   accent="#d97706" sub="access restricted"/>
+        <StatCard icon={<Activity size={20}/>}  label="Admins"       value={roleCounts.admin||0} accent="#db2777" sub="full access"/>
       </div>
 
       {/* ─── Role Breakdown ─── */}
@@ -203,7 +203,6 @@ export default function AdminUsersPage() {
       {showForm && (
         <div className="aup-overlay" onClick={()=>setShowForm(false)}>
           <div className="aup-modal" onClick={e=>e.stopPropagation()}>
-            <div className="aup-modal-gloss"/>
             <div className="aup-modal-head">
               <div className="aup-modal-title-row">
                 <div className="aup-modal-icon"><UserPlus size={20}/></div>
@@ -246,45 +245,47 @@ export default function AdminUsersPage() {
       <style>{`
         .aup-root {
           min-height: 100%;
-          background: #0b0f1a;
-          color: #c4cfe8;
+          background: #f0f4f8;
+          color: #374151;
           font-family: 'Segoe UI', system-ui, sans-serif;
           padding: 32px;
           display: flex;
           flex-direction: column;
           gap: 24px;
         }
+
         /* ─── Header ─── */
         .aup-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
         .aup-header-left { display:flex; align-items:center; gap:16px; }
         .aup-header-icon {
           width:48px; height:48px; border-radius:14px;
-          background:linear-gradient(135deg,#1a3a3a,#0f2626);
-          border:1px solid rgba(94,195,195,0.2);
+          background:#fff;
+          border:1px solid #e2e8f0;
           display:flex; align-items:center; justify-content:center;
-          color:#5ec3c3; box-shadow:0 4px 16px rgba(94,195,195,0.1);
+          color:#0d9488; box-shadow:0 2px 8px rgba(0,0,0,0.06);
         }
-        .aup-title { font-size:22px; font-weight:600; color:#e2e8f0; letter-spacing:-0.3px; }
-        .aup-subtitle { font-size:13px; color:rgba(148,170,210,0.6); margin-top:2px; }
+        .aup-title { font-size:22px; font-weight:600; color:#1e293b; letter-spacing:-0.3px; }
+        .aup-subtitle { font-size:13px; color:#64748b; margin-top:2px; }
         .aup-btn-add {
           display:flex; align-items:center; gap:8px;
-          padding:10px 22px; background:linear-gradient(135deg,#1b8a8a,#2aadad);
+          padding:10px 22px; background:linear-gradient(135deg,#0d9488,#14b8a6);
           border:none; border-radius:10px; color:#fff; font-size:14px; font-weight:600;
-          cursor:pointer; box-shadow:0 4px 20px rgba(94,195,195,0.25);
+          cursor:pointer; box-shadow:0 3px 12px rgba(13,148,136,0.3);
           transition:transform .15s, box-shadow .2s;
         }
-        .aup-btn-add:hover { transform:translateY(-1px); box-shadow:0 6px 24px rgba(94,195,195,0.35); }
+        .aup-btn-add:hover { transform:translateY(-1px); box-shadow:0 5px 18px rgba(13,148,136,0.4); }
 
         /* ─── Stat Cards ─── */
         .aup-analytics { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
         .stat-card {
-          background:linear-gradient(145deg,rgba(20,28,50,0.9),rgba(14,19,36,0.95));
-          border:1px solid rgba(94,195,195,0.1); border-radius:16px;
+          background:#fff;
+          border:1px solid #e2e8f0; border-radius:16px;
           padding:22px 20px; display:flex; align-items:flex-start; gap:16px;
           position:relative; overflow:hidden;
+          box-shadow:0 1px 4px rgba(0,0,0,0.05);
           transition:border-color .2s, box-shadow .2s;
         }
-        .stat-card:hover { border-color:rgba(94,195,195,0.25); box-shadow:0 6px 24px rgba(0,0,0,0.25); }
+        .stat-card:hover { border-color:#cbd5e1; box-shadow:0 4px 16px rgba(0,0,0,0.08); }
         .stat-card::before {
           content:''; position:absolute; top:0; left:0; right:0; height:3px;
           background:var(--accent); border-radius:16px 16px 0 0;
@@ -295,67 +296,72 @@ export default function AdminUsersPage() {
           flex-shrink:0; background:var(--accent-bg); color:var(--accent);
         }
         .stat-info { flex:1; }
-        .stat-value { font-size:28px; font-weight:700; color:#e2e8f0; line-height:1; margin-bottom:4px; }
-        .stat-label { font-size:13px; color:rgba(148,170,210,0.7); font-weight:500; }
-        .stat-sub { font-size:11px; color:rgba(148,170,210,0.4); margin-top:4px; }
+        .stat-value { font-size:28px; font-weight:700; color:#1e293b; line-height:1; margin-bottom:4px; }
+        .stat-label { font-size:13px; color:#64748b; font-weight:500; }
+        .stat-sub { font-size:11px; color:#94a3b8; margin-top:4px; }
 
         /* ─── Role Bar ─── */
         .aup-role-bar {
           display:grid; grid-template-columns:repeat(5,1fr); gap:12px;
-          background:linear-gradient(145deg,rgba(20,28,50,0.7),rgba(14,19,36,0.8));
-          border:1px solid rgba(94,195,195,0.08); border-radius:14px;
+          background:#fff;
+          border:1px solid #e2e8f0; border-radius:14px;
           padding:18px 20px;
+          box-shadow:0 1px 4px rgba(0,0,0,0.05);
         }
         .aup-role-item { display:flex; flex-direction:column; gap:8px; }
         .aup-role-header { display:flex; align-items:center; gap:7px; }
         .aup-role-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-        .aup-role-name { font-size:11px; color:rgba(148,170,210,0.7); flex:1; }
-        .aup-role-count { font-size:12px; font-weight:600; color:#e2e8f0; }
-        .aup-role-track { height:4px; border-radius:2px; background:rgba(255,255,255,0.06); overflow:hidden; }
+        .aup-role-name { font-size:11px; color:#64748b; flex:1; }
+        .aup-role-count { font-size:12px; font-weight:600; color:#1e293b; }
+        .aup-role-track { height:4px; border-radius:2px; background:#f1f5f9; overflow:hidden; }
         .aup-role-fill { height:100%; border-radius:2px; transition:width .4s ease; }
 
         /* ─── Toolbar ─── */
         .aup-toolbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
         .aup-search-wrap { position:relative; flex:1; min-width:200px; max-width:340px; }
-        .aup-search-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:rgba(148,170,210,0.4); pointer-events:none; }
+        .aup-search-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; pointer-events:none; }
         .aup-search {
           width:100%; padding:10px 16px 10px 40px;
-          background:rgba(255,255,255,0.04); border:1px solid rgba(94,195,195,0.12);
-          border-radius:10px; color:#e2e8f0; font-size:13px;
-          outline:none; transition:border-color .2s, box-shadow .2s; caret-color:#5ec3c3;
+          background:#fff; border:1px solid #e2e8f0;
+          border-radius:10px; color:#1e293b; font-size:13px;
+          outline:none; transition:border-color .2s, box-shadow .2s; caret-color:#0d9488;
+          box-shadow:0 1px 3px rgba(0,0,0,0.04);
         }
-        .aup-search::placeholder { color:rgba(148,170,210,0.35); }
-        .aup-search:focus { border-color:rgba(94,195,195,0.4); box-shadow:0 0 0 3px rgba(94,195,195,0.1); }
+        .aup-search::placeholder { color:#94a3b8; }
+        .aup-search:focus { border-color:#0d9488; box-shadow:0 0 0 3px rgba(13,148,136,0.12); }
         .aup-filter-wrap { position:relative; display:flex; align-items:center; }
-        .aup-filter-icon { position:absolute; left:12px; color:rgba(148,170,210,0.4); pointer-events:none; }
-        .aup-filter-chevron { position:absolute; right:12px; color:rgba(148,170,210,0.4); pointer-events:none; }
+        .aup-filter-icon { position:absolute; left:12px; color:#94a3b8; pointer-events:none; }
+        .aup-filter-chevron { position:absolute; right:12px; color:#94a3b8; pointer-events:none; }
         .aup-filter {
           appearance:none; -webkit-appearance:none;
           padding:10px 36px 10px 34px;
-          background:rgba(255,255,255,0.04); border:1px solid rgba(94,195,195,0.12);
-          border-radius:10px; color:#e2e8f0; font-size:13px;
+          background:#fff; border:1px solid #e2e8f0;
+          border-radius:10px; color:#1e293b; font-size:13px;
           cursor:pointer; outline:none; transition:border-color .2s;
+          box-shadow:0 1px 3px rgba(0,0,0,0.04);
         }
-        .aup-filter:focus { border-color:rgba(94,195,195,0.4); }
-        .aup-filter option { background:#1a2236; color:#e2e8f0; }
-        .aup-count-label { margin-left:auto; font-size:12px; color:rgba(148,170,210,0.4); }
+        .aup-filter:focus { border-color:#0d9488; }
+        .aup-filter option { background:#fff; color:#1e293b; }
+        .aup-count-label { margin-left:auto; font-size:12px; color:#94a3b8; }
 
         /* ─── Table ─── */
         .aup-table-wrap {
-          background:linear-gradient(145deg,rgba(20,28,50,0.85),rgba(14,19,36,0.92));
-          border:1px solid rgba(94,195,195,0.1); border-radius:16px; overflow:hidden;
+          background:#fff;
+          border:1px solid #e2e8f0; border-radius:16px; overflow:hidden;
+          box-shadow:0 1px 4px rgba(0,0,0,0.05);
         }
         .aup-table { width:100%; border-collapse:collapse; }
         .aup-th {
           text-align:left; padding:14px 20px;
-          font-size:11px; font-weight:600; color:rgba(148,170,210,0.5);
+          font-size:11px; font-weight:600; color:#64748b;
           text-transform:uppercase; letter-spacing:0.8px;
-          border-bottom:1px solid rgba(94,195,195,0.08); white-space:nowrap;
+          border-bottom:1px solid #f1f5f9; white-space:nowrap;
+          background:#fafbfc;
         }
         .aup-th-actions { text-align:right; }
-        .aup-tr { border-bottom:1px solid rgba(94,195,195,0.06); transition:background .15s; }
+        .aup-tr { border-bottom:1px solid #f1f5f9; transition:background .15s; }
         .aup-tr:last-child { border-bottom:none; }
-        .aup-tr:hover { background:rgba(94,195,195,0.03); }
+        .aup-tr:hover { background:#f8fafc; }
         .aup-td { padding:14px 20px; vertical-align:middle; font-size:13px; }
         .aup-member { display:flex; align-items:center; gap:12px; }
         .aup-avatar {
@@ -364,113 +370,109 @@ export default function AdminUsersPage() {
           font-size:14px; font-weight:600; color:#fff;
           flex-shrink:0; letter-spacing:-0.5px;
         }
-        .aup-member-name { color:#dde5f2; font-weight:500; }
-        .aup-member-email { font-size:11px; color:rgba(148,170,210,0.45); margin-top:1px; }
-        .aup-email { color:rgba(148,170,210,0.7); font-size:13px; }
+        .aup-member-name { color:#1e293b; font-weight:500; }
+        .aup-member-email { font-size:11px; color:#94a3b8; margin-top:1px; }
+        .aup-email { color:#64748b; font-size:13px; }
         .aup-role-badge {
           display:inline-flex; align-items:center; gap:6px;
           padding:5px 11px; border-radius:20px;
           font-size:11px; font-weight:600; letter-spacing:0.3px;
         }
         .aup-role-badge-dot { width:6px; height:6px; border-radius:50%; }
-        .aup-status { display:flex; align-items:center; gap:7px; font-size:13px; }
+        .aup-status { display:flex; align-items:center; gap:7px; font-size:13px; color:#374151; }
         .aup-status-dot { width:8px; height:8px; border-radius:50%; }
-        .aup-status-active .aup-status-dot { background:#10b981; box-shadow:0 0 6px rgba(16,185,129,0.4); }
-        .aup-status-disabled .aup-status-dot { background:#64748b; }
+        .aup-status-active .aup-status-dot { background:#10b981; box-shadow:0 0 6px rgba(16,185,129,0.35); }
+        .aup-status-disabled .aup-status-dot { background:#cbd5e1; }
         .aup-actions { display:flex; align-items:center; gap:4px; justify-content:flex-end; }
         .aup-act-btn {
           width:34px; height:34px; border-radius:8px;
-          border:1px solid rgba(94,195,195,0.12);
-          background:rgba(255,255,255,0.03); color:rgba(148,170,210,0.6);
+          border:1px solid #e2e8f0;
+          background:#fff; color:#64748b;
           display:flex; align-items:center; justify-content:center;
           cursor:pointer; transition:background .15s, color .15s, border-color .15s;
+          box-shadow:0 1px 2px rgba(0,0,0,0.04);
         }
-        .aup-act-btn:hover { background:rgba(94,195,195,0.1); color:#5ec3c3; border-color:rgba(94,195,195,0.25); }
-        .aup-act-btn.save { background:rgba(16,185,129,0.12); color:#10b981; border-color:rgba(16,185,129,0.25); }
-        .aup-act-btn.save:hover { background:rgba(16,185,129,0.2); }
-        .aup-act-btn.cancel-edit { background:rgba(148,170,210,0.08); color:rgba(148,170,210,0.6); }
+        .aup-act-btn:hover { background:#f0fdfc; color:#0d9488; border-color:#a7f3d0; }
+        .aup-act-btn.save { background:#edfbf7; color:#059669; border-color:#a7f3d0; }
+        .aup-act-btn.save:hover { background:#d1fae5; }
+        .aup-act-btn.cancel-edit { background:#f8fafc; color:#64748b; border-color:#e2e8f0; }
         .aup-edit-input {
-          background:rgba(255,255,255,0.06); border:1px solid rgba(94,195,195,0.2);
+          background:#f8fafc; border:1px solid #e2e8f0;
           border-radius:8px; padding:6px 10px;
-          color:#e2e8f0; font-size:13px; outline:none;
-          width:100%; max-width:150px; caret-color:#5ec3c3;
+          color:#1e293b; font-size:13px; outline:none;
+          width:100%; max-width:150px; caret-color:#0d9488;
           transition:border-color .15s;
         }
-        .aup-edit-input:focus { border-color:rgba(94,195,195,0.45); }
-        .aup-edit-input option { background:#1a2236; }
-        .aup-empty { text-align:center; padding:56px 20px; color:rgba(148,170,210,0.35); font-size:14px; }
-        .aup-empty-icon { margin:0 auto 12px; color:rgba(148,170,210,0.2); }
+        .aup-edit-input:focus { border-color:#0d9488; box-shadow:0 0 0 2px rgba(13,148,136,0.1); }
+        .aup-edit-input option { background:#fff; }
+        .aup-empty { text-align:center; padding:56px 20px; color:#94a3b8; font-size:14px; }
+        .aup-empty-icon { margin:0 auto 12px; color:#cbd5e1; }
 
         /* ─── Modal ─── */
         .aup-overlay {
           position:fixed; inset:0; z-index:50;
-          background:rgba(0,0,0,0.55); backdrop-filter:blur(4px);
+          background:rgba(15,23,42,0.4); backdrop-filter:blur(4px);
           display:flex; align-items:center; justify-content:center; padding:20px;
         }
         .aup-modal {
           position:relative; width:100%; max-width:480px;
-          background:linear-gradient(145deg,#161e38,#0f1526);
-          border:1px solid rgba(94,195,195,0.15); border-radius:20px;
-          box-shadow:0 40px 80px rgba(0,0,0,0.45); overflow:hidden;
+          background:#fff;
+          border:1px solid #e2e8f0; border-radius:20px;
+          box-shadow:0 20px 60px rgba(0,0,0,0.12); overflow:hidden;
           animation:modalIn .25s cubic-bezier(.22,1,.36,1);
         }
         @keyframes modalIn { from{opacity:0;transform:translateY(18px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-        .aup-modal-gloss {
-          position:absolute; top:0; left:0; right:0; height:45%;
-          background:linear-gradient(180deg,rgba(255,255,255,0.03) 0%,transparent 100%);
-          pointer-events:none;
-        }
         .aup-modal-head { display:flex; align-items:center; justify-content:space-between; padding:24px 28px 0; }
         .aup-modal-title-row { display:flex; align-items:center; gap:12px; }
         .aup-modal-icon {
           width:38px; height:38px; border-radius:10px;
-          background:rgba(94,195,195,0.1); border:1px solid rgba(94,195,195,0.2);
-          display:flex; align-items:center; justify-content:center; color:#5ec3c3;
+          background:#f0fdfc; border:1px solid #a7f3d0;
+          display:flex; align-items:center; justify-content:center; color:#0d9488;
         }
-        .aup-modal-title { font-size:17px; font-weight:600; color:#e2e8f0; }
+        .aup-modal-title { font-size:17px; font-weight:600; color:#1e293b; }
         .aup-modal-close {
           width:32px; height:32px; border-radius:8px;
-          border:1px solid rgba(94,195,195,0.1);
-          background:rgba(255,255,255,0.04); color:rgba(148,170,210,0.5);
+          border:1px solid #e2e8f0;
+          background:#f8fafc; color:#64748b;
           display:flex; align-items:center; justify-content:center;
           cursor:pointer; transition:background .15s, color .15s;
         }
-        .aup-modal-close:hover { background:rgba(94,195,195,0.1); color:#5ec3c3; }
+        .aup-modal-close:hover { background:#f0fdfc; color:#0d9488; border-color:#a7f3d0; }
         .aup-modal-body { padding:28px; display:flex; flex-direction:column; gap:18px; }
         .aup-modal-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
         .mf { display:flex; flex-direction:column; gap:6px; }
-        .mf-label { font-size:11px; font-weight:600; color:rgba(148,170,210,0.55); letter-spacing:0.5px; text-transform:uppercase; }
+        .mf-label { font-size:11px; font-weight:600; color:#64748b; letter-spacing:0.5px; text-transform:uppercase; }
         .mf-wrap { position:relative; }
-        .mf-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:rgba(94,195,195,0.35); pointer-events:none; }
+        .mf-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#0d9488; pointer-events:none; opacity:0.5; }
         .mf input, .mf select {
           width:100%; padding:11px 14px;
-          background:rgba(255,255,255,0.05); border:1px solid rgba(94,195,195,0.15);
-          border-radius:10px; color:#e2e8f0; font-size:13px;
-          outline:none; caret-color:#5ec3c3;
+          background:#f8fafc; border:1px solid #e2e8f0;
+          border-radius:10px; color:#1e293b; font-size:13px;
+          outline:none; caret-color:#0d9488;
           transition:border-color .2s, box-shadow .2s;
           appearance:none; -webkit-appearance:none;
         }
-        .mf input:focus, .mf select:focus { border-color:rgba(94,195,195,0.4); box-shadow:0 0 0 3px rgba(94,195,195,0.1); }
-        .mf input::placeholder { color:rgba(148,170,210,0.3); }
-        .mf select option { background:#1a2236; color:#e2e8f0; }
+        .mf input:focus, .mf select:focus { border-color:#0d9488; box-shadow:0 0 0 3px rgba(13,148,136,0.12); background:#fff; }
+        .mf input::placeholder { color:#94a3b8; }
+        .mf select option { background:#fff; color:#1e293b; }
         .mf.has-icon input { padding-left:38px; }
         .aup-modal-actions { display:flex; justify-content:flex-end; gap:10px; padding-top:4px; }
         .aup-btn-cancel {
           padding:10px 20px; border-radius:10px;
-          border:1px solid rgba(94,195,195,0.15);
-          background:rgba(255,255,255,0.04); color:rgba(148,170,210,0.7);
+          border:1px solid #e2e8f0;
+          background:#f8fafc; color:#64748b;
           font-size:13px; font-weight:500; cursor:pointer; transition:background .15s;
         }
-        .aup-btn-cancel:hover { background:rgba(255,255,255,0.08); }
+        .aup-btn-cancel:hover { background:#f1f5f9; }
         .aup-btn-create {
           display:flex; align-items:center; gap:8px;
           padding:10px 24px; border-radius:10px; border:none;
-          background:linear-gradient(135deg,#1b8a8a,#2aadad);
+          background:linear-gradient(135deg,#0d9488,#14b8a6);
           color:#fff; font-size:13px; font-weight:600; cursor:pointer;
-          box-shadow:0 4px 16px rgba(94,195,195,0.25);
+          box-shadow:0 3px 12px rgba(13,148,136,0.3);
           transition:transform .15s, box-shadow .2s;
         }
-        .aup-btn-create:hover { transform:translateY(-1px); box-shadow:0 6px 22px rgba(94,195,195,0.35); }
+        .aup-btn-create:hover { transform:translateY(-1px); box-shadow:0 5px 18px rgba(13,148,136,0.4); }
         .aup-btn-create:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
         .aup-spinner {
           width:16px; height:16px;
