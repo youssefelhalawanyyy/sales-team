@@ -8,6 +8,11 @@ export const NotificationsPanel = React.memo(() => {
   const dropdownRef = useRef(null);
 
   useEffect(() => {
+    console.log('🔔 NotificationsPanel: Received', notifications.length, 'notifications');
+    console.log('🔔 NotificationsPanel: Unread count:', unreadCount);
+  }, [notifications, unreadCount]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setOpen(false);

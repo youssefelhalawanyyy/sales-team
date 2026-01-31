@@ -12,7 +12,12 @@ export const NotificationProvider = ({ children }) => {
 
   // Real-time notifications listener
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    if (!currentUser?.uid) {
+      console.log('❌ NotificationProvider: No currentUser.uid, skipping listener');
+      return;
+    }
+
+    console.log('🔔 NotificationProvider: Setting up listener for user:', currentUser.uid);
 
     const q = query(
       collection(db, 'notifications'),
@@ -22,13 +27,21 @@ export const NotificationProvider = ({ children }) => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log('📬 NotificationProvider: Got snapshot with', snapshot.docs.length, 'notifications');
       const notifs = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate?.() || new Date()
       }));
+      console.log('📋 NotificationProvider: Parsed notifications:', notifs);
       setNotifications(notifs);
-      setUnreadCount(notifs.filter(n => !n.read).length);
+      const unread = notifs.filter(n => !n.read).length;
+      console.log('🔴 NotificationProvider: Unread count:', unread);
+      setUnreadCount(unread);
+    }, (error) => {
+      console.error('❌ NotificationProvider: Snapshot error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
     });
 
     return unsubscribe;
@@ -37,39 +50,55 @@ export const NotificationProvider = ({ children }) => {
   const markAsRead = useCallback(async (notificationId) => {
     const { updateDoc, doc } = await import('firebase/firestore');
     try {
+      console.log('✏️ Marking notification as read:', notificationId);
       await updateDoc(doc(db, 'notifications', notificationId), {
         read: true,
         readAt: new Date()
       });
+      console.log('✅ Notification marked as read');
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error('❌ Error marking notification as read:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
     }
   }, []);
 
   const markAllAsRead = useCallback(async () => {
     const { writeBatch, doc } = await import('firebase/firestore');
     try {
+      console.log('📝 Marking all notifications as read, total:', notifications.length);
       const batch = writeBatch(db);
+      let updateCount = 0;
       notifications.forEach(notif => {
         if (!notif.read) {
+          console.log('  - Updating notification:', notif.id);
           batch.update(doc(db, 'notifications', notif.id), {
             read: true,
             readAt: new Date()
           });
+          updateCount++;
         }
       });
+      console.log('💾 Committing batch with', updateCount, 'updates');
       await batch.commit();
+      console.log('✅ All notifications marked as read');
     } catch (error) {
-      console.error('Error marking all as read:', error);
+      console.error('❌ Error marking all as read:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
     }
   }, [notifications]);
 
   const deleteNotification = useCallback(async (notificationId) => {
     const { deleteDoc, doc } = await import('firebase/firestore');
     try {
+      console.log('🗑️ Deleting notification:', notificationId);
       await deleteDoc(doc(db, 'notifications', notificationId));
+      console.log('✅ Notification deleted');
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      console.error('❌ Error deleting notification:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
     }
   }, []);
 
