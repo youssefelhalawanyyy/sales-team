@@ -4,8 +4,22 @@ import { collection, getDocs, query, where, addDoc, updateDoc, doc, serverTimest
 import { useAuth } from '../contexts/AuthContext';
 import {
   FileText, Plus, Download, Eye, Search, Trash2, Loader2, X,
-  Building2, Mail, Phone, Edit, CheckCircle, Send
+  Building2, Phone, Edit, CheckCircle, Send
 } from 'lucide-react';
+
+/* ═══════════════════════════════════════════════════════════
+   EXCHANGE RATE FETCHER
+   ═══════════════════════════════════════════════════════════ */
+async function fetchExchangeRate() {
+  try {
+    const response = await fetch('https://api.exchangerate-api.com/v4/latest/EUR');
+    const data = await response.json();
+    return data.rates.EGP || 55; // Fallback to approximate rate if API fails
+  } catch (error) {
+    console.error('Error fetching exchange rate:', error);
+    return 55; // Default fallback rate
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════
    PRODUCT CATALOG
@@ -229,6 +243,17 @@ function EditQuoteModal({ quote, onClose, onUpdate }) {
     terms: quote.terms || 'Net 30'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState(quote.exchangeRate || 55);
+  const [loadingRate, setLoadingRate] = useState(true);
+
+  useEffect(() => {
+    async function getRate() {
+      const rate = await fetchExchangeRate();
+      setExchangeRate(rate);
+      setLoadingRate(false);
+    }
+    getRate();
+  }, []);
 
   const handleAddItem = () => {
     setForm({ ...form, items: [...form.items, { description: '', quantity: 1, unitPrice: 0, productId: '', notes: '' }] });
@@ -270,6 +295,7 @@ function EditQuoteModal({ quote, onClose, onUpdate }) {
         items: form.items.map(item => ({ description: item.description, quantity: Number(item.quantity), unitPrice: Number(item.unitPrice), productId: item.productId || '', notes: item.notes || '' })),
         subtotal, discount: form.discount, discountAmount, tax: form.tax, taxAmount, total,
         notes: form.notes, validUntil: form.validUntil, terms: form.terms,
+        exchangeRate: exchangeRate,
         updatedAt: serverTimestamp()
       });
 
@@ -289,6 +315,7 @@ function EditQuoteModal({ quote, onClose, onUpdate }) {
   const taxableAmount = subtotal - discountAmount;
   const taxAmount = taxableAmount * (form.tax / 100);
   const total = taxableAmount + taxAmount;
+  const totalEGP = total * exchangeRate;
 
   return (
     <div style={{position:'fixed',inset:0,zIndex:101,background:'rgba(15,23,42,0.6)',backdropFilter:'blur(4px)',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px',overflowY:'auto'}}>
@@ -301,6 +328,10 @@ function EditQuoteModal({ quote, onClose, onUpdate }) {
         </div>
 
         <div style={{padding:'24px'}}>
+          {loadingRate && <div style={{background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'8px',padding:'12px',marginBottom:'16px',display:'flex',alignItems:'center',gap:'8px'}}><Loader2 size={16} className="animate-spin" color="#2563eb"/><span style={{fontSize:'13px',color:'#1e40af'}}>Fetching latest exchange rate...</span></div>}
+          
+          {!loadingRate && <div style={{background:'#ecfdf5',border:'1px solid #6ee7b7',borderRadius:'8px',padding:'12px',marginBottom:'16px'}}><p style={{fontSize:'13px',color:'#065f46',fontWeight:600}}>Exchange Rate: 1 EUR = {exchangeRate.toFixed(2)} EGP</p></div>}
+
           <div style={{marginBottom:'20px'}}>
             <label style={{display:'block',fontSize:'13px',fontWeight:600,color:'#1e293b',marginBottom:'8px'}}>Quote Title <span style={{color:'#ef4444'}}>*</span></label>
             <input type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} style={{width:'100%',padding:'12px',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'14px'}} placeholder="e.g., Air Purification System Installation"/>
@@ -339,13 +370,15 @@ function EditQuoteModal({ quote, onClose, onUpdate }) {
 
           <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'20px',marginBottom:'20px'}}>
             <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:'12px',fontSize:'14px'}}>
-              <span style={{color:'#64748b'}}>Subtotal:</span><span style={{fontWeight:600,color:'#1e293b'}}>€ {subtotal.toFixed(2)}</span>
+              <span style={{color:'#64748b'}}>Subtotal (EUR):</span><span style={{fontWeight:600,color:'#1e293b'}}>€ {subtotal.toFixed(2)}</span>
               <div style={{display:'flex',alignItems:'center',gap:'8px'}}><span style={{color:'#64748b'}}>Discount:</span><input type="number" value={form.discount} onChange={e => setForm({...form, discount: Math.min(100, Math.max(0, Number(e.target.value)))})} min="0" max="100" style={{width:'60px',padding:'4px 8px',border:'1px solid #e2e8f0',borderRadius:'6px',fontSize:'13px'}}/><span style={{color:'#64748b'}}>%</span></div>
               <span style={{fontWeight:600,color:'#ef4444'}}>-€ {discountAmount.toFixed(2)}</span>
               <div style={{display:'flex',alignItems:'center',gap:'8px'}}><span style={{color:'#64748b'}}>Tax:</span><input type="number" value={form.tax} onChange={e => setForm({...form, tax: Math.min(100, Math.max(0, Number(e.target.value)))})} min="0" max="100" style={{width:'60px',padding:'4px 8px',border:'1px solid #e2e8f0',borderRadius:'6px',fontSize:'13px'}}/><span style={{color:'#64748b'}}>%</span></div>
               <span style={{fontWeight:600,color:'#0d9488'}}>+€ {taxAmount.toFixed(2)}</span>
-              <span style={{fontSize:'16px',fontWeight:700,color:'#1e293b',paddingTop:'12px',borderTop:'2px solid #e2e8f0'}}>Total:</span>
-              <span style={{fontSize:'18px',fontWeight:700,color:'#0d9488',paddingTop:'12px',borderTop:'2px solid #e2e8f0'}}>€ {total.toFixed(2)}</span>
+              <span style={{fontSize:'16px',fontWeight:700,color:'#1e293b',paddingTop:'12px',borderTop:'2px solid #e2e8f0'}}>Total (EGP):</span>
+              <span style={{fontSize:'18px',fontWeight:700,color:'#0d9488',paddingTop:'12px',borderTop:'2px solid #e2e8f0'}}>EGP {totalEGP.toFixed(2)}</span>
+              <span style={{fontSize:'12px',color:'#64748b',fontStyle:'italic'}}>EUR Equivalent:</span>
+              <span style={{fontSize:'13px',color:'#64748b',fontStyle:'italic'}}>€ {total.toFixed(2)}</span>
             </div>
           </div>
 
@@ -360,7 +393,7 @@ function EditQuoteModal({ quote, onClose, onUpdate }) {
           </div>
 
           <div style={{display:'flex',gap:'12px'}}>
-            <button onClick={handleUpdateQuote} disabled={isSubmitting} style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',padding:'12px',background:'linear-gradient(135deg,#0d9488,#14b8a6)',color:'#fff',border:'none',borderRadius:'8px',fontWeight:600,fontSize:'14px',cursor:'pointer',opacity: isSubmitting ? 0.6 : 1}}>
+            <button onClick={handleUpdateQuote} disabled={isSubmitting || loadingRate} style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',padding:'12px',background:'linear-gradient(135deg,#0d9488,#14b8a6)',color:'#fff',border:'none',borderRadius:'8px',fontWeight:600,fontSize:'14px',cursor:'pointer',opacity: isSubmitting || loadingRate ? 0.6 : 1}}>
               {isSubmitting ? <><Loader2 size={16} className="animate-spin"/>Updating...</> : 'Update Quote'}
             </button>
             <button onClick={onClose} style={{flex:1,padding:'12px',background:'#f1f5f9',color:'#475569',border:'1px solid #e2e8f0',borderRadius:'8px',fontWeight:600,fontSize:'14px',cursor:'pointer'}}>Cancel</button>
@@ -376,6 +409,7 @@ function EditQuoteModal({ quote, onClose, onUpdate }) {
    ═══════════════════════════════════════════════════════════ */
 function InvoicePrint({ quote, onClose }) {
   const printRef = useRef(null);
+  const exchangeRate = quote.exchangeRate || 55;
 
   const handlePrint = () => {
     const content = printRef.current.innerHTML;
@@ -438,6 +472,8 @@ function InvoicePrint({ quote, onClose }) {
           .totals-row.grand { border-bottom:none; border-top:3px solid #0d9488; margin-top:8px; padding-top:12px; }
           .totals-row.grand .t-label { font-size:14px; font-weight:700; color:#1e293b; text-transform:uppercase; letter-spacing:1px; }
           .totals-row.grand .t-val { font-size:20px; font-weight:700; background:linear-gradient(135deg, #0d9488, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+          .totals-row.note { border-bottom:none; padding:4px 0; font-size:10px; font-style:italic; }
+          .totals-row.note .t-val { font-size:10px; font-style:italic; color:#64748b; font-weight:400; }
           .bottom-section { display:flex; gap:20px; margin-top:24px; }
           .terms-box { flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-left:4px solid #0d9488; border-radius:8px; padding:16px 18px; }
           .terms-box .terms-title { font-size:9px; text-transform:uppercase; letter-spacing:2px; color:#0d9488; font-weight:700; margin-bottom:8px; }
@@ -498,7 +534,6 @@ function InvoicePrint({ quote, onClose }) {
               <div>
                 <p style={{fontSize:'9px',textTransform:'uppercase',letterSpacing:'2.5px',color:'#0d9488',fontWeight:700,marginBottom:'12px',paddingBottom:'6px',borderBottom:'2px solid #0d9488',display:'inline-block'}}>Bill To</p>
                 <p style={{fontSize:'16px',fontWeight:700,color:'#1e293b',marginBottom:'8px'}}>{quote.clientName || 'N/A'}</p>
-                {quote.clientEmail && <p style={{fontSize:'11px',color:'#475569',marginBottom:'6px',display:'flex',alignItems:'center',gap:'10px'}}><span style={{width:'16px',height:'16px',display:'flex',alignItems:'center',justifyContent:'center',background:'#f0fdfa',borderRadius:'4px',color:'#0d9488'}}>✉</span>{quote.clientEmail}</p>}
                 {quote.clientPhone && <p style={{fontSize:'11px',color:'#475569',display:'flex',alignItems:'center',gap:'10px'}}><span style={{width:'16px',height:'16px',display:'flex',alignItems:'center',justifyContent:'center',background:'#f0fdfa',borderRadius:'4px',color:'#0d9488'}}>☎</span>{quote.clientPhone}</p>}
               </div>
               <div style={{textAlign:'right'}}>
@@ -506,6 +541,7 @@ function InvoicePrint({ quote, onClose }) {
                 <p style={{fontSize:'11px',color:'#475569',marginBottom:'6px'}}><span style={{color:'#94a3b8',fontSize:'9px',textTransform:'uppercase',letterSpacing:'1px',marginRight:'8px'}}>Date</span><span style={{fontWeight:600,color:'#1e293b'}}>{quote.createdAt?.toDate ? new Date(quote.createdAt.toDate()).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : 'N/A'}</span></p>
                 {quote.validUntil && <p style={{fontSize:'11px',color:'#475569',marginBottom:'6px'}}><span style={{color:'#94a3b8',fontSize:'9px',textTransform:'uppercase',letterSpacing:'1px',marginRight:'8px'}}>Valid Until</span><span style={{fontWeight:600,color:'#1e293b'}}>{quote.validUntil}</span></p>}
                 <p style={{fontSize:'11px',color:'#475569'}}><span style={{color:'#94a3b8',fontSize:'9px',textTransform:'uppercase',letterSpacing:'1px',marginRight:'8px'}}>Terms</span><span style={{fontWeight:600,color:'#1e293b'}}>{quote.terms || 'Net 30'}</span></p>
+                <p style={{fontSize:'10px',color:'#0d9488',marginTop:'8px',fontWeight:600}}><span style={{color:'#64748b',fontSize:'9px'}}>Exchange Rate:</span> 1 EUR = {exchangeRate.toFixed(2)} EGP</p>
               </div>
             </div>
 
@@ -533,8 +569,8 @@ function InvoicePrint({ quote, onClose }) {
                         {item.notes && <div style={{color:'#64748b',fontSize:'10px',fontWeight:400,lineHeight:1.5,paddingTop:'4px'}}>{item.notes}</div>}
                       </td>
                       <td style={{padding:'12px 14px',fontSize:'11px',color:'#475569',textAlign:'center',verticalAlign:'top'}}>{item.quantity}</td>
-                      <td style={{padding:'12px 14px',fontSize:'11px',color:'#475569',textAlign:'right',verticalAlign:'top'}}>€ {Number(item.unitPrice).toLocaleString('en',{minimumFractionDigits:2})}</td>
-                      <td style={{padding:'12px 14px',fontSize:'12px',color:'#1e293b',fontWeight:700,textAlign:'right',verticalAlign:'top'}}>€ {(item.quantity * item.unitPrice).toLocaleString('en',{minimumFractionDigits:2})}</td>
+                      <td style={{padding:'12px 14px',fontSize:'11px',color:'#475569',textAlign:'right',verticalAlign:'top'}}>EGP {(Number(item.unitPrice) * exchangeRate).toLocaleString('en',{minimumFractionDigits:2})}<div style={{fontSize:'9px',color:'#94a3b8',fontStyle:'italic',marginTop:'2px'}}>€ {Number(item.unitPrice).toLocaleString('en',{minimumFractionDigits:2})}</div></td>
+                      <td style={{padding:'12px 14px',fontSize:'12px',color:'#1e293b',fontWeight:700,textAlign:'right',verticalAlign:'top'}}>EGP {(item.quantity * item.unitPrice * exchangeRate).toLocaleString('en',{minimumFractionDigits:2})}<div style={{fontSize:'9px',color:'#94a3b8',fontStyle:'italic',marginTop:'2px'}}>€ {(item.quantity * item.unitPrice).toLocaleString('en',{minimumFractionDigits:2})}</div></td>
                     </tr>
                   ))}
                 </tbody>
@@ -543,10 +579,13 @@ function InvoicePrint({ quote, onClose }) {
 
             <div style={{display:'flex',justifyContent:'flex-end',marginTop:'12px'}}>
               <div style={{width:'300px',background:'linear-gradient(135deg, #f8fafc, #f0fdfa)',border:'2px solid #e2e8f0',borderRadius:'12px',padding:'20px'}}>
-                <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',fontSize:'11px',color:'#64748b',borderBottom:'1px solid #e2e8f0'}}><span style={{fontWeight:600}}>Subtotal</span><span style={{fontWeight:700,color:'#1e293b',fontSize:'12px'}}>€ {(quote.subtotal||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
-                {quote.discount > 0 && <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',fontSize:'11px',color:'#64748b',borderBottom:'1px solid #e2e8f0'}}><span style={{fontWeight:600}}>Discount ({quote.discount}%)</span><span style={{fontWeight:700,color:'#ef4444',fontSize:'12px'}}>-€ {(quote.discountAmount||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div>}
-                <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',fontSize:'11px',color:'#64748b',borderBottom:'1px solid #e2e8f0'}}><span style={{fontWeight:600}}>Tax ({quote.tax}%)</span><span style={{fontWeight:700,color:'#0d9488',fontSize:'12px'}}>+€ {(quote.taxAmount||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
-                <div style={{display:'flex',justifyContent:'space-between',padding:'12px 0 0',fontSize:'14px',borderTop:'3px solid #0d9488',marginTop:'8px'}}><span style={{fontWeight:700,color:'#1e293b',textTransform:'uppercase',letterSpacing:'1px'}}>Total</span><span style={{fontWeight:700,fontSize:'20px',background:'linear-gradient(135deg, #0d9488, #0ea5e9)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>€ {(quote.total||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
+                <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',fontSize:'11px',color:'#64748b',borderBottom:'1px solid #e2e8f0'}}><span style={{fontWeight:600}}>Subtotal</span><span style={{fontWeight:700,color:'#1e293b',fontSize:'12px'}}>EGP {((quote.subtotal||0) * exchangeRate).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
+                <div style={{display:'flex',justifyContent:'space-between',padding:'4px 0',fontSize:'10px',color:'#64748b',borderBottom:'1px solid #e2e8f0',fontStyle:'italic'}}><span></span><span style={{fontSize:'10px',fontStyle:'italic'}}>€ {(quote.subtotal||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
+                {quote.discount > 0 && <><div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',fontSize:'11px',color:'#64748b',borderBottom:'1px solid #e2e8f0'}}><span style={{fontWeight:600}}>Discount ({quote.discount}%)</span><span style={{fontWeight:700,color:'#ef4444',fontSize:'12px'}}>-EGP {((quote.discountAmount||0) * exchangeRate).toLocaleString('en',{minimumFractionDigits:2})}</span></div><div style={{display:'flex',justifyContent:'space-between',padding:'4px 0',fontSize:'10px',color:'#64748b',borderBottom:'1px solid #e2e8f0',fontStyle:'italic'}}><span></span><span style={{fontSize:'10px',fontStyle:'italic'}}>-€ {(quote.discountAmount||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div></>}
+                <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',fontSize:'11px',color:'#64748b',borderBottom:'1px solid #e2e8f0'}}><span style={{fontWeight:600}}>Tax ({quote.tax}%)</span><span style={{fontWeight:700,color:'#0d9488',fontSize:'12px'}}>+EGP {((quote.taxAmount||0) * exchangeRate).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
+                <div style={{display:'flex',justifyContent:'space-between',padding:'4px 0',fontSize:'10px',color:'#64748b',borderBottom:'1px solid #e2e8f0',fontStyle:'italic'}}><span></span><span style={{fontSize:'10px',fontStyle:'italic'}}>+€ {(quote.taxAmount||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
+                <div style={{display:'flex',justifyContent:'space-between',padding:'12px 0 0',fontSize:'14px',borderTop:'3px solid #0d9488',marginTop:'8px'}}><span style={{fontWeight:700,color:'#1e293b',textTransform:'uppercase',letterSpacing:'1px'}}>Total</span><span style={{fontWeight:700,fontSize:'20px',background:'linear-gradient(135deg, #0d9488, #0ea5e9)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>EGP {((quote.total||0) * exchangeRate).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
+                <div style={{display:'flex',justifyContent:'space-between',padding:'4px 0',fontSize:'10px',color:'#64748b',fontStyle:'italic'}}><span></span><span style={{fontSize:'11px',fontStyle:'italic',color:'#64748b'}}>€ {(quote.total||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
               </div>
             </div>
 
@@ -559,7 +598,7 @@ function InvoicePrint({ quote, onClose }) {
 
             <div style={{marginTop:'auto',paddingTop:'20px',borderTop:'1px solid #e2e8f0',display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:'32px'}}>
               <p style={{fontSize:'10px',color:'#94a3b8',fontStyle:'italic'}}>Thank you for your business.</p>
-              <div style={{textAlign:'right'}}><p style={{fontSize:'9px',color:'#94a3b8'}}>Generated by Jonix CRM • Confidential</p><p style={{fontSize:'9px',color:'#64748b',marginTop:'4px'}}>www.jonix.com • info@jonix.com</p></div>
+              <div style={{textAlign:'right'}}><p style={{fontSize:'9px',color:'#94a3b8'}}>Generated by Jonix CRM • Confidential</p><p style={{fontSize:'9px',color:'#64748b',marginTop:'4px'}}>www.jonix.com</p></div>
             </div>
           </div>
         </div>
@@ -575,6 +614,7 @@ function ViewQuoteModal({ quote, onClose, onPDF, onEdit, onStatusChange }) {
   const fmtDate = (ts) => {
     try { return new Date(ts.toDate()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return 'N/A'; }
   };
+  const exchangeRate = quote.exchangeRate || 55;
 
   return (
     <div style={{position:'fixed',inset:0,zIndex:100,background:'rgba(15,23,42,0.45)',backdropFilter:'blur(4px)',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}>
@@ -593,23 +633,23 @@ function ViewQuoteModal({ quote, onClose, onPDF, onEdit, onStatusChange }) {
         </div>
 
         <div style={{padding:'24px'}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px'}}>
             <span style={{display:'inline-flex',alignItems:'center',gap:'6px',padding:'6px 14px',borderRadius:'20px',fontSize:'12px',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px',background: quote.status==='draft'?'#fef3c7':quote.status==='sent'?'#dbeafe':'#d1fae5',color: quote.status==='draft'?'#92400e':quote.status==='sent'?'#1e40af':'#065f46',border: quote.status==='draft'?'1px solid #fde047':quote.status==='sent'?'1px solid #93c5fd':'1px solid #6ee7b7'}}>
               <span style={{width:'7px',height:'7px',borderRadius:'50%',background:'currentColor'}}/>{quote.status}
             </span>
             <span style={{fontSize:'12px',color:'#94a3b8'}}>{fmtDate(quote.createdAt)}</span>
           </div>
 
+          <div style={{background:'#ecfdf5',border:'1px solid #6ee7b7',borderRadius:'8px',padding:'12px',marginBottom:'16px'}}>
+            <p style={{fontSize:'12px',color:'#065f46',fontWeight:600}}>Exchange Rate: 1 EUR = {exchangeRate.toFixed(2)} EGP</p>
+          </div>
+
           <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'18px',marginBottom:'24px'}}>
             <p style={{fontSize:'8px',textTransform:'uppercase',letterSpacing:'2px',color:'#0d9488',fontWeight:600,marginBottom:'12px'}}>Client Information</p>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'12px'}}>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
               <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
                 <div style={{background:'#e0f2fe',padding:'6px',borderRadius:'8px',display:'flex'}}><Building2 size={14} color="#0284c7"/></div>
                 <div><p style={{fontSize:'9px',color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.5px'}}>Client</p><p style={{fontSize:'13px',fontWeight:600,color:'#1e293b'}}>{quote.clientName||'—'}</p></div>
-              </div>
-              <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                <div style={{background:'#e0f2fe',padding:'6px',borderRadius:'8px',display:'flex'}}><Mail size={14} color="#0284c7"/></div>
-                <div><p style={{fontSize:'9px',color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.5px'}}>Email</p><p style={{fontSize:'12px',color:'#475569'}}>{quote.clientEmail||'—'}</p></div>
               </div>
               <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
                 <div style={{background:'#e0f2fe',padding:'6px',borderRadius:'8px',display:'flex'}}><Phone size={14} color="#0284c7"/></div>
@@ -639,8 +679,8 @@ function ViewQuoteModal({ quote, onClose, onPDF, onEdit, onStatusChange }) {
                       {item.notes && <div style={{fontSize:'11px',color:'#64748b',marginTop:'4px'}}>{item.notes}</div>}
                     </td>
                     <td style={{padding:'10px 12px',fontSize:'13px',color:'#475569',textAlign:'right'}}>{item.quantity}</td>
-                    <td style={{padding:'10px 12px',fontSize:'13px',color:'#475569',textAlign:'right'}}>€ {Number(item.unitPrice).toLocaleString('en',{minimumFractionDigits:2})}</td>
-                    <td style={{padding:'10px 12px',fontSize:'13px',color:'#1e293b',fontWeight:600,textAlign:'right'}}>€ {(item.quantity*item.unitPrice).toLocaleString('en',{minimumFractionDigits:2})}</td>
+                    <td style={{padding:'10px 12px',fontSize:'13px',color:'#475569',textAlign:'right'}}>EGP {(Number(item.unitPrice) * exchangeRate).toLocaleString('en',{minimumFractionDigits:2})}<div style={{fontSize:'10px',color:'#94a3b8',fontStyle:'italic'}}>€ {Number(item.unitPrice).toLocaleString('en',{minimumFractionDigits:2})}</div></td>
+                    <td style={{padding:'10px 12px',fontSize:'13px',color:'#1e293b',fontWeight:600,textAlign:'right'}}>EGP {(item.quantity*item.unitPrice*exchangeRate).toLocaleString('en',{minimumFractionDigits:2})}<div style={{fontSize:'10px',color:'#94a3b8',fontStyle:'italic'}}>€ {(item.quantity*item.unitPrice).toLocaleString('en',{minimumFractionDigits:2})}</div></td>
                   </tr>
                 ))}
               </tbody>
@@ -649,10 +689,13 @@ function ViewQuoteModal({ quote, onClose, onPDF, onEdit, onStatusChange }) {
 
           <div style={{display:'flex',justifyContent:'flex-end'}}>
             <div style={{width:'280px',background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:'12px',padding:'18px'}}>
-              <div style={{display:'flex',justifyContent:'space-between',padding:'5px 0',fontSize:'13px',color:'#64748b',borderBottom:'1px solid #f1f5f9'}}><span>Subtotal</span><span style={{fontWeight:600,color:'#1e293b'}}>€ {(quote.subtotal||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
-              {quote.discount > 0 && <div style={{display:'flex',justifyContent:'space-between',padding:'5px 0',fontSize:'13px',color:'#64748b',borderBottom:'1px solid #f1f5f9'}}><span>Discount ({quote.discount}%)</span><span style={{fontWeight:600,color:'#ef4444'}}>-€ {(quote.discountAmount||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div>}
-              <div style={{display:'flex',justifyContent:'space-between',padding:'5px 0',fontSize:'13px',color:'#64748b',borderBottom:'1px solid #f1f5f9'}}><span>Tax ({quote.tax}%)</span><span style={{fontWeight:600,color:'#0d9488'}}>+€ {(quote.taxAmount||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
-              <div style={{display:'flex',justifyContent:'space-between',padding:'10px 0 0',borderTop:'2px solid #1e293b',marginTop:'6px'}}><span style={{fontWeight:700,color:'#1e293b',fontSize:'15px'}}>Total</span><span style={{fontWeight:700,color:'#0d9488',fontSize:'20px'}}>€ {(quote.total||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
+              <div style={{display:'flex',justifyContent:'space-between',padding:'5px 0',fontSize:'13px',color:'#64748b',borderBottom:'1px solid #f1f5f9'}}><span>Subtotal</span><span style={{fontWeight:600,color:'#1e293b'}}>EGP {((quote.subtotal||0)*exchangeRate).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
+              <div style={{display:'flex',justifyContent:'space-between',padding:'3px 0',fontSize:'10px',color:'#94a3b8',borderBottom:'1px solid #f1f5f9',fontStyle:'italic'}}><span></span><span>€ {(quote.subtotal||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
+              {quote.discount > 0 && <><div style={{display:'flex',justifyContent:'space-between',padding:'5px 0',fontSize:'13px',color:'#64748b',borderBottom:'1px solid #f1f5f9'}}><span>Discount ({quote.discount}%)</span><span style={{fontWeight:600,color:'#ef4444'}}>-EGP {((quote.discountAmount||0)*exchangeRate).toLocaleString('en',{minimumFractionDigits:2})}</span></div><div style={{display:'flex',justifyContent:'space-between',padding:'3px 0',fontSize:'10px',color:'#94a3b8',borderBottom:'1px solid #f1f5f9',fontStyle:'italic'}}><span></span><span>-€ {(quote.discountAmount||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div></>}
+              <div style={{display:'flex',justifyContent:'space-between',padding:'5px 0',fontSize:'13px',color:'#64748b',borderBottom:'1px solid #f1f5f9'}}><span>Tax ({quote.tax}%)</span><span style={{fontWeight:600,color:'#0d9488'}}>+EGP {((quote.taxAmount||0)*exchangeRate).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
+              <div style={{display:'flex',justifyContent:'space-between',padding:'3px 0',fontSize:'10px',color:'#94a3b8',borderBottom:'1px solid #f1f5f9',fontStyle:'italic'}}><span></span><span>+€ {(quote.taxAmount||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
+              <div style={{display:'flex',justifyContent:'space-between',padding:'10px 0 0',borderTop:'2px solid #1e293b',marginTop:'6px'}}><span style={{fontWeight:700,color:'#1e293b',fontSize:'15px'}}>Total</span><span style={{fontWeight:700,color:'#0d9488',fontSize:'20px'}}>EGP {((quote.total||0)*exchangeRate).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
+              <div style={{display:'flex',justifyContent:'space-between',padding:'3px 0',fontSize:'11px',color:'#94a3b8',fontStyle:'italic'}}><span></span><span>€ {(quote.total||0).toLocaleString('en',{minimumFractionDigits:2})}</span></div>
             </div>
           </div>
 
@@ -681,6 +724,8 @@ export default function QuoteGeneratorPage() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState(55);
+  const [loadingRate, setLoadingRate] = useState(true);
 
   const [viewQuote, setViewQuote] = useState(null);
   const [pdfQuote, setPdfQuote] = useState(null);
@@ -697,6 +742,15 @@ export default function QuoteGeneratorPage() {
   useEffect(() => {
     if (currentUser) { loadDeals(); loadQuotes(); }
   }, [currentUser, userRole]);
+
+  useEffect(() => {
+    async function getRate() {
+      const rate = await fetchExchangeRate();
+      setExchangeRate(rate);
+      setLoadingRate(false);
+    }
+    getRate();
+  }, []);
 
   async function loadDeals() {
     try {
@@ -739,12 +793,16 @@ export default function QuoteGeneratorPage() {
       const clientEmail = deal.email || deal.clientEmail || '';
       const clientPhone = deal.phone || deal.clientPhone || '';
 
+      // Fetch fresh exchange rate before creating quote
+      const currentRate = await fetchExchangeRate();
+
       await addDoc(collection(db, 'quotes'), {
         dealId: form.dealId, clientName, clientEmail, clientPhone,
         quoteNumber: form.quoteNumber || `QT-${Date.now()}`, title: form.title,
         items: form.items.map(item => ({ description: item.description, quantity: Number(item.quantity), unitPrice: Number(item.unitPrice), productId: item.productId || '', notes: item.notes || '' })),
         subtotal, discount: form.discount, discountAmount, tax: form.tax, taxAmount, total,
         notes: form.notes, validUntil: form.validUntil, terms: form.terms,
+        exchangeRate: currentRate,
         status: 'draft', createdBy: currentUser.uid,
         createdAt: serverTimestamp(), updatedAt: serverTimestamp()
       });
@@ -787,6 +845,7 @@ export default function QuoteGeneratorPage() {
   const taxableAmount = subtotal - discountAmount;
   const taxAmount = taxableAmount * (form.tax / 100);
   const total = taxableAmount + taxAmount;
+  const totalEGP = total * exchangeRate;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 lg:p-8">
@@ -808,6 +867,20 @@ export default function QuoteGeneratorPage() {
       {showForm && (
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 lg:p-8 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Quote</h2>
+          
+          {loadingRate && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-center gap-3">
+              <Loader2 size={20} className="animate-spin text-blue-600"/>
+              <span className="text-sm text-blue-800 font-medium">Fetching latest exchange rate...</span>
+            </div>
+          )}
+          
+          {!loadingRate && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-green-800 font-semibold">Exchange Rate: 1 EUR = {exchangeRate.toFixed(2)} EGP</p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Deal <span className="text-red-500">*</span></label>
@@ -820,7 +893,7 @@ export default function QuoteGeneratorPage() {
             <div><label className="block text-sm font-semibold text-gray-700 mb-2">Quote Number</label><input type="text" value={form.quoteNumber} onChange={e=>setForm({...form,quoteNumber:e.target.value})} placeholder="Auto-generated if left blank" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"/></div>
           </div>
           <div className="mb-6"><label className="block text-sm font-semibold text-gray-700 mb-2">Quote Title <span className="text-red-500">*</span></label><input type="text" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="e.g., Air Purification System Installation" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"/></div>
-          {selectedDeal && <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6"><p className="text-sm font-semibold text-blue-800 mb-1">Selected Deal: {selectedDeal.businessName||selectedDeal.clientName||selectedDeal.name}</p><p className="text-xs text-blue-600">{selectedDeal.email||selectedDeal.clientEmail||'No email'} • {selectedDeal.phone||selectedDeal.clientPhone||'No phone'}</p></div>}
+          {selectedDeal && <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6"><p className="text-sm font-semibold text-blue-800 mb-1">Selected Deal: {selectedDeal.businessName||selectedDeal.clientName||selectedDeal.name}</p><p className="text-xs text-blue-600">{selectedDeal.phone||selectedDeal.clientPhone||'No phone'}</p></div>}
 
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Line Items <span className="text-red-500">*</span></h3>
@@ -853,10 +926,11 @@ export default function QuoteGeneratorPage() {
 
           <div className="bg-gray-50 rounded-lg p-6 mb-6 border border-gray-200">
             <div className="space-y-3">
-              <div className="flex justify-between"><span className="text-gray-600">Subtotal:</span><span className="font-semibold">€ {subtotal.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Subtotal (EUR):</span><span className="font-semibold">€ {subtotal.toFixed(2)}</span></div>
               <div className="flex justify-between items-center"><div className="flex items-center gap-2"><span className="text-gray-600">Discount:</span><input type="number" value={form.discount} onChange={e=>setForm({...form,discount:Math.min(100,Math.max(0,Number(e.target.value)))})} className="w-20 px-2 py-1 border border-gray-300 rounded text-sm" min="0" max="100"/><span className="text-gray-600">%</span></div><span className="font-semibold text-red-600">-€ {discountAmount.toFixed(2)}</span></div>
               <div className="flex justify-between items-center"><div className="flex items-center gap-2"><span className="text-gray-600">Tax:</span><input type="number" value={form.tax} onChange={e=>setForm({...form,tax:Math.min(100,Math.max(0,Number(e.target.value)))})} className="w-20 px-2 py-1 border border-gray-300 rounded text-sm" min="0" max="100"/><span className="text-gray-600">%</span></div><span className="font-semibold text-green-600">+€ {taxAmount.toFixed(2)}</span></div>
-              <div className="pt-3 border-t-2 border-gray-300 flex justify-between"><span className="text-lg font-bold text-gray-900">Total:</span><span className="text-lg font-bold text-orange-600">€ {total.toFixed(2)}</span></div>
+              <div className="pt-3 border-t-2 border-gray-300 flex justify-between"><span className="text-lg font-bold text-gray-900">Total (EGP):</span><span className="text-lg font-bold text-orange-600">EGP {totalEGP.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-sm text-gray-500 italic">EUR Equivalent:</span><span className="text-sm text-gray-500 italic">€ {total.toFixed(2)}</span></div>
             </div>
           </div>
 
@@ -866,7 +940,7 @@ export default function QuoteGeneratorPage() {
             <div><label className="block text-sm font-semibold text-gray-700 mb-2">Additional Notes</label><input type="text" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="e.g., Thank you for your business" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"/></div>
           </div>
           <div className="flex gap-3">
-            <button type="button" onClick={handleCreateQuote} disabled={isSubmitting} className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-red-700 transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed">{isSubmitting ? <><Loader2 size={18} className="animate-spin"/>Creating...</> : 'Create Quote'}</button>
+            <button type="button" onClick={handleCreateQuote} disabled={isSubmitting || loadingRate} className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-red-700 transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed">{isSubmitting ? <><Loader2 size={18} className="animate-spin"/>Creating...</> : 'Create Quote'}</button>
             <button type="button" onClick={()=>{setShowForm(false);setForm(initialForm);setSelectedDeal(null);}} className="flex-1 px-6 py-3 bg-gray-200 text-gray-900 rounded-lg font-semibold hover:bg-gray-300 transition-all">Cancel</button>
           </div>
         </div>
@@ -889,28 +963,34 @@ export default function QuoteGeneratorPage() {
             <p className="text-gray-400 text-sm mt-1">{search||filterStatus!=='all'?'Try adjusting your search or filter.':'Click "New Quote" to create your first quote.'}</p>
           </div>
         ) : (
-          filteredQuotes.map(quote => (
-            <div key={quote.id} className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-all">
-              <div className="flex items-start justify-between mb-4">
-                <div><h3 className="text-lg font-bold text-gray-900">{quote.title}</h3><p className="text-sm text-gray-500">#{quote.quoteNumber}</p></div>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${quote.status==='draft'?'bg-yellow-100 text-yellow-800':quote.status==='sent'?'bg-blue-100 text-blue-800':'bg-green-100 text-green-800'}`}>{quote.status}</span>
+          filteredQuotes.map(quote => {
+            const quoteRate = quote.exchangeRate || 55;
+            const totalEGP = (quote.total || 0) * quoteRate;
+            return (
+              <div key={quote.id} className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-all">
+                <div className="flex items-start justify-between mb-4">
+                  <div><h3 className="text-lg font-bold text-gray-900">{quote.title}</h3><p className="text-sm text-gray-500">#{quote.quoteNumber}</p></div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${quote.status==='draft'?'bg-yellow-100 text-yellow-800':quote.status==='sent'?'bg-blue-100 text-blue-800':'bg-green-100 text-green-800'}`}>{quote.status}</span>
+                </div>
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm text-gray-600"><strong>Client:</strong> {quote.clientName||'N/A'}</p>
+                  <p className="text-sm text-gray-600"><strong>Items:</strong> {quote.items?.length||0}</p>
+                  <p className="text-sm text-gray-600"><strong>Terms:</strong> {quote.terms||'N/A'}</p>
+                  <p className="text-sm text-gray-600"><strong>Valid Until:</strong> {quote.validUntil||'Not set'}</p>
+                  <p className="text-sm text-gray-600"><strong>Exchange Rate:</strong> 1 EUR = {quoteRate.toFixed(2)} EGP</p>
+                </div>
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4 mb-4 border border-orange-200">
+                  <div className="flex justify-between items-center mb-1"><span className="text-gray-600 font-medium">Total Amount:</span><span className="text-2xl font-bold text-orange-600">EGP {totalEGP.toFixed(2)}</span></div>
+                  <div className="flex justify-end"><span className="text-sm text-gray-500 italic">€ {(quote.total||0).toFixed(2)}</span></div>
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={()=>setViewQuote(quote)} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors font-medium text-sm"><Eye size={16}/> View</button>
+                  <button type="button" onClick={()=>setEditQuote(quote)} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 transition-colors font-medium text-sm"><Edit size={16}/> Edit</button>
+                  <button type="button" onClick={()=>setPdfQuote(quote)} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium text-sm"><Download size={16}/> PDF</button>
+                </div>
               </div>
-              <div className="space-y-2 mb-4">
-                <p className="text-sm text-gray-600"><strong>Client:</strong> {quote.clientName||'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>Items:</strong> {quote.items?.length||0}</p>
-                <p className="text-sm text-gray-600"><strong>Terms:</strong> {quote.terms||'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>Valid Until:</strong> {quote.validUntil||'Not set'}</p>
-              </div>
-              <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4 mb-4 border border-orange-200">
-                <div className="flex justify-between items-center"><span className="text-gray-600 font-medium">Total Amount:</span><span className="text-2xl font-bold text-orange-600">€ {quote.total?.toFixed(2)||'0.00'}</span></div>
-              </div>
-              <div className="flex gap-2">
-                <button type="button" onClick={()=>setViewQuote(quote)} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors font-medium text-sm"><Eye size={16}/> View</button>
-                <button type="button" onClick={()=>setEditQuote(quote)} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 transition-colors font-medium text-sm"><Edit size={16}/> Edit</button>
-                <button type="button" onClick={()=>setPdfQuote(quote)} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium text-sm"><Download size={16}/> PDF</button>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
