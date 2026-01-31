@@ -25,10 +25,21 @@ export const GlobalSearch = () => {
     setLoading(true);
     try {
       const searchLower = term.toLowerCase();
+      const isAdmin = userRole === 'admin' || userRole === 'sales_manager' || userRole === 'team_leader';
+      
+      // For non-admins, restrict search to their own data
+      const dealsQuery = isAdmin
+        ? query(collection(db, 'deals'), limit(5))
+        : query(collection(db, 'deals'), where('salesPersonId', '==', currentUser.uid), limit(5));
+      
+      const contactsQuery = isAdmin
+        ? query(collection(db, 'contacts'), limit(5))
+        : query(collection(db, 'contacts'), where('salesPersonId', '==', currentUser.uid), limit(5));
+      
       const [dealsSnap, contactsSnap, tasksSnap] = await Promise.all([
-        getDocs(query(collection(db, 'deals'), limit(5))),
-        getDocs(query(collection(db, 'contacts'), limit(5))),
-        getDocs(query(collection(db, 'tasks'), limit(5)))
+        getDocs(dealsQuery),
+        getDocs(contactsQuery),
+        getDocs(query(collection(db, 'tasks'), where('assignedTo', '==', currentUser.uid), limit(5)))
       ]);
 
       const deals = dealsSnap.docs
@@ -61,7 +72,7 @@ export const GlobalSearch = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentUser?.uid, userRole]);
 
   // Close on outside click
   useEffect(() => {

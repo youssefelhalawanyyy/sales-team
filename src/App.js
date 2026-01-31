@@ -135,7 +135,7 @@ const AppContent = () => {
         <Route
           path="/finance"
           element={
-            <ProtectedRoute requiredRoles={['admin', 'finance_manager']}>
+            <ProtectedRoute requiredRoles={['admin']}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <Suspense fallback={<LoadingFallback />}>
                   <FinancePage />
@@ -149,7 +149,7 @@ const AppContent = () => {
         <Route
           path="/finance/commissions"
           element={
-            <ProtectedRoute requiredRoles={['admin', 'finance_manager']}>
+            <ProtectedRoute requiredRoles={['admin']}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <Suspense fallback={<LoadingFallback />}>
                   <CommissionPage />
@@ -163,7 +163,7 @@ const AppContent = () => {
         <Route
           path="/finance/reports"
           element={
-            <ProtectedRoute requiredRoles={['admin', 'finance_manager']}>
+            <ProtectedRoute requiredRoles={['admin']}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <Suspense fallback={<LoadingFallback />}>
                   <FinanceReportsPage />
@@ -409,12 +409,7 @@ const AppContent = () => {
         <Route
           path="/analytics"
           element={
-            <ProtectedRoute requiredRoles={[
-              'admin',
-              'sales_manager',
-              'team_leader',
-              'sales_member'
-            ]}>
+            <ProtectedRoute requiredRoles={['admin']}>
               <Suspense fallback={<LoadingFallback />}>
                 <AnalyticsDashboard />
               </Suspense>
@@ -443,12 +438,7 @@ const AppContent = () => {
         <Route
           path="/forecasting"
           element={
-            <ProtectedRoute requiredRoles={[
-              'admin',
-              'sales_manager',
-              'team_leader',
-              'sales_member'
-            ]}>
+            <ProtectedRoute requiredRoles={['admin']}>
               <Suspense fallback={<LoadingFallback />}>
                 <SalesForecasting />
               </Suspense>
@@ -489,7 +479,7 @@ const AppContent = () => {
         <Route
           path="/admin/data"
           element={
-            <ProtectedRoute requiredRoles={['admin', 'sales_manager']}>
+            <ProtectedRoute requiredRoles={['admin']}>
               <Suspense fallback={<LoadingFallback />}>
                 <DataImportExport />
               </Suspense>

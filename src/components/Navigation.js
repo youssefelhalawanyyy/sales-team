@@ -194,6 +194,23 @@ export const Navigation = ({ userRole }) => {
         ]
       },
 
+      {
+        label: 'Finance',
+        icon: DollarSign,
+        children: [
+          { label: 'Finance', path: '/finance', icon: DollarSign },
+          { label: 'Commissions', path: '/finance/commissions', icon: Users },
+          { label: 'Reports', path: '/finance/reports', icon: BarChart3 },
+          { label: 'Settlements', path: '/finance/settlements', icon: DollarSign }
+        ]
+      },
+
+      {
+        label: 'Calendar',
+        path: '/calendar',
+        icon: Calendar
+      },
+
       informationItem
     ],
 
@@ -226,13 +243,9 @@ export const Navigation = ({ userRole }) => {
       },
 
       {
-        label: 'Analytics',
-        icon: BarChart2,
-        children: [
-          { label: 'Analytics Dashboard', path: '/analytics', icon: BarChart2 },
-          { label: 'Forecasting', path: '/forecasting', icon: TrendingUp },
-          { label: 'Calendar', path: '/calendar', icon: Calendar }
-        ]
+        label: 'Calendar',
+        path: '/calendar',
+        icon: Calendar
       },
 
       informationItem
@@ -250,26 +263,14 @@ export const Navigation = ({ userRole }) => {
           { label: 'Contacts', path: '/sales/contacts', icon: Users },
           { label: 'Deals', path: '/sales/deals', icon: Users2 },
           { label: 'Visits', path: '/sales/visits', icon: MapPin },
-          { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
-          { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
-          { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
+          { label: 'Follow-Ups', path: '/sales/followups', icon: Bell }
         ]
       },
 
       {
-        label: 'Tasks',
-        path: '/tasks',
-        icon: CheckSquare
-      },
-
-      {
-        label: 'Analytics',
-        icon: BarChart2,
-        children: [
-          { label: 'Analytics Dashboard', path: '/analytics', icon: BarChart2 },
-          { label: 'Forecasting', path: '/forecasting', icon: TrendingUp },
-          { label: 'Calendar', path: '/calendar', icon: Calendar }
-        ]
+        label: 'Calendar',
+        path: '/calendar',
+        icon: Calendar
       },
 
       informationItem
