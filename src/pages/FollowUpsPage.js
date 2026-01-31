@@ -110,20 +110,27 @@ export default function FollowUpsPage() {
       let q;
 
       if (userRole === 'admin') {
+        // Admin: Load ALL follow-ups (no filter needed)
         q = query(
-          collection(db, 'followups'),
-          orderBy('reminderDate', 'asc')
+          collection(db, 'followups')
         );
       } else {
+        // Regular users: Only load their assigned follow-ups
         q = query(
           collection(db, 'followups'),
-          where('assignedTo', '==', currentUser.uid),
-          orderBy('reminderDate', 'asc')
+          where('assignedTo', '==', currentUser.uid)
         );
       }
 
       const snap = await getDocs(q);
       let list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // Sort by reminderDate in memory (avoids composite index requirement)
+      list.sort((a, b) => {
+        const dateA = a.reminderDate?.toMillis?.() || 0;
+        const dateB = b.reminderDate?.toMillis?.() || 0;
+        return dateA - dateB;
+      });
 
       // Auto-update overdue status
       list = list.map(f => {
@@ -136,7 +143,8 @@ export default function FollowUpsPage() {
       setFollowups(list);
     } catch (e) {
       console.error('Error loading follow-ups:', e);
-      alert('Failed to load follow-ups');
+      console.error('Full error details:', e.message, e.code);
+      alert('Failed to load follow-ups: ' + e.message);
     } finally {
       setLoading(false);
     }
