@@ -26,6 +26,7 @@ export default function EmailTemplatesPage() {
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
   const [previewId, setPreviewId] = useState(null);
+  const isAdmin = userRole === 'admin';
 
   const [form, setForm] = useState({
     name: '',
@@ -301,29 +302,33 @@ Best regards,
           </div>
 
           <div className="flex gap-3">
-            <button
-              onClick={handleCreateDefault}
-              className="px-4 py-3 bg-gray-200 text-gray-900 rounded-lg font-semibold hover:bg-gray-300 transition-all"
-            >
-              Load Defaults
-            </button>
-            <button
-              onClick={() => {
-                setShowForm(!showForm);
-                setEditingId(null);
-                setForm({ name: '', category: 'general', subject: '', body: '', description: '' });
-              }}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-700 transition-all shadow-lg"
-            >
-              <Plus size={20} />
-              New Template
-            </button>
+            {isAdmin && (
+              <button
+                onClick={handleCreateDefault}
+                className="px-4 py-3 bg-gray-200 text-gray-900 rounded-lg font-semibold hover:bg-gray-300 transition-all"
+              >
+                Load Defaults
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setShowForm(!showForm);
+                  setEditingId(null);
+                  setForm({ name: '', category: 'general', subject: '', body: '', description: '' });
+                }}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-700 transition-all shadow-lg"
+              >
+                <Plus size={20} />
+                New Template
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Form */}
-      {showForm && (
+      {showForm && isAdmin && (
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             {editingId ? 'Edit Template' : 'Create New Template'}
@@ -465,24 +470,28 @@ Best regards,
                   <Eye size={16} />
                   Preview
                 </button>
-                <button
-                  onClick={() => {
-                    setForm(template);
-                    setEditingId(template.id);
-                    setShowForm(true);
-                  }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium text-sm"
-                >
-                  <Edit size={16} />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDeleteTemplate(template.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium text-sm"
-                >
-                  <Trash2 size={16} />
-                  Delete
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => {
+                      setForm(template);
+                      setEditingId(template.id);
+                      setShowForm(true);
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium text-sm"
+                  >
+                    <Edit size={16} />
+                    Edit
+                  </button>
+                )}
+                {isAdmin && (
+                  <button
+                    onClick={() => handleDeleteTemplate(template.id)}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium text-sm"
+                  >
+                    <Trash2 size={16} />
+                    Delete
+                  </button>
+                )}
               </div>
 
               {previewId === template.id && (

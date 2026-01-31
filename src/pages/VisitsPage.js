@@ -164,6 +164,19 @@ export default function VisitsPage() {
         createdAt: serverTimestamp()
       });
 
+      // Auto-log communication
+      await addDoc(collection(db, 'communications'), {
+        clientId: form.dealId,
+        clientName: selectedDeal.businessName,
+        type: 'meeting',
+        purpose: form.purpose,
+        result: form.result,
+        notes: form.nextStep,
+        timestamp: serverTimestamp(),
+        createdBy: currentUser.uid,
+        createdByName: `${currentUser.firstName} ${currentUser.lastName}`
+      });
+
       // Reset form
       setForm({
         dealId: '',
@@ -205,6 +218,23 @@ export default function VisitsPage() {
         result: editVisit.result,
         nextStep: editVisit.nextStep
       });
+
+      // Auto-log communication for updated visit
+      try {
+        await addDoc(collection(db, 'communications'), {
+          clientId: editVisit.dealId,
+          clientName: selectedDeal?.businessName || editVisit.businessName,
+          type: 'meeting_updated',
+          purpose: editVisit.purpose,
+          result: editVisit.result,
+          notes: editVisit.nextStep,
+          timestamp: serverTimestamp(),
+          createdBy: currentUser.uid,
+          createdByName: `${currentUser.firstName} ${currentUser.lastName}`
+        });
+      } catch (logError) {
+        console.error('Error logging communication:', logError);
+      }
 
       setEditVisit(null);
       loadVisits();

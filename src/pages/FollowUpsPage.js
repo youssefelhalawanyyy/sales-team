@@ -183,6 +183,18 @@ export default function FollowUpsPage() {
         completedAt: null
       });
 
+      // Auto-log communication
+      await addDoc(collection(db, 'communications'), {
+        clientId: form.dealId,
+        clientName: selectedDeal.businessName,
+        type: 'followup',
+        action: form.nextAction,
+        notes: form.notes,
+        timestamp: serverTimestamp(),
+        createdBy: currentUser.uid,
+        createdByName: `${currentUser.firstName} ${currentUser.lastName}`
+      });
+
       setForm({
         dealId: '',
         reminderDate: '',
@@ -244,6 +256,24 @@ export default function FollowUpsPage() {
         status: 'done',
         completedAt: serverTimestamp()
       });
+
+      // Auto-log communication when follow-up is completed
+      if (followup) {
+        try {
+          await addDoc(collection(db, 'communications'), {
+            clientId: followup.dealId,
+            clientName: followup.businessName,
+            type: 'followup_completed',
+            action: followup.nextAction,
+            notes: followup.notes,
+            timestamp: serverTimestamp(),
+            createdBy: currentUser.uid,
+            createdByName: `${currentUser.firstName} ${currentUser.lastName}`
+          });
+        } catch (logError) {
+          console.error('Error logging communication:', logError);
+        }
+      }
       
       // Send completion notification
       if (followup) {

@@ -94,6 +94,11 @@ export default function QuoteGeneratorPage() {
 
     try {
       const deal = deals.find(d => d.id === form.dealId);
+      if (!deal) {
+        alert('Deal not found');
+        return;
+      }
+
       const subtotal = form.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
       const discountAmount = subtotal * (form.discount / 100);
       const taxableAmount = subtotal - discountAmount;
@@ -302,7 +307,7 @@ export default function QuoteGeneratorPage() {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal:</span>
-                <span className="font-semibold">${subtotal.toFixed(2)}</span>
+                <span className="font-semibold">EGP {subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -317,7 +322,7 @@ export default function QuoteGeneratorPage() {
                   />
                   <span className="text-gray-600">%</span>
                 </div>
-                <span className="font-semibold">-${discountAmount.toFixed(2)}</span>
+                <span className="font-semibold">-EGP {discountAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -332,11 +337,11 @@ export default function QuoteGeneratorPage() {
                   />
                   <span className="text-gray-600">%</span>
                 </div>
-                <span className="font-semibold">${taxAmount.toFixed(2)}</span>
+                <span className="font-semibold">+EGP {taxAmount.toFixed(2)}</span>
               </div>
               <div className="pt-3 border-t-2 border-gray-200 flex justify-between">
                 <span className="text-lg font-bold text-gray-900">Total:</span>
-                <span className="text-lg font-bold text-orange-600">${total.toFixed(2)}</span>
+                <span className="text-lg font-bold text-orange-600">EGP {total.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -466,7 +471,7 @@ export default function QuoteGeneratorPage() {
               <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4 mb-4 border border-orange-200">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 font-medium">Total Amount:</span>
-                  <span className="text-2xl font-bold text-orange-600">${quote.total?.toFixed(2) || '0.00'}</span>
+                  <span className="text-2xl font-bold text-orange-600">EGP {quote.total?.toFixed(2) || '0.00'}</span>
                 </div>
               </div>
 

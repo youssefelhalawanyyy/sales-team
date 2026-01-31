@@ -45,6 +45,9 @@ export default function SalesDealsPage() {
   const [editDeal, setEditDeal] = useState(null);
   const [viewingHistory, setViewingHistory] = useState(null);
   const [error, setError] = useState(null);
+  const [showLossReasonModal, setShowLossReasonModal] = useState(false);
+  const [lossReason, setLossReason] = useState('');
+  const [pendingStatusChange, setPendingStatusChange] = useState(null);
 
   useEffect(() => {
     if (currentUser?.uid) {
@@ -120,9 +123,16 @@ export default function SalesDealsPage() {
       const originalDeal = deals.find(d => d.id === editDeal.id) || 
                           archivedDeals.find(d => d.id === editDeal.id);
       
+      // Check if status is changing to 'lost' and ask for reason
+      if (originalDeal.status !== 'lost' && editDeal.status === 'lost' && !editDeal.lossReason) {
+        setPendingStatusChange(editDeal);
+        setShowLossReasonModal(true);
+        return;
+      }
+      
       const changes = {};
       
-      ['businessName', 'contactPerson', 'phoneNumber', 'status', 'price', 'notes'].forEach(field => {
+      ['businessName', 'contactPerson', 'phoneNumber', 'status', 'price', 'notes', 'lossReason'].forEach(field => {
         if (originalDeal[field] !== editDeal[field]) {
           changes[field] = { from: originalDeal[field], to: editDeal[field] };
         }
@@ -142,6 +152,7 @@ export default function SalesDealsPage() {
         status: editDeal.status,
         price: Number(editDeal.price) || 0,
         notes: editDeal.notes,
+        lossReason: editDeal.lossReason || null,
         editHistory: arrayUnion(historyEntry)
       });
 
@@ -618,6 +629,64 @@ export default function SalesDealsPage() {
         <Modal onClose={() => setViewingHistory(null)} title={`Edit History - ${viewingHistory.businessName}`}>
           <DealHistory deal={viewingHistory} />
         </Modal>
+      )}
+
+      {/* Loss Reason Modal */}
+      {showLossReasonModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-slideUp">
+            <div className="border-b border-gray-200 p-6">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                <AlertCircle className="text-red-500" size={28} />
+                Why did this deal get lost?
+              </h2>
+              <p className="text-gray-600 mt-2">Please provide a reason for marking this deal as lost.</p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <textarea
+                value={lossReason}
+                onChange={(e) => setLossReason(e.target.value)}
+                placeholder="Enter the reason (e.g., Budget constraints, Chose competitor, Lost contact, etc.)"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
+                rows="4"
+              />
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    if (!lossReason.trim()) {
+                      alert('Please enter a reason for the lost deal');
+                      return;
+                    }
+                    setEditDeal({ ...editDeal, lossReason });
+                    setShowLossReasonModal(false);
+                    setLossReason('');
+                    // Trigger save after setting the reason
+                    setTimeout(saveEdit, 100);
+                  }}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-xl font-semibold shadow-lg shadow-red-500/30 transition-all"
+                >
+                  Mark as Lost
+                </button>
+                <button
+                  onClick={() => {
+                    setShowLossReasonModal(false);
+                    setLossReason('');
+                    if (pendingStatusChange) {
+                      const originalDeal = deals.find(d => d.id === pendingStatusChange.id) || 
+                                          archivedDeals.find(d => d.id === pendingStatusChange.id);
+                      setEditDeal({ ...pendingStatusChange, status: originalDeal?.status });
+                    }
+                  }}
+                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
