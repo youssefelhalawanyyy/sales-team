@@ -59,20 +59,18 @@ export const CalendarView = () => {
       );
     }
 
-    // Tasks Query - Users see tasks assigned to them AND created by them
+    // Tasks Query - Users see tasks assigned to them
     console.log('✅ Tasks: Loading assigned tasks (assignedTo = ' + currentUser.uid + ')');
     tasksQuery = query(
       collection(db, 'tasks'),
-      where('assignedTo', '==', currentUser.uid),
-      orderBy('dueDate', 'asc')
+      where('assignedTo', '==', currentUser.uid)
     );
 
     // Follow-ups Query - Users see follow-ups assigned to them
     console.log('📞 Follow-ups: Loading assigned follow-ups (assignedTo = ' + currentUser.uid + ')');
     followUpsQuery = query(
       collection(db, 'followUps'),
-      where('assignedTo', '==', currentUser.uid),
-      orderBy('scheduledDate', 'asc')
+      where('assignedTo', '==', currentUser.uid)
     );
 
     // Listen to deals
@@ -121,6 +119,14 @@ export const CalendarView = () => {
           priority: data.priority || 'medium'
         };
       });
+      
+      // Sort by due date in memory
+      tasksData.sort((a, b) => {
+        const dateA = a.date?.getTime?.() || 0;
+        const dateB = b.date?.getTime?.() || 0;
+        return dateA - dateB;
+      });
+      
       console.log('✅ Loaded tasks:', tasksData.length);
       console.log('Tasks:', tasksData);
       setTasks(tasksData);
@@ -147,6 +153,14 @@ export const CalendarView = () => {
           priority: data.priority || 'medium'
         };
       });
+      
+      // Sort by scheduled date in memory
+      followUpsData.sort((a, b) => {
+        const dateA = a.date?.getTime?.() || 0;
+        const dateB = b.date?.getTime?.() || 0;
+        return dateA - dateB;
+      });
+      
       console.log('✅ Loaded follow-ups:', followUpsData.length);
       console.log('Follow-ups:', followUpsData);
       setFollowUps(followUpsData);
