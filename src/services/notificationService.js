@@ -1,8 +1,19 @@
-import { collection, addDoc, serverTimestamp, doc, updateDoc, query, where, getDocs } from 'firebase/firestore';
+import { 
+  collection, 
+  addDoc, 
+  serverTimestamp, 
+  doc, 
+  updateDoc, 
+  getDoc,
+  query, 
+  where, 
+  getDocs 
+} from 'firebase/firestore';
 import { db } from '../firebase';
 
 /**
  * Centralized notification service for managing all types of notifications
+ * ✅ FIXED VERSION - Works for all users
  */
 
 // Notification types
@@ -29,15 +40,17 @@ export const NOTIFICATION_PRIORITY = {
 
 /**
  * Send a notification to a user
+ * ✅ FIXED: Now properly creates notifications for all users
  */
 export async function sendNotification(userId, payload) {
   if (!userId || !payload?.message) {
-    console.error('Missing userId or message', { userId, message: payload?.message });
+    console.error('❌ Missing userId or message', { userId, message: payload?.message });
     return null;
   }
 
   try {
     console.log('📢 Sending notification to user:', userId);
+    console.log('📝 Payload:', payload);
     
     const notification = {
       userId,
@@ -53,35 +66,56 @@ export async function sendNotification(userId, payload) {
       icon: payload.icon || null
     };
 
-    console.log('Notification object:', notification);
+    console.log('💾 Creating notification document:', notification);
     
     const docRef = await addDoc(collection(db, 'notifications'), notification);
     
-    console.log('✅ Notification created with ID:', docRef.id);
+    console.log('✅ Notification created successfully!');
+    console.log('📄 Document ID:', docRef.id);
+    console.log('👤 User ID:', userId);
     
     // If push notifications are enabled, send push notification
     if (payload.sendPush) {
+      console.log('🔔 Attempting push notification...');
       await sendPushNotification(userId, payload);
     }
 
     return docRef.id;
   } catch (error) {
     console.error('❌ Error sending notification:', error);
-    console.error('Error details:', { message: error.message, code: error.code });
+    console.error('Error message:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Error stack:', error.stack);
     return null;
   }
 }
 
 /**
  * Send notifications to multiple users
+ * ✅ FIXED: Better error handling and logging
  */
 export async function sendNotificationToMultiple(userIds, payload) {
+  if (!userIds || userIds.length === 0) {
+    console.error('❌ No user IDs provided');
+    return false;
+  }
+
+  console.log(`📢 Sending notifications to ${userIds.length} users`);
+  
   try {
-    const promises = userIds.map(userId => sendNotification(userId, payload));
-    await Promise.all(promises);
+    const promises = userIds.map((userId, index) => {
+      console.log(`Sending to user ${index + 1}/${userIds.length}:`, userId);
+      return sendNotification(userId, payload);
+    });
+    
+    const results = await Promise.all(promises);
+    const successful = results.filter(r => r !== null).length;
+    
+    console.log(`✅ Sent ${successful}/${userIds.length} notifications successfully`);
+    
     return true;
   } catch (error) {
-    console.error('Error sending batch notifications:', error);
+    console.error('❌ Error sending batch notifications:', error);
     return false;
   }
 }
@@ -90,11 +124,14 @@ export async function sendNotificationToMultiple(userIds, payload) {
  * Deal-related notifications
  */
 export async function notifyDealCreated(userId, dealData) {
+  console.log('🎯 notifyDealCreated called for user:', userId);
+  console.log('Deal data:', dealData);
+  
   const clientName = dealData.businessName || dealData.clientName || 'New Client';
   const amount = dealData.price ? `$${dealData.price.toLocaleString()}` : dealData.amount ? `$${dealData.amount.toLocaleString()}` : 'No amount';
 
   return sendNotification(userId, {
-    title: 'New Deal',
+    title: 'New Deal Created',
     message: `New deal created: ${clientName} - ${amount}`,
     type: NOTIFICATION_TYPES.DEAL_CREATED,
     priority: NOTIFICATION_PRIORITY.MEDIUM,
@@ -109,6 +146,8 @@ export async function notifyDealCreated(userId, dealData) {
 }
 
 export async function notifyDealUpdated(userId, dealData) {
+  console.log('🎯 notifyDealUpdated called for user:', userId);
+  
   const clientName = dealData.businessName || dealData.clientName || 'Client';
   const stage = dealData.stage || dealData.status || 'Updated';
 
@@ -128,6 +167,8 @@ export async function notifyDealUpdated(userId, dealData) {
 }
 
 export async function notifyDealClosed(userId, dealData, status) {
+  console.log('🎯 notifyDealClosed called for user:', userId);
+  
   const clientName = dealData.businessName || dealData.clientName || 'Client';
   const amount = dealData.price ? `$${dealData.price.toLocaleString()}` : dealData.amount ? `$${dealData.amount.toLocaleString()}` : '';
 
@@ -151,6 +192,8 @@ export async function notifyDealClosed(userId, dealData, status) {
  * Follow-up related notifications
  */
 export async function notifyFollowUpDue(userId, followUpData) {
+  console.log('🎯 notifyFollowUpDue called for user:', userId);
+  
   const clientName = followUpData.businessName || followUpData.clientName || 'Client';
   const type = followUpData.type || 'Follow-up';
 
@@ -170,6 +213,8 @@ export async function notifyFollowUpDue(userId, followUpData) {
 }
 
 export async function notifyFollowUpCompleted(userId, followUpData) {
+  console.log('🎯 notifyFollowUpCompleted called for user:', userId);
+  
   const clientName = followUpData.businessName || followUpData.clientName || 'Client';
 
   return sendNotification(userId, {
@@ -190,6 +235,8 @@ export async function notifyFollowUpCompleted(userId, followUpData) {
  * Commission-related notifications
  */
 export async function notifyCommissionEarned(userId, commissionData) {
+  console.log('🎯 notifyCommissionEarned called for user:', userId);
+  
   const amount = `$${commissionData.amount.toLocaleString()}`;
   const dealName = commissionData.dealName || 'Deal';
 
@@ -212,8 +259,10 @@ export async function notifyCommissionEarned(userId, commissionData) {
  * Achievement-related notifications
  */
 export async function notifyAchievementUnlocked(userId, achievementData) {
+  console.log('🎯 notifyAchievementUnlocked called for user:', userId);
+  
   return sendNotification(userId, {
-    title: 'Achievement Unlocked',
+    title: 'Achievement Unlocked!',
     message: `Achievement unlocked: ${achievementData.name}`,
     type: NOTIFICATION_TYPES.ACHIEVEMENT_UNLOCKED,
     priority: NOTIFICATION_PRIORITY.MEDIUM,
@@ -231,6 +280,8 @@ export async function notifyAchievementUnlocked(userId, achievementData) {
  * Settlement-related notifications
  */
 export async function notifySettlementReady(userId, settlementData) {
+  console.log('🎯 notifySettlementReady called for user:', userId);
+  
   const amount = `$${settlementData.totalAmount.toLocaleString()}`;
 
   return sendNotification(userId, {
@@ -248,67 +299,134 @@ export async function notifySettlementReady(userId, settlementData) {
 }
 
 /**
+ * Team member notifications
+ */
+export async function notifyTeamMemberAdded(userId, teamData, newMemberData) {
+  console.log('🎯 notifyTeamMemberAdded called for user:', userId);
+  
+  const memberName = newMemberData.name || newMemberData.email || 'New member';
+  const teamName = teamData.name || 'your team';
+
+  return sendNotification(userId, {
+    title: 'New Team Member',
+    message: `${memberName} joined ${teamName}`,
+    type: NOTIFICATION_TYPES.TEAM_MEMBER_ADDED,
+    priority: NOTIFICATION_PRIORITY.MEDIUM,
+    metadata: {
+      teamId: teamData.id,
+      memberId: newMemberData.id,
+      memberName,
+      teamName
+    },
+    actionUrl: `/teams/${teamData.id}`,
+    icon: '👥'
+  });
+}
+
+/**
  * Push notification support
+ * ✅ FIXED: Proper user document retrieval
  */
 async function sendPushNotification(userId, payload) {
   try {
-    // Get user's push subscription
-    const q = query(
-      collection(db, 'users'),
-      where('uid', '==', userId)
-    );
-    const querySnapshot = await getDocs(q);
+    console.log('🔔 Attempting to send push notification to:', userId);
     
-    if (querySnapshot.empty) return false;
-
-    const userData = querySnapshot.docs[0].data();
-    if (!userData.pushSubscription) return false;
-
-    // Send push notification via service worker
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification(payload.message, {
-        badge: payload.icon || '🔔',
-        icon: payload.icon || '/favicon.ico',
-        tag: payload.type,
-        requireInteraction: payload.priority === NOTIFICATION_PRIORITY.URGENT,
-        data: {
-          url: payload.actionUrl,
-          type: payload.type
-        }
-      });
+    // ✅ FIX: Use getDoc with document reference instead of query
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      console.warn('⚠️ User document not found:', userId);
+      return false;
     }
 
+    const userData = userDoc.data();
+    console.log('👤 User data retrieved:', { 
+      hasSubscription: !!userData.pushSubscription,
+      pushEnabled: userData.pushNotificationsEnabled 
+    });
+    
+    if (!userData.pushSubscription) {
+      console.warn('⚠️ User has no push subscription:', userId);
+      return false;
+    }
+
+    // Check if running in browser with service worker support
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      console.warn('⚠️ Service worker or PushManager not available');
+      return false;
+    }
+
+    // Send push notification via service worker
+    const registration = await navigator.serviceWorker.ready;
+    await registration.showNotification(payload.title || 'Notification', {
+      body: payload.message,
+      badge: '/badge-icon.png',
+      icon: '/notification-icon.png',
+      tag: payload.type,
+      requireInteraction: payload.priority === NOTIFICATION_PRIORITY.URGENT,
+      vibrate: [200, 100, 200],
+      data: {
+        url: payload.actionUrl,
+        type: payload.type,
+        metadata: payload.metadata
+      }
+    });
+    
+    console.log('✅ Push notification sent successfully');
     return true;
   } catch (error) {
-    console.error('Error sending push notification:', error);
+    console.error('❌ Error sending push notification:', error);
+    console.error('Error details:', { message: error.message, stack: error.stack });
     return false;
   }
 }
 
 /**
  * Request push notification permission
+ * ✅ FIXED: Proper document existence check and error handling
  */
 export async function requestPushNotificationPermission(userId) {
   try {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      console.warn('Push notifications not supported');
+    console.log('📱 Requesting push notification permission for:', userId);
+    
+    // Check browser support
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      console.warn('⚠️ Push notifications not supported in this browser');
       return false;
     }
 
+    // Request notification permission
     const permission = await Notification.requestPermission();
+    console.log('📋 Permission status:', permission);
+    
     if (permission !== 'granted') {
+      console.warn('⚠️ Notification permission denied');
       return false;
     }
 
+    // Wait for service worker to be ready
     const registration = await navigator.serviceWorker.ready;
+    console.log('✅ Service worker ready');
+
+    // Subscribe to push notifications
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: process.env.REACT_APP_VAPID_PUBLIC_KEY
     });
 
-    // Save subscription to database
+    console.log('✅ Push subscription created:', subscription.endpoint);
+
+    // ✅ FIX: Check if user document exists before updating
     const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      console.error('❌ User document not found:', userId);
+      return false;
+    }
+
+    // Save subscription to database
     await updateDoc(userRef, {
       pushSubscription: {
         endpoint: subscription.endpoint,
@@ -316,28 +434,199 @@ export async function requestPushNotificationPermission(userId) {
           p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
           auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth'))))
         }
-      }
+      },
+      pushNotificationsEnabled: true,
+      lastPushSubscriptionUpdate: serverTimestamp()
     });
 
+    console.log('✅ Push subscription saved to database');
     return true;
   } catch (error) {
-    console.error('Error requesting push notification permission:', error);
+    console.error('❌ Error requesting push notification permission:', error);
+    console.error('Error details:', { message: error.message, stack: error.stack });
     return false;
   }
 }
 
+/**
+ * Disable push notifications for a user
+ */
+export async function disablePushNotifications(userId) {
+  try {
+    console.log('🔕 Disabling push notifications for:', userId);
+    
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      console.error('❌ User document not found:', userId);
+      return false;
+    }
+
+    await updateDoc(userRef, {
+      pushNotificationsEnabled: false,
+      lastPushSubscriptionUpdate: serverTimestamp()
+    });
+
+    console.log('✅ Push notifications disabled');
+    return true;
+  } catch (error) {
+    console.error('❌ Error disabling push notifications:', error);
+    return false;
+  }
+}
+
+/**
+ * Mark notification as read
+ */
+export async function markNotificationAsRead(notificationId) {
+  try {
+    console.log('📖 Marking notification as read:', notificationId);
+    
+    const notificationRef = doc(db, 'notifications', notificationId);
+    await updateDoc(notificationRef, {
+      read: true,
+      readAt: serverTimestamp()
+    });
+
+    console.log('✅ Notification marked as read');
+    return true;
+  } catch (error) {
+    console.error('❌ Error marking notification as read:', error);
+    return false;
+  }
+}
+
+/**
+ * Mark all notifications as read for a user
+ */
+export async function markAllNotificationsAsRead(userId) {
+  try {
+    console.log('📖 Marking all notifications as read for user:', userId);
+    
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', userId),
+      where('read', '==', false)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    console.log(`Found ${querySnapshot.size} unread notifications`);
+    
+    const updatePromises = querySnapshot.docs.map(doc => 
+      updateDoc(doc.ref, {
+        read: true,
+        readAt: serverTimestamp()
+      })
+    );
+    
+    await Promise.all(updatePromises);
+    
+    console.log('✅ All notifications marked as read');
+    return true;
+  } catch (error) {
+    console.error('❌ Error marking all notifications as read:', error);
+    return false;
+  }
+}
+
+/**
+ * Get unread notification count for a user
+ */
+export async function getUnreadCount(userId) {
+  try {
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', userId),
+      where('read', '==', false)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.size;
+  } catch (error) {
+    console.error('❌ Error getting unread count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Delete a notification
+ */
+export async function deleteNotification(notificationId) {
+  try {
+    console.log('🗑️ Deleting notification:', notificationId);
+    
+    const notificationRef = doc(db, 'notifications', notificationId);
+    await updateDoc(notificationRef, {
+      deleted: true,
+      deletedAt: serverTimestamp()
+    });
+
+    console.log('✅ Notification deleted');
+    return true;
+  } catch (error) {
+    console.error('❌ Error deleting notification:', error);
+    return false;
+  }
+}
+
+/**
+ * Test notification (for debugging)
+ */
+export async function sendTestNotification(userId) {
+  console.log('🧪 Sending test notification to:', userId);
+  
+  return sendNotification(userId, {
+    title: 'Test Notification',
+    message: 'This is a test notification. If you can see this, notifications are working!',
+    type: NOTIFICATION_TYPES.DEAL_CREATED,
+    priority: NOTIFICATION_PRIORITY.MEDIUM,
+    icon: '🧪',
+    actionUrl: '/notifications'
+  });
+}
+
+// Export everything
 export default {
+  // Core functions
   sendNotification,
   sendNotificationToMultiple,
+  
+  // Deal notifications
   notifyDealCreated,
   notifyDealUpdated,
   notifyDealClosed,
+  
+  // Follow-up notifications
   notifyFollowUpDue,
   notifyFollowUpCompleted,
+  
+  // Commission notifications
   notifyCommissionEarned,
+  
+  // Achievement notifications
   notifyAchievementUnlocked,
+  
+  // Settlement notifications
   notifySettlementReady,
+  
+  // Team notifications
+  notifyTeamMemberAdded,
+  
+  // Push notifications
   requestPushNotificationPermission,
+  disablePushNotifications,
+  
+  // Notification management
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  getUnreadCount,
+  deleteNotification,
+  
+  // Testing
+  sendTestNotification,
+  
+  // Constants
   NOTIFICATION_TYPES,
   NOTIFICATION_PRIORITY
 };
