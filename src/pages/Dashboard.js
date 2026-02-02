@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs, query, where, limit } from 'firebase/firestore';
 import { MemberCommissionView } from '../components/MemberCommissionView';
+import GuidedTourModal from '../components/GuidedTourModal';
+import { getTourSteps } from '../utils/tourSteps';
 
 import {
   Users,
@@ -50,6 +52,9 @@ export const Dashboard = () => {
   const [achievements, setAchievements] = useState([]);
   const [myTasks, setMyTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showTour, setShowTour] = useState(false);
+  const [tourCompleted, setTourCompleted] = useState(true);
+  const tourSteps = useMemo(() => getTourSteps(userRole), [userRole]);
 
   const { getAssignedTasks } = useTasks();
   const navigate = useNavigate();
@@ -63,6 +68,11 @@ export const Dashboard = () => {
     fetchDashboardData();
     fetchMyTasks();
   }, [userRole, currentUser?.uid]);
+
+  useEffect(() => {
+    const completed = localStorage.getItem('tourCompleted') === 'true';
+    setTourCompleted(completed);
+  }, []);
 
   const fetchMyTasks = useCallback(async () => {
     try {
@@ -422,6 +432,21 @@ export const Dashboard = () => {
           </div>
         </div>
 
+        {!tourCompleted && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">New here?</p>
+              <p className="text-sm text-gray-600 mt-1">Take a 2-minute guided tour to learn the core workflow.</p>
+            </div>
+            <button
+              onClick={() => setShowTour(true)}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-500/30"
+            >
+              Start Tour
+            </button>
+          </div>
+        )}
+
 
         {/* ADMIN STATS */}
         {userRole === 'admin' && (
@@ -473,6 +498,21 @@ export const Dashboard = () => {
             </div>
           </div>
         )}
+
+        <GuidedTourModal
+          open={showTour}
+          steps={tourSteps}
+          onClose={() => setShowTour(false)}
+          onComplete={() => {
+            localStorage.setItem('tourCompleted', 'true');
+            setTourCompleted(true);
+            setShowTour(false);
+          }}
+          onNavigate={(path) => {
+            setShowTour(false);
+            navigate(path);
+          }}
+        />
 
 
         {/* USER STATS - NO FINANCIAL DATA */}

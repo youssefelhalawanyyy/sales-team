@@ -12,6 +12,8 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navigation } from './components/Navigation';
+import OfflineSyncBar from './components/OfflineSyncBar';
+import QuickAddFab from './components/QuickAddFab';
 import './App.css';
 
 import { LoginPage } from './pages/LoginPage';
@@ -52,6 +54,7 @@ const RevenuePipelineForecastPage = React.lazy(() => import('./pages/RevenuePipe
 const WinLossAnalysisPage = React.lazy(() => import('./pages/WinLossAnalysisPage'));
 const SalesVelocityMetricsPage = React.lazy(() => import('./pages/SalesVelocityMetricsPage'));
 const PipelineSettingsPage = React.lazy(() => import('./pages/PipelineSettingsPage'));
+const HelpCenterPage = React.lazy(() => import('./pages/HelpCenterPage'));
 
 // Loading fallback component - lightweight for fast rendering
 const LoadingFallback = React.memo(() => (
@@ -90,6 +93,7 @@ const AppContent = React.memo(() => {
 
       {/* Navigation */}
       {currentUser && <Navigation userRole={userRole} />}
+      {currentUser && <OfflineSyncBar />}
 
       <Routes>
 
@@ -500,6 +504,24 @@ const AppContent = React.memo(() => {
           }
         />
 
+        {/* ================= HELP CENTER ================= */}
+        <Route
+          path="/help"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'finance_manager',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <Suspense fallback={<LoadingFallback />}>
+                <HelpCenterPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
         {/* ================= AUDIT LOG ================= */}
         <Route
           path="/admin/audit-log"
@@ -675,6 +697,7 @@ const AppContent = React.memo(() => {
         />
 
       </Routes>
+      {currentUser && <QuickAddFab />}
     </>
   );
 });

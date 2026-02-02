@@ -29,7 +29,8 @@ import {
   Mail,
   Heart,
   MessageSquare,
-  Zap
+  Zap,
+  LifeBuoy
 } from 'lucide-react';
 
 export const Navigation = React.memo(({ userRole }) => {
@@ -95,6 +96,12 @@ export const Navigation = React.memo(({ userRole }) => {
     label: 'Email Templates',
     path: '/email-templates',
     icon: Mail
+  };
+
+  const helpCenterItem = {
+    label: 'Help Center',
+    path: '/help',
+    icon: LifeBuoy
   };
 
   /* =============================
@@ -165,6 +172,7 @@ export const Navigation = React.memo(({ userRole }) => {
         ]
       },
       emailTemplatesItem,
+      helpCenterItem,
       informationItem
     ],
 
@@ -181,6 +189,7 @@ export const Navigation = React.memo(({ userRole }) => {
         ]
       },
       emailTemplatesItem,
+      helpCenterItem,
       informationItem
     ],
 
@@ -212,6 +221,7 @@ export const Navigation = React.memo(({ userRole }) => {
         ]
       },
       { label: 'Calendar', path: '/calendar', icon: Calendar },
+      helpCenterItem,
       emailTemplatesItem,
       informationItem
     ],
@@ -262,6 +272,7 @@ export const Navigation = React.memo(({ userRole }) => {
       { label: 'Commissions', path: '/my/commissions', icon: DollarSign },
       { label: 'Tasks', path: '/tasks', icon: CheckSquare },
       { label: 'Calendar', path: '/calendar', icon: Calendar },
+      helpCenterItem,
       emailTemplatesItem,
       informationItem
     ]
