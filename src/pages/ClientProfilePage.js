@@ -289,43 +289,6 @@ export default function ClientProfilePage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex flex-col justify-center items-center py-20">
-        <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-        <p className="mt-4 text-gray-600 font-medium">Loading client profile...</p>
-      </div>
-    );
-  }
-
-  if (error || !deal) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Building2 className="w-10 h-10 text-gray-400" />
-          </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">
-            {error || 'Client not found'}
-          </h3>
-          <p className="text-gray-600 mb-6">
-            {error ? 'Please try again or contact support.' : "The client you're looking for doesn't exist or you don't have permission to view it."}
-          </p>
-          <button
-            onClick={() => navigate('/sales')}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 transition-all hover:scale-105"
-          >
-            Back to Sales
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const status = getStageByValue(pipelineStages, deal.status) || pipelineStages[0];
-  const StatusIcon = STATUS_ICON_MAP[deal.status] || Briefcase;
-  const statusColorClass = getStageColorClass(pipelineStages, deal.status);
-
   /* ============================= */
 
   const getStageLabel = (value) => getStageByValue(pipelineStages, value)?.label || value;
@@ -359,6 +322,7 @@ export default function ClientProfilePage() {
   const lastUpdate = useMemo(() => clientUpdates[0] || null, [clientUpdates]);
 
   const timelineItems = useMemo(() => {
+    if (!deal) return [];
     const items = [];
 
     if (deal?.createdAt) {
@@ -440,6 +404,43 @@ export default function ClientProfilePage() {
 
     return items;
   }, [deal, visits, followups, clientUpdates, pipelineStages]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center py-20">
+        <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+        <p className="mt-4 text-gray-600 font-medium">Loading client profile...</p>
+      </div>
+    );
+  }
+
+  if (error || !deal) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Building2 className="w-10 h-10 text-gray-400" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
+            {error || 'Client not found'}
+          </h3>
+          <p className="text-gray-600 mb-6">
+            {error ? 'Please try again or contact support.' : "The client you're looking for doesn't exist or you don't have permission to view it."}
+          </p>
+          <button
+            onClick={() => navigate('/sales')}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 transition-all hover:scale-105"
+          >
+            Back to Sales
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const status = getStageByValue(pipelineStages, deal.status) || pipelineStages[0];
+  const StatusIcon = STATUS_ICON_MAP[deal.status] || Briefcase;
+  const statusColorClass = getStageColorClass(pipelineStages, deal.status);
 
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
