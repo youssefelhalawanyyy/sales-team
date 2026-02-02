@@ -77,6 +77,8 @@ export async function flushOfflineQueue(currentUser) {
           ownerName: item.payload.ownerName || `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim(),
           archived: false,
           createdAt: serverTimestamp(),
+          statusUpdatedAt: serverTimestamp(),
+          lastActivityAt: serverTimestamp(),
           editHistory: item.payload.editHistory || [],
           source: 'offline'
         });

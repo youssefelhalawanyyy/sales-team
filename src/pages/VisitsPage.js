@@ -174,6 +174,15 @@ export default function VisitsPage() {
         createdAt: serverTimestamp()
       });
 
+      try {
+        await updateDoc(doc(db, 'sales', form.dealId), {
+          lastVisitAt: serverTimestamp(),
+          lastActivityAt: serverTimestamp()
+        });
+      } catch (activityError) {
+        console.error('Error updating deal activity:', activityError);
+      }
+
       // Auto-log communication
       await addDoc(collection(db, 'communications'), {
         clientId: form.dealId,
@@ -228,6 +237,17 @@ export default function VisitsPage() {
         result: editVisit.result,
         nextStep: editVisit.nextStep
       });
+
+      if (editVisit.dealId) {
+        try {
+          await updateDoc(doc(db, 'sales', editVisit.dealId), {
+            lastVisitAt: serverTimestamp(),
+            lastActivityAt: serverTimestamp()
+          });
+        } catch (activityError) {
+          console.error('Error updating deal activity:', activityError);
+        }
+      }
 
       // Auto-log communication for updated visit
       try {

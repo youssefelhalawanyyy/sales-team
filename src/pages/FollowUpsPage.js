@@ -196,6 +196,16 @@ export default function FollowUpsPage() {
         completedAt: null
       });
 
+      try {
+        await updateDoc(doc(db, 'sales', form.dealId), {
+          lastFollowUpAt: serverTimestamp(),
+          nextFollowUpAt: reminderDate,
+          lastActivityAt: serverTimestamp()
+        });
+      } catch (activityError) {
+        console.error('Error updating deal activity:', activityError);
+      }
+
       // Auto-log communication
       await addDoc(collection(db, 'communications'), {
         clientId: form.dealId,
@@ -251,6 +261,18 @@ export default function FollowUpsPage() {
         status: status
       });
 
+      if (editFollowup.dealId) {
+        try {
+          await updateDoc(doc(db, 'sales', editFollowup.dealId), {
+            nextFollowUpAt: reminderDate,
+            lastActivityAt: serverTimestamp(),
+            ...(status === 'done' ? { lastFollowUpAt: serverTimestamp() } : {})
+          });
+        } catch (activityError) {
+          console.error('Error updating deal activity:', activityError);
+        }
+      }
+
       setEditFollowup(null);
       loadFollowups();
     } catch (e) {
@@ -269,6 +291,17 @@ export default function FollowUpsPage() {
         status: 'done',
         completedAt: serverTimestamp()
       });
+
+      if (followup?.dealId) {
+        try {
+          await updateDoc(doc(db, 'sales', followup.dealId), {
+            lastFollowUpAt: serverTimestamp(),
+            lastActivityAt: serverTimestamp()
+          });
+        } catch (activityError) {
+          console.error('Error updating deal activity:', activityError);
+        }
+      }
 
       // Auto-log communication when follow-up is completed
       if (followup) {

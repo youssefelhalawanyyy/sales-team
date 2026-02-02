@@ -112,6 +112,7 @@ export default function QuickAddFab() {
       return;
     }
 
+    const now = new Date();
     const payload = {
       businessName: dealForm.businessName,
       contactPerson: dealForm.contactPerson,
@@ -126,7 +127,9 @@ export default function QuickAddFab() {
       teamName: teamContext.teamName,
       sharedWith: [],
       archived: false,
-      editHistory: []
+      editHistory: [],
+      statusUpdatedAt: now,
+      lastActivityAt: now
     };
 
     setSubmitting(true);
@@ -139,6 +142,8 @@ export default function QuickAddFab() {
           ...payload,
           createdBy: currentUser.uid,
           createdAt: serverTimestamp(),
+          statusUpdatedAt: serverTimestamp(),
+          lastActivityAt: serverTimestamp(),
           source: 'quick_add'
         });
         alert('Deal created successfully!');

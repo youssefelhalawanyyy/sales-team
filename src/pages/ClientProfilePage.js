@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import {
@@ -9,6 +9,7 @@ import {
   query,
   where,
   updateDoc,
+  arrayUnion,
   serverTimestamp
 } from 'firebase/firestore';
 import {
@@ -31,7 +32,10 @@ import {
   Users,
   Edit,
   Save,
-  X
+  X,
+  MessageSquare,
+  ClipboardList,
+  Activity
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../utils/currency';
@@ -63,6 +67,11 @@ export default function ClientProfilePage() {
   const [notesText, setNotesText] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
 
+  // Client updates state
+  const [updateText, setUpdateText] = useState('');
+  const [updateStatus, setUpdateStatus] = useState('');
+  const [savingUpdate, setSavingUpdate] = useState(false);
+
   /* ============================= */
 
   useEffect(() => {
@@ -79,6 +88,12 @@ export default function ClientProfilePage() {
     };
     loadPipeline();
   }, [currentUser?.uid]);
+
+  useEffect(() => {
+    if (deal?.status) {
+      setUpdateStatus(deal.status);
+    }
+  }, [deal?.status]);
 
   /* ============================= */
 
@@ -192,10 +207,27 @@ export default function ClientProfilePage() {
       setSavingNotes(true);
 
       const dealRef = doc(db, 'sales', dealId);
-      await updateDoc(dealRef, {
+      const previousNotes = deal?.notes || '';
+      const notesChanged = previousNotes !== notesText;
+      const updatePayload = {
         notes: notesText,
-        updatedAt: serverTimestamp()
-      });
+        updatedAt: serverTimestamp(),
+        lastActivityAt: serverTimestamp()
+      };
+
+      if (notesChanged) {
+        const historyEntry = {
+          timestamp: new Date(),
+          editedBy: currentUser.uid,
+          editedByName: `${currentUser.firstName} ${currentUser.lastName}`,
+          changes: {
+            notes: { from: previousNotes, to: notesText }
+          }
+        };
+        updatePayload.editHistory = arrayUnion(historyEntry);
+      }
+
+      await updateDoc(dealRef, updatePayload);
 
       // Update local state
       setDeal(prev => ({ ...prev, notes: notesText }));
@@ -216,6 +248,46 @@ export default function ClientProfilePage() {
   }
 
   /* ============================= */
+
+  async function handleAddUpdate() {
+    if (!dealId) return;
+    const trimmed = updateText.trim();
+    if (!trimmed) {
+      alert('Please enter a client update.');
+      return;
+    }
+
+    try {
+      setSavingUpdate(true);
+      const updateEntry = {
+        id: `update_${Date.now()}`,
+        note: trimmed,
+        status: updateStatus || deal.status,
+        createdAt: new Date(),
+        authorId: currentUser.uid,
+        authorName: `${currentUser.firstName} ${currentUser.lastName}`
+      };
+
+      await updateDoc(doc(db, 'sales', dealId), {
+        clientUpdates: arrayUnion(updateEntry),
+        updatedAt: serverTimestamp(),
+        lastActivityAt: serverTimestamp()
+      });
+
+      setDeal(prev => ({
+        ...prev,
+        clientUpdates: [...(prev.clientUpdates || []), updateEntry]
+      }));
+
+      setUpdateText('');
+      alert('Client update saved!');
+    } catch (e) {
+      console.error('Error adding client update:', e);
+      alert('Failed to save update: ' + e.message);
+    } finally {
+      setSavingUpdate(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -255,6 +327,119 @@ export default function ClientProfilePage() {
   const statusColorClass = getStageColorClass(pipelineStages, deal.status);
 
   /* ============================= */
+
+  const getStageLabel = (value) => getStageByValue(pipelineStages, value)?.label || value;
+
+  const toDateValue = (value) => {
+    if (!value) return null;
+    return value?.toDate?.() || new Date(value);
+  };
+
+  const clientUpdates = useMemo(() => {
+    const updates = Array.isArray(deal?.clientUpdates) ? deal.clientUpdates : [];
+    return updates.slice().sort((a, b) => {
+      const dateA = toDateValue(a.createdAt)?.getTime() || 0;
+      const dateB = toDateValue(b.createdAt)?.getTime() || 0;
+      return dateB - dateA;
+    });
+  }, [deal?.clientUpdates]);
+
+  const lastVisit = useMemo(() => (visits.length > 0 ? visits[0] : null), [visits]);
+
+  const nextFollowup = useMemo(() => {
+    const upcoming = followups.filter(f => f.status !== 'done' && f.reminderDate);
+    upcoming.sort((a, b) => {
+      const dateA = toDateValue(a.reminderDate)?.getTime() || 0;
+      const dateB = toDateValue(b.reminderDate)?.getTime() || 0;
+      return dateA - dateB;
+    });
+    return upcoming[0] || null;
+  }, [followups]);
+
+  const lastUpdate = useMemo(() => clientUpdates[0] || null, [clientUpdates]);
+
+  const timelineItems = useMemo(() => {
+    const items = [];
+
+    if (deal?.createdAt) {
+      items.push({
+        id: 'deal-created',
+        type: 'created',
+        date: deal.createdAt,
+        title: 'Deal created',
+        description: `Created by ${deal.createdByName || 'Unknown'}`
+      });
+    }
+
+    visits.forEach(visit => {
+      items.push({
+        id: `visit-${visit.id}`,
+        type: 'visit',
+        date: visit.visitDate || visit.createdAt,
+        title: 'Visit logged',
+        description: visit.purpose || visit.result || visit.address || 'Client visit',
+        meta: visit.salesRepName
+      });
+    });
+
+    followups.forEach(followup => {
+      const statusLabel = followup.status === 'done' ? 'Follow-up completed' : 'Follow-up scheduled';
+      items.push({
+        id: `followup-${followup.id}`,
+        type: 'followup',
+        date: followup.reminderDate || followup.createdAt,
+        title: statusLabel,
+        description: followup.nextAction || followup.notes || 'Follow-up',
+        meta: followup.assignedToName
+      });
+    });
+
+    clientUpdates.forEach(update => {
+      items.push({
+        id: `update-${update.id}`,
+        type: 'update',
+        date: update.createdAt,
+        title: update.status ? `Client update • ${getStageLabel(update.status)}` : 'Client update',
+        description: update.note,
+        meta: update.authorName
+      });
+    });
+
+    (deal?.editHistory || []).forEach((entry, index) => {
+      const changes = entry.changes || {};
+      if (changes.status) {
+        items.push({
+          id: `status-${index}`,
+          type: 'status',
+          date: entry.timestamp,
+          title: 'Status changed',
+          description: `${getStageLabel(changes.status.from)} → ${getStageLabel(changes.status.to)}`,
+          meta: entry.editedByName
+        });
+      } else {
+        const changeFields = Object.keys(changes);
+        const summary = changeFields.length > 0
+          ? `Updated ${changeFields.slice(0, 2).map(field => field.replace(/([A-Z])/g, ' $1')).join(', ')}${changeFields.length > 2 ? '…' : ''}`
+          : 'Deal updated';
+        items.push({
+          id: `edit-${index}`,
+          type: 'edit',
+          date: entry.timestamp,
+          title: 'Deal updated',
+          description: summary,
+          meta: entry.editedByName
+        });
+      }
+    });
+
+    items.sort((a, b) => {
+      const dateA = toDateValue(a.date)?.getTime() || 0;
+      const dateB = toDateValue(b.date)?.getTime() || 0;
+      return dateB - dateA;
+    });
+
+    return items;
+  }, [deal, visits, followups, clientUpdates, pipelineStages]);
 
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
@@ -440,6 +625,172 @@ export default function ClientProfilePage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* MEETING PREP */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <ClipboardList className="w-5 h-5 text-blue-600" />
+            Meeting Prep
+          </h3>
+          <span className="text-xs font-semibold text-gray-500">
+            Last activity: {deal.lastActivityAt ? formatDateTime(deal.lastActivityAt) : 'N/A'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+            <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Next Follow-up</p>
+            {nextFollowup ? (
+              <>
+                <p className="text-sm font-bold text-gray-900">{nextFollowup.nextAction || 'Follow-up'}</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  {formatDateTime(nextFollowup.reminderDate)}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-gray-600">No follow-ups scheduled</p>
+            )}
+          </div>
+
+          <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+            <p className="text-xs font-semibold text-purple-700 uppercase mb-2">Last Visit</p>
+            {lastVisit ? (
+              <>
+                <p className="text-sm font-bold text-gray-900">{lastVisit.purpose || 'Client visit'}</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  {formatDateTime(lastVisit.visitDate)}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-gray-600">No visits logged</p>
+            )}
+          </div>
+
+          <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+            <p className="text-xs font-semibold text-green-700 uppercase mb-2">Latest Update</p>
+            {lastUpdate ? (
+              <>
+                <p className="text-sm font-bold text-gray-900 line-clamp-2">{lastUpdate.note}</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  {formatDateTime(lastUpdate.createdAt)}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-gray-600">No updates yet</p>
+            )}
+          </div>
+        </div>
+
+        {deal.notes && (
+          <div className="mt-4 bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Notes Snapshot</p>
+            <p className="text-sm text-gray-700 line-clamp-3 whitespace-pre-wrap">{deal.notes}</p>
+          </div>
+        )}
+      </div>
+
+      {/* CLIENT UPDATES */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-indigo-600" />
+            Client Updates
+          </h3>
+          <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-semibold">
+            {clientUpdates.length} updates
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2">
+            <textarea
+              value={updateText}
+              onChange={(e) => setUpdateText(e.target.value)}
+              placeholder="Add a quick update about the client status, requirements, or next steps..."
+              rows={3}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm"
+            />
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase">Status Tag</label>
+              <select
+                value={updateStatus}
+                onChange={(e) => setUpdateStatus(e.target.value)}
+                className="w-full mt-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+              >
+                {pipelineStages.map(stage => (
+                  <option key={stage.value} value={stage.value}>
+                    {stage.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Tag only (does not change pipeline stage)</p>
+            </div>
+            <button
+              onClick={handleAddUpdate}
+              disabled={savingUpdate}
+              className="w-full px-4 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {savingUpdate ? 'Saving...' : 'Add Update'}
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-3">
+          {clientUpdates.length === 0 ? (
+            <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+              <MessageSquare className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-600">No client updates yet</p>
+              <p className="text-xs text-gray-500 mt-1">Add updates to keep the team aligned</p>
+            </div>
+          ) : (
+            clientUpdates.map(update => (
+              <div key={update.id} className="border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <span className="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-semibold">
+                    {update.status ? getStageLabel(update.status) : 'Update'}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {formatDateTime(update.createdAt)}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{update.note}</p>
+                {update.authorName && (
+                  <p className="text-xs text-gray-500 mt-2">By {update.authorName}</p>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* DEAL TIMELINE */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-purple-600" />
+            Deal Timeline
+          </h3>
+          <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-lg text-xs font-semibold">
+            {timelineItems.length} events
+          </span>
+        </div>
+
+        {timelineItems.length === 0 ? (
+          <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            <Activity className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+            <p className="text-sm text-gray-600">No activity yet</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {timelineItems.map(item => (
+              <TimelineItem key={item.id} item={item} />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* NOTES SECTION */}
@@ -738,6 +1089,53 @@ function FollowUpItem({ followup }) {
         }`}>
           {followup.status ? followup.status.toUpperCase() : 'PENDING'}
         </span>
+      </div>
+    </div>
+  );
+}
+
+function TimelineItem({ item }) {
+  const iconMap = {
+    created: Briefcase,
+    visit: MapPin,
+    followup: Bell,
+    update: MessageSquare,
+    status: TrendingUp,
+    edit: Edit
+  };
+
+  const colorMap = {
+    created: 'bg-blue-50 text-blue-600 border-blue-200',
+    visit: 'bg-purple-50 text-purple-600 border-purple-200',
+    followup: 'bg-orange-50 text-orange-600 border-orange-200',
+    update: 'bg-indigo-50 text-indigo-600 border-indigo-200',
+    status: 'bg-green-50 text-green-600 border-green-200',
+    edit: 'bg-gray-50 text-gray-600 border-gray-200'
+  };
+
+  const Icon = iconMap[item.type] || Activity;
+  const colorClass = colorMap[item.type] || 'bg-gray-50 text-gray-600 border-gray-200';
+
+  return (
+    <div className="flex gap-4 items-start border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all">
+      <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${colorClass}`}>
+        <Icon className="w-5 h-5" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">{item.title}</p>
+            {item.description && (
+              <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{item.description}</p>
+            )}
+          </div>
+          <span className="text-xs text-gray-500 whitespace-nowrap">
+            {item.date ? formatDateTime(item.date) : ''}
+          </span>
+        </div>
+        {item.meta && (
+          <p className="text-xs text-gray-500 mt-2">By {item.meta}</p>
+        )}
       </div>
     </div>
   );

@@ -30,7 +30,8 @@ import {
   Heart,
   MessageSquare,
   Zap,
-  LifeBuoy
+  LifeBuoy,
+  AlertCircle
 } from 'lucide-react';
 
 export const Navigation = React.memo(({ userRole }) => {
@@ -87,7 +88,7 @@ export const Navigation = React.memo(({ userRole }) => {
   };
 
   const informationItem = {
-    label: 'Info',
+    label: 'Overview',
     path: '/description',
     icon: Info
   };
@@ -102,6 +103,12 @@ export const Navigation = React.memo(({ userRole }) => {
     label: 'Help Center',
     path: '/help',
     icon: LifeBuoy
+  };
+
+  const infoGroup = {
+    label: 'Info',
+    icon: Info,
+    children: [informationItem, helpCenterItem]
   };
 
   /* =============================
@@ -122,6 +129,7 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
+          { label: 'SLA Dashboard', path: '/admin/sla', icon: AlertCircle },
           { label: 'Teams', path: '/sales/teams', icon: Users2 },
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
         ]
@@ -164,6 +172,7 @@ export const Navigation = React.memo(({ userRole }) => {
         children: [
           { label: 'Users', path: '/admin/users', icon: Users },
           { label: 'Pipeline', path: '/admin/pipeline', icon: TrendingUp },
+          { label: 'SLA Dashboard', path: '/admin/sla', icon: AlertCircle },
           { label: 'Audit Log', path: '/admin/audit-log', icon: History },
           { label: 'Data Import/Export', path: '/admin/data', icon: Database },
           { label: 'Analytics', path: '/analytics', icon: BarChart2 },
@@ -172,8 +181,7 @@ export const Navigation = React.memo(({ userRole }) => {
         ]
       },
       emailTemplatesItem,
-      helpCenterItem,
-      informationItem
+      infoGroup
     ],
 
     finance_manager: [
@@ -189,8 +197,7 @@ export const Navigation = React.memo(({ userRole }) => {
         ]
       },
       emailTemplatesItem,
-      helpCenterItem,
-      informationItem
+      infoGroup
     ],
 
     sales_manager: [
@@ -205,6 +212,7 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
+          { label: 'SLA Dashboard', path: '/admin/sla', icon: AlertCircle },
           { label: 'Teams', path: '/sales/teams', icon: Users2 },
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
         ]
@@ -221,9 +229,8 @@ export const Navigation = React.memo(({ userRole }) => {
         ]
       },
       { label: 'Calendar', path: '/calendar', icon: Calendar },
-      helpCenterItem,
       emailTemplatesItem,
-      informationItem
+      infoGroup
     ],
 
     team_leader: [
@@ -238,6 +245,7 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
+          { label: 'SLA Dashboard', path: '/admin/sla', icon: AlertCircle },
           { label: 'Teams', path: '/sales/teams', icon: Users2 },
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
         ]
@@ -253,7 +261,7 @@ export const Navigation = React.memo(({ userRole }) => {
       },
       { label: 'Calendar', path: '/calendar', icon: Calendar },
       emailTemplatesItem,
-      informationItem
+      infoGroup
     ],
 
     sales_member: [
@@ -272,9 +280,8 @@ export const Navigation = React.memo(({ userRole }) => {
       { label: 'Commissions', path: '/my/commissions', icon: DollarSign },
       { label: 'Tasks', path: '/tasks', icon: CheckSquare },
       { label: 'Calendar', path: '/calendar', icon: Calendar },
-      helpCenterItem,
       emailTemplatesItem,
-      informationItem
+      infoGroup
     ]
   };
 

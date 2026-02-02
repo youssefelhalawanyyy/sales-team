@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import {
@@ -10,6 +10,7 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  arrayUnion,
   query,
   where,
   orderBy
@@ -32,6 +33,23 @@ const CATEGORIES = [
   'Package Ice Cream', 'B2B', 'Fruits & veg', 'Plastics', 'Raw Material',
   'Barista items', 'Protein Bar', 'Packaged Beverages', 'Other'
 ];
+
+const REQUIRED_CONTACT_FIELDS = ['companyName', 'contactName', 'phone'];
+
+const normalizeText = (value) => (value || '').toString().trim().toLowerCase();
+const normalizePhone = (value) => normalizeText(value).replace(/\D/g, '');
+
+const getContactQualityScore = (contact) => {
+  let score = 0;
+  if (contact.companyName) score += 2;
+  if (contact.contactName) score += 2;
+  if (contact.phone) score += 2;
+  if (contact.email) score += 1;
+  if (contact.contactPosition) score += 1;
+  if (contact.category) score += 1;
+  if (contact.notes) score += 1;
+  return score;
+};
 
 // COMPLETE CONTACT LIST - All contacts from the spreadsheet (300+ contacts)
 const FULL_CONTACT_LIST = [
@@ -587,6 +605,9 @@ export default function ContactsPage() {
   const [showImport, setShowImport] = useState(false);
   const [pipelineStages, setPipelineStages] = useState(DEFAULT_PIPELINE_STAGES);
   const [teamContext, setTeamContext] = useState({ teamId: null, teamName: null });
+  const [showQualityModal, setShowQualityModal] = useState(false);
+  const [qualityTab, setQualityTab] = useState('duplicates');
+  const [mergingGroupId, setMergingGroupId] = useState(null);
 
   const [form, setForm] = useState({
     companyName: '',
@@ -880,6 +901,8 @@ export default function ContactsPage() {
         archived: false,
         sourceContactId: contact.id,
         createdAt: serverTimestamp(),
+        statusUpdatedAt: serverTimestamp(),
+        lastActivityAt: serverTimestamp(),
         editHistory: []
       });
 
@@ -946,6 +969,84 @@ export default function ContactsPage() {
     }
   }
 
+  const canMergeDuplicates = userRole === 'admin' || userRole === 'sales_manager';
+
+  async function mergeDuplicateGroup(group) {
+    if (!group || !group.contacts || group.contacts.length < 2) return;
+    if (!canMergeDuplicates) {
+      alert('Only admins or sales managers can merge duplicates.');
+      return;
+    }
+
+    const primary = group.contacts.find(c => c.id === group.primaryId) || group.contacts[0];
+    const others = group.contacts.filter(c => c.id !== primary.id);
+    if (others.length === 0) return;
+
+    if (!window.confirm(`Merge ${others.length} duplicate contact(s) into "${primary.companyName || primary.contactName || 'Primary'}"?`)) {
+      return;
+    }
+
+    setMergingGroupId(group.id);
+    try {
+      const { id: primaryId, ...primaryData } = primary;
+      const merged = { ...primaryData };
+      const fields = ['companyName', 'contactName', 'contactPosition', 'phone', 'email', 'category'];
+
+      fields.forEach(field => {
+        if (!normalizeText(merged[field])) {
+          const candidate = others.find(contact => normalizeText(contact[field]));
+          if (candidate) merged[field] = candidate[field];
+        }
+      });
+
+      const notesParts = [];
+      if (primary.notes) notesParts.push(primary.notes);
+      others.forEach(contact => {
+        if (contact.notes) {
+          const label = contact.companyName || contact.contactName || 'Contact';
+          notesParts.push(`Merged from ${label}: ${contact.notes}`);
+        }
+      });
+      merged.notes = notesParts.filter(Boolean).join('\n\n');
+
+      const mergedFromIds = others.map(contact => contact.id);
+      const updatePayload = {
+        ...merged,
+        updatedAt: serverTimestamp(),
+        mergedAt: serverTimestamp()
+      };
+
+      if (mergedFromIds.length > 0) {
+        updatePayload.mergedFrom = arrayUnion(...mergedFromIds);
+      }
+
+      await updateDoc(doc(db, 'contacts', primaryId), updatePayload);
+
+      const relatedDeals = [...activeDeals, ...closedDeals]
+        .filter(deal => mergedFromIds.includes(deal.sourceContactId));
+      await Promise.all(
+        relatedDeals.map(deal =>
+          updateDoc(doc(db, 'sales', deal.id), {
+            sourceContactId: primaryId,
+            updatedAt: serverTimestamp()
+          })
+        )
+      );
+
+      await Promise.all(others.map(contact => deleteDoc(doc(db, 'contacts', contact.id))));
+
+      await loadContacts();
+      await loadActiveDeals();
+      await loadDealHistory();
+      alert('Duplicates merged successfully!');
+    } catch (error) {
+      console.error('Error merging duplicates:', error);
+      alert('Failed to merge duplicates: ' + error.message);
+    } finally {
+      setMergingGroupId(null);
+    }
+  }
+
   const filtered = contacts.filter(c => {
     const searchMatch = 
       c.companyName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -962,6 +1063,61 @@ export default function ContactsPage() {
     acc[c.category] = (acc[c.category] || 0) + 1;
     return acc;
   }, {});
+
+  const missingContacts = useMemo(
+    () => contacts.filter(contact =>
+      REQUIRED_CONTACT_FIELDS.some(field => !normalizeText(contact[field]))
+    ),
+    [contacts]
+  );
+
+  const duplicateGroups = useMemo(() => {
+    const buildGroups = (type, keyFn) => {
+      const map = new Map();
+      contacts.forEach(contact => {
+        const key = keyFn(contact);
+        if (!key) return;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(contact);
+      });
+
+      return Array.from(map.entries())
+        .filter(([, list]) => list.length > 1)
+        .map(([key, list]) => {
+          const sorted = [...list].sort((a, b) => {
+            const scoreDiff = getContactQualityScore(b) - getContactQualityScore(a);
+            if (scoreDiff !== 0) return scoreDiff;
+            const timeA = a.createdAt?.toMillis?.() || 0;
+            const timeB = b.createdAt?.toMillis?.() || 0;
+            return timeB - timeA;
+          });
+          return {
+            id: `${type}:${key}`,
+            type,
+            key,
+            contacts: list,
+            primaryId: sorted[0]?.id
+          };
+        });
+    };
+
+    const emailGroups = buildGroups('Email', contact => {
+      const key = normalizeText(contact.email);
+      return key && key.includes('@') ? key : null;
+    });
+
+    const phoneGroups = buildGroups('Phone', contact => {
+      const key = normalizePhone(contact.phone);
+      return key && key.length >= 7 ? key : null;
+    });
+
+    const companyGroups = buildGroups('Company', contact => {
+      const key = normalizeText(contact.companyName);
+      return key && key.length >= 3 ? key : null;
+    });
+
+    return [...emailGroups, ...phoneGroups, ...companyGroups];
+  }, [contacts]);
 
   const availableContacts = filtered.filter(c => !isContactInProgress(c));
   const inProgressContacts = filtered.filter(c => isContactInProgress(c));
@@ -1059,6 +1215,57 @@ export default function ContactsPage() {
           </div>
         )}
       </div>
+
+      {/* DATA QUALITY */}
+      {!loading && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                Data Quality Center
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Catch duplicates, missing required fields, and auto-merge suggestions.
+              </p>
+            </div>
+            <div className="flex gap-3 flex-wrap">
+              <button
+                onClick={() => { setQualityTab('duplicates'); setShowQualityModal(true); }}
+                className="px-4 py-2 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-600 font-semibold text-sm transition-all"
+              >
+                Review Duplicates
+              </button>
+              <button
+                onClick={() => { setQualityTab('missing'); setShowQualityModal(true); }}
+                className="px-4 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 font-semibold text-sm transition-all"
+              >
+                Missing Fields
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
+              <p className="text-xs font-semibold text-purple-700 uppercase">Duplicate Groups</p>
+              <p className="text-2xl font-bold text-purple-700 mt-2">{duplicateGroups.length}</p>
+              <p className="text-xs text-purple-600 mt-1">Based on email, phone, and company</p>
+            </div>
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+              <p className="text-xs font-semibold text-blue-700 uppercase">Missing Required</p>
+              <p className="text-2xl font-bold text-blue-700 mt-2">{missingContacts.length}</p>
+              <p className="text-xs text-blue-600 mt-1">Company, contact, or phone</p>
+            </div>
+            <div className="bg-green-50 border border-green-100 rounded-xl p-4">
+              <p className="text-xs font-semibold text-green-700 uppercase">Auto-Merge Ready</p>
+              <p className="text-2xl font-bold text-green-700 mt-2">
+                {duplicateGroups.filter(group => group.contacts.length > 1).length}
+              </p>
+              <p className="text-xs text-green-600 mt-1">Suggested primary contacts available</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* LOADING */}
       {loading && (
@@ -1377,6 +1584,132 @@ export default function ContactsPage() {
               </button>
             </div>
           </div>
+        </Modal>
+      )}
+
+      {showQualityModal && (
+        <Modal onClose={() => setShowQualityModal(false)} title="Data Quality Center">
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setQualityTab('duplicates')}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                qualityTab === 'duplicates'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-purple-50 text-purple-600 hover:bg-purple-100'
+              }`}
+            >
+              Duplicates
+            </button>
+            <button
+              onClick={() => setQualityTab('missing')}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                qualityTab === 'missing'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+              }`}
+            >
+              Missing Fields
+            </button>
+          </div>
+
+          {qualityTab === 'duplicates' ? (
+            <div className="space-y-4">
+              {duplicateGroups.length === 0 ? (
+                <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                  <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">No duplicate groups detected</p>
+                </div>
+              ) : (
+                duplicateGroups.map(group => (
+                  <div key={group.id} className="border border-gray-200 rounded-xl p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                      <div>
+                        <p className="text-sm font-bold text-gray-900">{group.type} match</p>
+                        <p className="text-xs text-gray-500">{group.key}</p>
+                      </div>
+                      <button
+                        onClick={() => mergeDuplicateGroup(group)}
+                        disabled={!canMergeDuplicates || mergingGroupId === group.id}
+                        className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                          !canMergeDuplicates
+                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                            : mergingGroupId === group.id
+                              ? 'bg-purple-200 text-purple-700'
+                              : 'bg-purple-600 text-white hover:bg-purple-700'
+                        }`}
+                      >
+                        {mergingGroupId === group.id ? 'Merging...' : 'Merge Suggested'}
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {group.contacts.map(contact => (
+                        <div
+                          key={contact.id}
+                          className={`border rounded-lg p-3 ${
+                            contact.id === group.primaryId ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900">
+                                {contact.companyName || contact.contactName || 'Unnamed Contact'}
+                              </p>
+                              <p className="text-xs text-gray-600 mt-1">
+                                {contact.contactName || 'No contact'} • {contact.phone || 'No phone'}
+                              </p>
+                              {contact.email && (
+                                <p className="text-xs text-gray-500 mt-1">{contact.email}</p>
+                              )}
+                            </div>
+                            {contact.id === group.primaryId && (
+                              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-md">
+                                Primary
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {missingContacts.length === 0 ? (
+                <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                  <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">All contacts have required fields</p>
+                </div>
+              ) : (
+                missingContacts.map(contact => {
+                  const missing = REQUIRED_CONTACT_FIELDS.filter(field => !normalizeText(contact[field]));
+                  return (
+                    <div key={contact.id} className="border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {contact.companyName || contact.contactName || 'Unnamed Contact'}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Missing: {missing.map(field => field.replace(/([A-Z])/g, ' $1')).join(', ')}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setShowQualityModal(false);
+                          setEditContact(contact);
+                        }}
+                        className="px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-all"
+                      >
+                        Fix Now
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
         </Modal>
       )}
     </div>

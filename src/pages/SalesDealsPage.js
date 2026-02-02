@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import {
@@ -23,6 +23,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../utils/currency';
 import DealHistory from '../components/DealHistory';
 import { notifyDealUpdated, notifyDealClosed } from '../services/notificationService';
+import { runAutoFollowups } from '../services/autoFollowupService';
 import { fetchPipelineSettings } from '../services/pipelineService';
 import {
   DEFAULT_PIPELINE_STAGES,
@@ -31,12 +32,29 @@ import {
   getStageByValue,
   getStageColorClass
 } from '../utils/pipeline';
+import { scoreDeal, getPriorityBadge } from '../utils/leadScoring';
 
 const STATUS_ICON_MAP = {
   potential_client: Users,
   pending_approval: Clock,
   closed: CheckCircle2,
   lost: XCircle
+};
+
+const isDealFieldMissing = (deal, field) => {
+  const value = deal?.[field];
+  if (field === 'price') {
+    return value === undefined || value === null || Number(value) <= 0;
+  }
+  if (typeof value === 'string') {
+    return value.trim() === '';
+  }
+  return value === undefined || value === null;
+};
+
+const getMissingRequiredFields = (deal, stages) => {
+  const required = getRequiredFieldsForStage(stages, deal?.status);
+  return required.filter(field => isDealFieldMissing(deal, field));
 };
 
 export default function SalesDealsPage() {
@@ -48,6 +66,7 @@ export default function SalesDealsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
+  const [sortMode, setSortMode] = useState('smart');
   const [showArchive, setShowArchive] = useState(false);
   const [editDeal, setEditDeal] = useState(null);
   const [viewingHistory, setViewingHistory] = useState(null);
@@ -59,6 +78,7 @@ export default function SalesDealsPage() {
   const [teamContext, setTeamContext] = useState({ teamId: null, teamName: null, memberOptions: [] });
   const [availableUsers, setAvailableUsers] = useState([]);
   const [usersById, setUsersById] = useState({});
+  const autoFollowupRunRef = useRef(false);
 
   useEffect(() => {
     if (!currentUser?.uid) return;
@@ -101,6 +121,15 @@ export default function SalesDealsPage() {
       setUsersById(map);
     }
   }, [currentUser?.uid, userRole, teamContext]);
+
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+    if (autoFollowupRunRef.current) return;
+    if (!Array.isArray(deals) || deals.length === 0) return;
+
+    autoFollowupRunRef.current = true;
+    runAutoFollowups({ deals, currentUser });
+  }, [deals, currentUser]);
 
   async function loadDeals() {
     try {
@@ -396,7 +425,7 @@ export default function SalesDealsPage() {
         changes: changes
       };
 
-      await updateDoc(dealRef, {
+      const updatePayload = {
         businessName: editDeal.businessName,
         contactPerson: editDeal.contactPerson,
         phoneNumber: editDeal.phoneNumber,
@@ -409,8 +438,16 @@ export default function SalesDealsPage() {
         teamId: editDeal.teamId || null,
         teamName: editDeal.teamName || null,
         sharedWith: Array.isArray(editDeal.sharedWith) ? editDeal.sharedWith : [],
-        editHistory: arrayUnion(historyEntry)
-      });
+        editHistory: arrayUnion(historyEntry),
+        updatedAt: serverTimestamp(),
+        lastActivityAt: serverTimestamp()
+      };
+
+      if (statusChanged) {
+        updatePayload.statusUpdatedAt = serverTimestamp();
+      }
+
+      await updateDoc(dealRef, updatePayload);
 
       // Handle contact when deal is closed or lost
       const isClosedOrLost = editDeal.status === 'closed' || editDeal.status === 'lost';
@@ -619,12 +656,47 @@ export default function SalesDealsPage() {
     });
   };
 
-  const filtered = deals.filter(d => {
-    const s = d.businessName?.toLowerCase().includes(search.toLowerCase()) ||
-              d.contactPerson?.toLowerCase().includes(search.toLowerCase());
-    const f = filter === 'all' || d.status === filter;
-    return s && f;
-  });
+  const dealScores = useMemo(() => {
+    const map = {};
+    deals.forEach(deal => {
+      map[deal.id] = scoreDeal(deal, pipelineStages);
+    });
+    return map;
+  }, [deals, pipelineStages]);
+
+  const filtered = useMemo(() => {
+    const base = deals.filter(d => {
+      const s = d.businessName?.toLowerCase().includes(search.toLowerCase()) ||
+                d.contactPerson?.toLowerCase().includes(search.toLowerCase());
+      const f = filter === 'all' || d.status === filter;
+      return s && f;
+    });
+
+    const withScores = base.map(deal => {
+      const scoreMeta = dealScores[deal.id] || { score: 0, priority: 'low' };
+      return { ...deal, leadScore: scoreMeta.score, leadPriority: scoreMeta.priority };
+    });
+
+    const getTimeValue = (value) => {
+      const date = value?.toDate?.() || value;
+      return date ? new Date(date).getTime() : 0;
+    };
+
+    if (sortMode === 'smart') {
+      withScores.sort((a, b) => {
+        if (b.leadScore !== a.leadScore) return b.leadScore - a.leadScore;
+        return getTimeValue(b.createdAt) - getTimeValue(a.createdAt);
+      });
+    } else if (sortMode === 'recent') {
+      withScores.sort((a, b) => getTimeValue(b.createdAt) - getTimeValue(a.createdAt));
+    } else if (sortMode === 'stale') {
+      const getActivity = (deal) =>
+        getTimeValue(deal.lastActivityAt || deal.statusUpdatedAt || deal.createdAt);
+      withScores.sort((a, b) => getActivity(a) - getActivity(b));
+    }
+
+    return withScores;
+  }, [deals, search, filter, sortMode, dealScores]);
 
   const filteredArchived = archivedDeals.filter(d =>
     d.businessName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -803,9 +875,24 @@ export default function SalesDealsPage() {
               </select>
             </div>
           )}
+
+          {!showArchive && (
+            <div className="relative sm:w-56">
+              <TrendingUp className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <select
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none bg-white cursor-pointer"
+                value={sortMode}
+                onChange={e => setSortMode(e.target.value)}
+              >
+                <option value="smart">Smart Priority</option>
+                <option value="recent">Newest First</option>
+                <option value="stale">Needs Attention</option>
+              </select>
+            </div>
+          )}
         </div>
 
-        {(search || filter !== 'all') && (
+        {(search || filter !== 'all' || sortMode !== 'smart') && (
           <div className="mt-3 flex items-center gap-2 flex-wrap">
             <span className="text-sm text-gray-600">Active filters:</span>
             {search && (
@@ -818,6 +905,12 @@ export default function SalesDealsPage() {
               <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium flex items-center gap-2">
                 Status: {statusLabelMap[filter] || filter}
                 <X className="w-3 h-3 cursor-pointer" onClick={() => setFilter('all')} />
+              </span>
+            )}
+            {sortMode !== 'smart' && (
+              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium flex items-center gap-2">
+                Sort: {sortMode === 'recent' ? 'Newest' : 'Needs Attention'}
+                <X className="w-3 h-3 cursor-pointer" onClick={() => setSortMode('smart')} />
               </span>
             )}
           </div>
@@ -1065,6 +1158,12 @@ function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, onViewHist
   const status = getStageByValue(pipelineStages, deal.status);
   const StatusIcon = STATUS_ICON_MAP[deal.status] || TrendingUp;
   const colorClass = getStageColorClass(pipelineStages, deal.status);
+  const priorityMeta = getPriorityBadge(deal.leadPriority);
+  const missingFields = getMissingRequiredFields(deal, pipelineStages);
+  const missingLabels = missingFields.map(field => PIPELINE_FIELD_LABELS[field] || field);
+  const missingSummary = missingLabels.length > 2
+    ? `${missingLabels.slice(0, 2).join(', ')} +${missingLabels.length - 2}`
+    : missingLabels.join(', ');
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all">
@@ -1121,6 +1220,16 @@ function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, onViewHist
           )}
         </div>
         <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${priorityMeta.color}`}>
+              {priorityMeta.label} • {deal.leadScore ?? 0}
+            </span>
+            {missingFields.length > 0 && (
+              <span className="px-3 py-1 rounded-lg text-xs font-semibold border bg-red-50 text-red-700 border-red-200">
+                Missing: {missingSummary}
+              </span>
+            )}
+          </div>
           <div className="text-left sm:text-center lg:text-right">
             <p className="text-sm text-gray-600 mb-1">Deal Value</p>
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(deal.price || 0)}</p>
