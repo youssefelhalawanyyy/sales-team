@@ -119,6 +119,7 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
         ]
       },
+      { label: 'Pipeline', path: '/admin/pipeline', icon: TrendingUp },
       {
         label: 'Finance',
         icon: DollarSign,

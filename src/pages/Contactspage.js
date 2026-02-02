@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import {
   collection,
   addDoc,
+  getDoc,
   getDocs,
   updateDoc,
   deleteDoc,
@@ -21,6 +22,8 @@ import {
   TrendingUp, History
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { fetchPipelineSettings } from '../services/pipelineService';
+import { DEFAULT_PIPELINE_STAGES, PIPELINE_RESERVED_VALUES } from '../utils/pipeline';
 
 const CATEGORIES = [
   'AutoMotive', 'Candy', 'Healthy Beauty Care', 'Package Beverage', 
@@ -582,6 +585,8 @@ export default function ContactsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editContact, setEditContact] = useState(null);
   const [showImport, setShowImport] = useState(false);
+  const [pipelineStages, setPipelineStages] = useState(DEFAULT_PIPELINE_STAGES);
+  const [teamContext, setTeamContext] = useState({ teamId: null, teamName: null });
 
   const [form, setForm] = useState({
     companyName: '',
@@ -596,10 +601,25 @@ export default function ContactsPage() {
   useEffect(() => {
     if (currentUser?.uid) {
       loadContacts();
+      loadTeamContext();
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+    const loadPipeline = async () => {
+      const stages = await fetchPipelineSettings();
+      setPipelineStages(stages);
+    };
+    loadPipeline();
+  }, [currentUser?.uid]);
+
+  useEffect(() => {
+    if (currentUser?.uid) {
       loadActiveDeals();
       loadDealHistory();
     }
-  }, [currentUser]);
+  }, [currentUser, pipelineStages, teamContext.teamId]);
 
   async function loadContacts() {
     try {
@@ -621,16 +641,87 @@ export default function ContactsPage() {
     }
   }
 
+  async function loadTeamContext() {
+    try {
+      let teamId = currentUser?.teamId || null;
+      let teamName = currentUser?.teamName || null;
+
+      if (!teamId && userRole === 'team_leader') {
+        const teamSnap = await getDocs(
+          query(collection(db, 'teams'), where('leaderId', '==', currentUser.uid))
+        );
+        const teamDoc = teamSnap.docs[0];
+        if (teamDoc) {
+          teamId = teamDoc.id;
+          teamName = teamDoc.data().name || null;
+        }
+      }
+
+      if (!teamId && userRole !== 'team_leader') {
+        const memberSnap = await getDocs(
+          query(collection(db, 'teamMembers'), where('userId', '==', currentUser.uid))
+        );
+        const memberDoc = memberSnap.docs[0];
+        if (memberDoc) {
+          teamId = memberDoc.data().teamId || null;
+        }
+        if (teamId && !teamName) {
+          const teamRef = doc(db, 'teams', teamId);
+          const teamSnap = await getDoc(teamRef);
+          if (teamSnap.exists()) {
+            teamName = teamSnap.data().name || null;
+          }
+        }
+      }
+
+      setTeamContext({ teamId, teamName });
+    } catch (error) {
+      console.error('Error loading team context:', error);
+      setTeamContext({ teamId: null, teamName: null });
+    }
+  }
+
+  async function fetchAccessibleDeals() {
+    if (userRole === 'admin' || userRole === 'sales_manager') {
+      const snap = await getDocs(collection(db, 'sales'));
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+
+    const queries = [
+      query(collection(db, 'sales'), where('ownerId', '==', currentUser.uid)),
+      query(collection(db, 'sales'), where('createdBy', '==', currentUser.uid)),
+      query(collection(db, 'sales'), where('sharedWith', 'array-contains', currentUser.uid))
+    ];
+
+    if (teamContext.teamId) {
+      queries.push(query(collection(db, 'sales'), where('teamId', '==', teamContext.teamId)));
+    }
+
+    const snapshots = await Promise.all(queries.map(q => getDocs(q)));
+    const dealMap = new Map();
+    snapshots.forEach(snapshot => {
+      snapshot.docs.forEach(docSnap => {
+        dealMap.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
+      });
+    });
+
+    return Array.from(dealMap.values());
+  }
+
   async function loadActiveDeals() {
     try {
-      const dealsQuery = query(
-        collection(db, 'sales'),
-        where('status', 'in', ['potential_client', 'contacted', 'meeting_scheduled', 'proposal_sent', 'negotiating'])
-      );
-      
-      const snapshot = await getDocs(dealsQuery);
-      const deals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      setActiveDeals(deals);
+      const activeStages = pipelineStages
+        .map(stage => stage.value)
+        .filter(value => !PIPELINE_RESERVED_VALUES.includes(value));
+
+      if (activeStages.length === 0) {
+        setActiveDeals([]);
+        return;
+      }
+
+      const deals = await fetchAccessibleDeals();
+      const activeDealsList = deals.filter(deal => activeStages.includes(deal.status));
+      setActiveDeals(activeDealsList);
     } catch (e) {
       console.error('Error loading active deals:', e);
     }
@@ -638,15 +729,9 @@ export default function ContactsPage() {
 
   async function loadDealHistory() {
     try {
-      // Load all closed and lost deals for history tracking
-      const closedQuery = query(
-        collection(db, 'sales'),
-        where('status', 'in', ['closed', 'lost'])
-      );
-      
-      const snapshot = await getDocs(closedQuery);
-      const deals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      setClosedDeals(deals);
+      const deals = await fetchAccessibleDeals();
+      const closed = deals.filter(deal => deal.status === 'closed' || deal.status === 'lost');
+      setClosedDeals(closed);
     } catch (e) {
       console.error('Error loading deal history:', e);
     }
@@ -666,7 +751,7 @@ export default function ContactsPage() {
       (deal.businessName?.toLowerCase() === contact.companyName?.toLowerCase() && 
        deal.phoneNumber === contact.phone)
     );
-    return deal ? deal.createdByName : null;
+    return deal ? (deal.ownerName || deal.createdByName) : null;
   }
 
   // Get deal history for a contact
@@ -777,15 +862,21 @@ export default function ContactsPage() {
     if (!window.confirm(`Start working on ${contact.companyName}?\n\nThis will create a sales deal and lock this contact so others can't work on it simultaneously.`)) return;
     
     try {
+      const defaultStage = pipelineStages[0]?.value || 'potential_client';
       await addDoc(collection(db, 'sales'), {
         businessName: contact.companyName,
         contactPerson: contact.contactName,
         phoneNumber: contact.phone,
-        status: 'potential_client',
+        status: defaultStage,
         price: 0,
         notes: `Category: ${contact.category}\nEmail: ${contact.email || 'N/A'}\nPosition: ${contact.contactPosition || 'N/A'}\n\nOriginal Notes: ${contact.notes || 'None'}`,
         createdBy: currentUser.uid,
         createdByName: `${currentUser.firstName} ${currentUser.lastName}`,
+        ownerId: currentUser.uid,
+        ownerName: `${currentUser.firstName} ${currentUser.lastName}`,
+        teamId: teamContext.teamId || null,
+        teamName: teamContext.teamName || null,
+        sharedWith: [],
         archived: false,
         sourceContactId: contact.id,
         createdAt: serverTimestamp(),

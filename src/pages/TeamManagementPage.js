@@ -139,8 +139,7 @@ const TeamManagementPage = () => {
 
     try {
       const leader = availableLeaders.find(m => m.id === newTeamLeader);
-      
-      await addDoc(collection(db, 'teams'), {
+      const teamRef = await addDoc(collection(db, 'teams'), {
         name: newTeamName,
         leaderId: newTeamLeader,
         leaderName: leader.firstName + ' ' + leader.lastName,
@@ -150,6 +149,12 @@ const TeamManagementPage = () => {
         totalDeals: 0,
         totalCommission: 0,
         status: 'active'
+      });
+
+      await updateDoc(doc(db, 'users', newTeamLeader), {
+        teamId: teamRef.id,
+        teamName: newTeamName,
+        teamRole: 'leader'
       });
 
       setNewTeamName('');
@@ -184,6 +189,12 @@ const TeamManagementPage = () => {
       const currentCount = (selectedTeam.memberCount || 0) + 1;
       await updateDoc(teamRef, {
         memberCount: currentCount
+      });
+
+      await updateDoc(doc(db, 'users', selectedMember), {
+        teamId: selectedTeam.id,
+        teamName: selectedTeam.name,
+        teamRole: 'member'
       });
 
       setSelectedMember('');

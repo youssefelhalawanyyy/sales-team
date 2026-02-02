@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import {
   collection,
-  addDoc,
+  getDoc,
   getDocs,
   updateDoc,
   deleteDoc,
@@ -12,8 +12,7 @@ import {
   orderBy,
   query,
   arrayUnion,
-  where,
-  increment
+  where
 } from 'firebase/firestore';
 import { 
   Plus, Trash2, Edit, X, Search, Filter, TrendingUp, Clock, CheckCircle2, 
@@ -24,13 +23,21 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../utils/currency';
 import DealHistory from '../components/DealHistory';
 import { notifyDealUpdated, notifyDealClosed } from '../services/notificationService';
+import { fetchPipelineSettings } from '../services/pipelineService';
+import {
+  DEFAULT_PIPELINE_STAGES,
+  PIPELINE_FIELD_LABELS,
+  getRequiredFieldsForStage,
+  getStageByValue,
+  getStageColorClass
+} from '../utils/pipeline';
 
-const STATUSES = [
-  { value: 'potential_client', label: 'Potential Client', color: 'blue', icon: Users },
-  { value: 'pending_approval', label: 'Pending Approval', color: 'yellow', icon: Clock },
-  { value: 'closed', label: 'Closed', color: 'green', icon: CheckCircle2 },
-  { value: 'lost', label: 'Lost', color: 'red', icon: XCircle }
-];
+const STATUS_ICON_MAP = {
+  potential_client: Users,
+  pending_approval: Clock,
+  closed: CheckCircle2,
+  lost: XCircle
+};
 
 export default function SalesDealsPage() {
   const { currentUser, userRole } = useAuth();
@@ -48,6 +55,27 @@ export default function SalesDealsPage() {
   const [showLossReasonModal, setShowLossReasonModal] = useState(false);
   const [lossReason, setLossReason] = useState('');
   const [pendingStatusChange, setPendingStatusChange] = useState(null);
+  const [pipelineStages, setPipelineStages] = useState(DEFAULT_PIPELINE_STAGES);
+  const [teamContext, setTeamContext] = useState({ teamId: null, teamName: null, memberOptions: [] });
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [usersById, setUsersById] = useState({});
+
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    const loadPipeline = async () => {
+      const stages = await fetchPipelineSettings();
+      setPipelineStages(stages);
+    };
+
+    loadPipeline();
+  }, [currentUser?.uid]);
+
+  useEffect(() => {
+    if (currentUser?.uid) {
+      loadTeamContext();
+    }
+  }, [currentUser?.uid, userRole, currentUser?.teamId]);
 
   useEffect(() => {
     if (currentUser?.uid) {
@@ -56,29 +84,70 @@ export default function SalesDealsPage() {
         loadArchivedDeals();
       }
     }
-  }, [currentUser, userRole]);
+  }, [currentUser, userRole, teamContext.teamId]);
+
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    if (userRole === 'admin' || userRole === 'sales_manager') {
+      loadAvailableUsers();
+    } else {
+      const teamOptions = teamContext.memberOptions || [];
+      const map = {};
+      teamOptions.forEach(user => {
+        map[user.value] = user;
+      });
+      setAvailableUsers(teamOptions);
+      setUsersById(map);
+    }
+  }, [currentUser?.uid, userRole, teamContext]);
 
   async function loadDeals() {
     try {
       setLoading(true);
       setError(null);
-      
-      let dealsQuery;
-      
+
+      const normalizeDeal = (deal) => ({
+        ...deal,
+        ownerId: deal.ownerId || deal.createdBy,
+        ownerName: deal.ownerName || deal.createdByName || 'Unknown',
+        sharedWith: Array.isArray(deal.sharedWith) ? deal.sharedWith : []
+      });
+
+      let allDeals = [];
+
       if (userRole === 'admin' || userRole === 'sales_manager') {
-        dealsQuery = query(
+        const dealsQuery = query(
           collection(db, 'sales'),
           orderBy('createdAt', 'desc')
         );
+        const snapshot = await getDocs(dealsQuery);
+        allDeals = snapshot.docs.map(d => normalizeDeal({ id: d.id, ...d.data() }));
       } else {
-        dealsQuery = query(
-          collection(db, 'sales'),
-          where('createdBy', '==', currentUser.uid)
-        );
-      }
+        const queries = [
+          query(collection(db, 'sales'), where('ownerId', '==', currentUser.uid)),
+          query(collection(db, 'sales'), where('createdBy', '==', currentUser.uid)),
+          query(collection(db, 'sales'), where('sharedWith', 'array-contains', currentUser.uid))
+        ];
 
-      const snapshot = await getDocs(dealsQuery);
-      let allDeals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (teamContext.teamId) {
+          queries.push(query(collection(db, 'sales'), where('teamId', '==', teamContext.teamId)));
+        }
+
+        const snapshots = await Promise.all(queries.map(q => getDocs(q)));
+        const dealMap = new Map();
+        snapshots.forEach(snapshot => {
+          snapshot.docs.forEach(docSnap => {
+            dealMap.set(docSnap.id, normalizeDeal({ id: docSnap.id, ...docSnap.data() }));
+          });
+        });
+        allDeals = Array.from(dealMap.values());
+        allDeals.sort((a, b) => {
+          const timeA = a.createdAt?.toMillis?.() || 0;
+          const timeB = b.createdAt?.toMillis?.() || 0;
+          return timeB - timeA;
+        });
+      }
       
       const activeDeals = allDeals.filter(deal => !deal.archived);
       
@@ -108,7 +177,13 @@ export default function SalesDealsPage() {
       );
       
       const snapshot = await getDocs(archivedQuery);
-      const allDeals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      const allDeals = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data(),
+        ownerId: d.data().ownerId || d.data().createdBy,
+        ownerName: d.data().ownerName || d.data().createdByName || 'Unknown',
+        sharedWith: Array.isArray(d.data().sharedWith) ? d.data().sharedWith : []
+      }));
       const archived = allDeals.filter(deal => deal.archived === true);
       
       setArchivedDeals(archived);
@@ -117,11 +192,162 @@ export default function SalesDealsPage() {
     }
   }
 
+  async function loadTeamContext() {
+    try {
+      let teamId = currentUser?.teamId || null;
+      let teamName = currentUser?.teamName || null;
+      let teamDoc = null;
+
+      if (!teamId) {
+        if (userRole === 'team_leader') {
+          const teamSnap = await getDocs(
+            query(collection(db, 'teams'), where('leaderId', '==', currentUser.uid))
+          );
+          teamDoc = teamSnap.docs[0] || null;
+          if (teamDoc) {
+            teamId = teamDoc.id;
+            teamName = teamDoc.data().name || null;
+          }
+        } else {
+          const memberSnap = await getDocs(
+            query(collection(db, 'teamMembers'), where('userId', '==', currentUser.uid))
+          );
+          const memberDoc = memberSnap.docs[0] || null;
+          if (memberDoc) {
+            teamId = memberDoc.data().teamId || null;
+          }
+          if (teamId) {
+            const teamRef = doc(db, 'teams', teamId);
+            const teamSnap = await getDoc(teamRef);
+            teamDoc = teamSnap.exists() ? teamSnap : null;
+            if (teamDoc) {
+              teamName = teamDoc.data().name || null;
+            }
+          }
+        }
+      } else if (!teamName && teamId) {
+        const teamRef = doc(db, 'teams', teamId);
+        const teamSnap = await getDoc(teamRef);
+        teamDoc = teamSnap.exists() ? teamSnap : null;
+        if (teamDoc) {
+          teamName = teamDoc.data().name || null;
+        }
+      }
+
+      let memberOptions = [];
+      if (teamId) {
+        const membersSnap = await getDocs(
+          query(collection(db, 'teamMembers'), where('teamId', '==', teamId))
+        );
+        memberOptions = membersSnap.docs.map(member => {
+          const data = member.data();
+          return {
+            value: data.userId,
+            label: data.userName || data.userEmail || data.userId,
+            email: data.userEmail,
+            teamId,
+            teamName
+          };
+        });
+
+        if (teamDoc) {
+          const leaderId = teamDoc.data().leaderId;
+          const leaderName = teamDoc.data().leaderName || teamDoc.data().leaderEmail || leaderId;
+          const exists = memberOptions.some(option => option.value === leaderId);
+          if (!exists) {
+            memberOptions.push({
+              value: leaderId,
+              label: leaderName,
+              email: teamDoc.data().leaderEmail || '',
+              teamId,
+              teamName
+            });
+          }
+        }
+      }
+
+      if (currentUser?.uid) {
+        const exists = memberOptions.some(option => option.value === currentUser.uid);
+        if (!exists) {
+          memberOptions.push({
+            value: currentUser.uid,
+            label: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email || currentUser.uid,
+            email: currentUser.email || '',
+            teamId,
+            teamName
+          });
+        }
+      }
+
+      setTeamContext({ teamId, teamName, memberOptions });
+    } catch (error) {
+      console.error('Error loading team context:', error);
+      setTeamContext({ teamId: null, teamName: null, memberOptions: [] });
+    }
+  }
+
+  async function loadAvailableUsers() {
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      const options = snap.docs.map(docSnap => {
+        const data = docSnap.data();
+        const name = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+        return {
+          value: docSnap.id,
+          label: name || data.email || docSnap.id,
+          email: data.email || '',
+          teamId: data.teamId || null,
+          teamName: data.teamName || null
+        };
+      }).filter(user => user.value);
+
+      const map = {};
+      options.forEach(option => {
+        map[option.value] = option;
+      });
+
+      setAvailableUsers(options);
+      setUsersById(map);
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
+  }
+
   async function saveEdit() {
     try {
       const dealRef = doc(db, 'sales', editDeal.id);
       const originalDeal = deals.find(d => d.id === editDeal.id) || 
                           archivedDeals.find(d => d.id === editDeal.id);
+
+      const statusChanged = originalDeal.status !== editDeal.status;
+
+      const isFieldMissing = (deal, field) => {
+        const value = deal[field];
+        if (field === 'price') {
+          return value === undefined || value === null || Number(value) <= 0;
+        }
+        if (typeof value === 'string') {
+          return value.trim() === '';
+        }
+        return value === undefined || value === null;
+      };
+
+      if (statusChanged) {
+        const requiredFields = getRequiredFieldsForStage(pipelineStages, editDeal.status);
+        const missingFields = requiredFields.filter(field => isFieldMissing(editDeal, field));
+
+        if (missingFields.includes('lossReason') && editDeal.status === 'lost' && !editDeal.lossReason) {
+          setPendingStatusChange(editDeal);
+          setShowLossReasonModal(true);
+          return;
+        }
+
+        if (missingFields.length > 0) {
+          const labels = missingFields.map(field => PIPELINE_FIELD_LABELS[field] || field);
+          alert(`Please fill required fields for this stage:\n\n${labels.join(', ')}`);
+          return;
+        }
+      }
       
       // Check if status is changing to 'lost' and ask for reason
       if (originalDeal.status !== 'lost' && editDeal.status === 'lost' && !editDeal.lossReason) {
@@ -129,14 +355,39 @@ export default function SalesDealsPage() {
         setShowLossReasonModal(true);
         return;
       }
-      
+
       const changes = {};
-      
+
       ['businessName', 'contactPerson', 'phoneNumber', 'status', 'price', 'notes', 'lossReason'].forEach(field => {
         if (originalDeal[field] !== editDeal[field]) {
           changes[field] = { from: originalDeal[field], to: editDeal[field] };
         }
       });
+
+      if ((originalDeal.ownerId || originalDeal.createdBy) !== (editDeal.ownerId || editDeal.createdBy)) {
+        changes.owner = {
+          from: originalDeal.ownerName || originalDeal.createdByName || originalDeal.ownerId || originalDeal.createdBy,
+          to: editDeal.ownerName || editDeal.createdByName || editDeal.ownerId || editDeal.createdBy
+        };
+      }
+
+      if (originalDeal.teamId !== editDeal.teamId) {
+        changes.teamName = {
+          from: originalDeal.teamName || originalDeal.teamId || '(none)',
+          to: editDeal.teamName || editDeal.teamId || '(none)'
+        };
+      }
+
+      const originalShared = Array.isArray(originalDeal.sharedWith) ? originalDeal.sharedWith : [];
+      const nextShared = Array.isArray(editDeal.sharedWith) ? editDeal.sharedWith : [];
+      const sharedChanged = originalShared.length !== nextShared.length ||
+        originalShared.some(id => !nextShared.includes(id));
+
+      if (sharedChanged) {
+        const toNames = nextShared.map(id => usersById[id]?.label || id);
+        const fromNames = originalShared.map(id => usersById[id]?.label || id);
+        changes.sharedWith = { from: fromNames, to: toNames };
+      }
 
       const historyEntry = {
         timestamp: new Date(),
@@ -153,11 +404,15 @@ export default function SalesDealsPage() {
         price: Number(editDeal.price) || 0,
         notes: editDeal.notes,
         lossReason: editDeal.lossReason || null,
+        ownerId: editDeal.ownerId || editDeal.createdBy,
+        ownerName: editDeal.ownerName || editDeal.createdByName || 'Unknown',
+        teamId: editDeal.teamId || null,
+        teamName: editDeal.teamName || null,
+        sharedWith: Array.isArray(editDeal.sharedWith) ? editDeal.sharedWith : [],
         editHistory: arrayUnion(historyEntry)
       });
 
       // Handle contact when deal is closed or lost
-      const statusChanged = originalDeal.status !== editDeal.status;
       const isClosedOrLost = editDeal.status === 'closed' || editDeal.status === 'lost';
       
       // Send notifications
@@ -335,6 +590,35 @@ export default function SalesDealsPage() {
     navigate('/sales/contacts');
   }
 
+  const canManageSharing = (deal) => {
+    if (!deal) return false;
+    if (userRole === 'admin' || userRole === 'sales_manager') return true;
+    const ownerId = deal.ownerId || deal.createdBy;
+    if (ownerId === currentUser.uid) return true;
+    return userRole === 'team_leader' && teamContext.teamId && deal.teamId === teamContext.teamId;
+  };
+
+  const handleOwnerChange = (ownerId) => {
+    const owner = availableUsers.find(user => user.value === ownerId);
+    setEditDeal(prev => ({
+      ...prev,
+      ownerId,
+      ownerName: owner?.label || prev.ownerName,
+      teamId: owner?.teamId || prev.teamId || null,
+      teamName: owner?.teamName || prev.teamName || null
+    }));
+  };
+
+  const handleShareToggle = (userId) => {
+    setEditDeal(prev => {
+      const current = Array.isArray(prev.sharedWith) ? prev.sharedWith : [];
+      const next = current.includes(userId)
+        ? current.filter(id => id !== userId)
+        : [...current, userId];
+      return { ...prev, sharedWith: next.filter(id => id !== prev.ownerId) };
+    });
+  };
+
   const filtered = deals.filter(d => {
     const s = d.businessName?.toLowerCase().includes(search.toLowerCase()) ||
               d.contactPerson?.toLowerCase().includes(search.toLowerCase());
@@ -350,12 +634,42 @@ export default function SalesDealsPage() {
   const totalRevenue = filtered.filter(d => d.status === 'closed').reduce((s, d) => s + (d.price || 0), 0);
   const potentialRevenue = filtered.filter(d => d.status === 'potential_client' || d.status === 'pending_approval').reduce((s, d) => s + (d.price || 0), 0);
 
+  const statusOptions = useMemo(
+    () => pipelineStages.map(stage => ({ value: stage.value, label: stage.label })),
+    [pipelineStages]
+  );
+
+  const statusLabelMap = useMemo(() => {
+    const map = {};
+    pipelineStages.forEach(stage => {
+      map[stage.value] = stage.label;
+    });
+    return map;
+  }, [pipelineStages]);
+
   const canModifyDeal = (deal) => {
     if (userRole === 'admin' || userRole === 'sales_manager') return true;
-    return deal.createdBy === currentUser.uid;
+    const ownerId = deal.ownerId || deal.createdBy;
+    if (ownerId === currentUser.uid) return true;
+    return userRole === 'team_leader' && teamContext.teamId && deal.teamId === teamContext.teamId;
   };
 
   const canViewArchive = userRole === 'admin' || userRole === 'sales_manager';
+
+  const ownerOptions = useMemo(
+    () => availableUsers.map(user => ({ value: user.value, label: user.label })),
+    [availableUsers]
+  );
+
+  const ownerSelectOptions = useMemo(() => {
+    if (!editDeal?.ownerId) return ownerOptions;
+    const exists = ownerOptions.some(option => option.value === editDeal.ownerId);
+    if (exists) return ownerOptions;
+    return [
+      { value: editDeal.ownerId, label: editDeal.ownerName || editDeal.ownerId },
+      ...ownerOptions
+    ];
+  }, [ownerOptions, editDeal]);
 
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
@@ -427,7 +741,7 @@ export default function SalesDealsPage() {
           <div>
             <p className="text-sm font-semibold text-blue-900">Personal Deals View</p>
             <p className="text-sm text-blue-700 mt-1">
-              You are viewing only the deals you have created. Contact an administrator to view all team deals.
+              You are viewing deals you own, deals shared with you, and deals from your team (if assigned).
             </p>
           </div>
         </div>
@@ -483,7 +797,7 @@ export default function SalesDealsPage() {
                 onChange={e => setFilter(e.target.value)}
               >
                 <option value="all">All Statuses</option>
-                {STATUSES.map(s => (
+                {statusOptions.map(s => (
                   <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
@@ -502,7 +816,7 @@ export default function SalesDealsPage() {
             )}
             {filter !== 'all' && (
               <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium flex items-center gap-2">
-                Status: {STATUSES.find(s => s.value === filter)?.label}
+                Status: {statusLabelMap[filter] || filter}
                 <X className="w-3 h-3 cursor-pointer" onClick={() => setFilter('all')} />
               </span>
             )}
@@ -545,21 +859,27 @@ export default function SalesDealsPage() {
 
       {!loading && !showArchive && filtered.length > 0 && (
         <div className="grid grid-cols-1 gap-4">
-          {filtered.map(d => (
-            <DealCard
-              key={d.id}
-              deal={d}
-              onEdit={() => setEditDeal(d)}
-              onArchive={() => archiveDeal(d.id)}
-              onDelete={() => deleteDeal(d.id)}
-              onViewProfile={() => navigate(`/sales/client/${d.id}`)}
-              onViewHistory={() => setViewingHistory(d)}
-              userRole={userRole}
-              canModify={canModifyDeal(d)}
-            />
-          ))}
-        </div>
-      )}
+                {filtered.map(d => (
+                  <DealCard
+                    key={d.id}
+                    deal={d}
+                    onEdit={() => setEditDeal({
+                      ...d,
+                      ownerId: d.ownerId || d.createdBy,
+                      ownerName: d.ownerName || d.createdByName || 'Unknown',
+                      sharedWith: Array.isArray(d.sharedWith) ? d.sharedWith : []
+                    })}
+                    onArchive={() => archiveDeal(d.id)}
+                    onDelete={() => deleteDeal(d.id)}
+                    onViewProfile={() => navigate(`/sales/client/${d.id}`)}
+                    onViewHistory={() => setViewingHistory(d)}
+                    userRole={userRole}
+                    canModify={canModifyDeal(d)}
+                    pipelineStages={pipelineStages}
+                  />
+                ))}
+              </div>
+            )}
 
       {/* ARCHIVED DEALS */}
       {!loading && showArchive && canViewArchive && (
@@ -593,6 +913,7 @@ export default function SalesDealsPage() {
                     onDelete={() => deleteDeal(d.id)}
                     onViewProfile={() => navigate(`/sales/client/${d.id}`)}
                     onViewHistory={() => setViewingHistory(d)}
+                    pipelineStages={pipelineStages}
                   />
                 ))}
               </div>
@@ -609,10 +930,35 @@ export default function SalesDealsPage() {
             <InputField label="Contact Person" icon={Users} value={editDeal.contactPerson} onChange={e => setEditDeal({ ...editDeal, contactPerson: e.target.value })} />
             <InputField label="Phone Number" icon={Phone} value={editDeal.phoneNumber} onChange={e => setEditDeal({ ...editDeal, phoneNumber: e.target.value })} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <SelectField label="Status" value={editDeal.status} onChange={e => setEditDeal({ ...editDeal, status: e.target.value })} options={STATUSES.map(s => ({ value: s.value, label: s.label }))} />
+              <SelectField label="Status" value={editDeal.status} onChange={e => setEditDeal({ ...editDeal, status: e.target.value })} options={statusOptions} />
               <InputField label="Deal Value" icon={DollarSign} type="number" step="0.01" value={editDeal.price} onChange={e => setEditDeal({ ...editDeal, price: e.target.value })} />
             </div>
             <TextAreaField label="Notes" icon={FileText} value={editDeal.notes || ''} onChange={e => setEditDeal({ ...editDeal, notes: e.target.value })} />
+            {canManageSharing(editDeal) && (
+              <div className="border-t border-gray-200 pt-4 space-y-4">
+                <h3 className="text-sm font-semibold text-gray-800">Ownership & Sharing</h3>
+                {ownerOptions.length > 0 ? (
+                  <SelectField
+                    label="Deal Owner"
+                    value={editDeal.ownerId || editDeal.createdBy}
+                    onChange={e => handleOwnerChange(e.target.value)}
+                    options={ownerSelectOptions}
+                  />
+                ) : (
+                  <p className="text-sm text-gray-500">No users available for ownership transfer.</p>
+                )}
+                {availableUsers.length > 0 && (
+                  <MultiSelectField
+                    label="Share With (view access)"
+                    value={Array.isArray(editDeal.sharedWith) ? editDeal.sharedWith : []}
+                    options={availableUsers
+                      .filter(user => user.value !== (editDeal.ownerId || editDeal.createdBy))
+                      .map(user => ({ value: user.value, label: user.label }))}
+                    onToggle={handleShareToggle}
+                  />
+                )}
+              </div>
+            )}
             <div className="flex gap-3 pt-4">
               <button onClick={saveEdit} className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 transition-all hover:shadow-blue-500/50">
                 Save Changes
@@ -627,7 +973,7 @@ export default function SalesDealsPage() {
 
       {viewingHistory && (
         <Modal onClose={() => setViewingHistory(null)} title={`Edit History - ${viewingHistory.businessName}`}>
-          <DealHistory deal={viewingHistory} />
+          <DealHistory deal={viewingHistory} pipelineStages={pipelineStages} />
         </Modal>
       )}
 
@@ -715,15 +1061,10 @@ function StatCard({ title, value, icon: Icon, color, subtitle }) {
   );
 }
 
-function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, onViewHistory, userRole, canModify }) {
-  const status = STATUSES.find(s => s.value === deal.status);
-  const StatusIcon = status?.icon || Briefcase;
-  const colorClasses = {
-    blue: 'bg-blue-100 text-blue-700 border-blue-200',
-    green: 'bg-green-100 text-green-700 border-green-200',
-    yellow: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    red: 'bg-red-100 text-red-700 border-red-200',
-  };
+function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, onViewHistory, userRole, canModify, pipelineStages }) {
+  const status = getStageByValue(pipelineStages, deal.status);
+  const StatusIcon = STATUS_ICON_MAP[deal.status] || TrendingUp;
+  const colorClass = getStageColorClass(pipelineStages, deal.status);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all">
@@ -752,6 +1093,18 @@ function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, onViewHist
                 by {deal.createdByName}
               </span>
             )}
+            {deal.ownerName && (
+              <span className="flex items-center gap-1">
+                <UserCheck className="w-4 h-4" />
+                Owner: {deal.ownerName}
+              </span>
+            )}
+            {Array.isArray(deal.sharedWith) && deal.sharedWith.length > 0 && (
+              <span className="flex items-center gap-1">
+                <Users className="w-4 h-4" />
+                Shared: {deal.sharedWith.length}
+              </span>
+            )}
           </div>
           {deal.sourceContactId && (
             <div className="flex items-center gap-2">
@@ -772,7 +1125,7 @@ function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, onViewHist
             <p className="text-sm text-gray-600 mb-1">Deal Value</p>
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(deal.price || 0)}</p>
           </div>
-          <div className={`px-4 py-2 rounded-xl font-semibold text-sm border flex items-center gap-2 ${colorClasses[status?.color]}`}>
+          <div className={`px-4 py-2 rounded-xl font-semibold text-sm border flex items-center gap-2 ${colorClass}`}>
             <StatusIcon className="w-4 h-4" strokeWidth={2.5} />
             {status?.label || deal.status}
           </div>
@@ -812,15 +1165,10 @@ function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, onViewHist
   );
 }
 
-function ArchivedDealCard({ deal, onRestore, onDelete, onViewProfile, onViewHistory }) {
-  const status = STATUSES.find(s => s.value === deal.status);
-  const StatusIcon = status?.icon || Briefcase;
-  const colorClasses = {
-    blue: 'bg-blue-100 text-blue-700 border-blue-200',
-    green: 'bg-green-100 text-green-700 border-green-200',
-    yellow: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    red: 'bg-red-100 text-red-700 border-red-200',
-  };
+function ArchivedDealCard({ deal, onRestore, onDelete, onViewProfile, onViewHistory, pipelineStages }) {
+  const status = getStageByValue(pipelineStages, deal.status);
+  const StatusIcon = STATUS_ICON_MAP[deal.status] || TrendingUp;
+  const colorClass = getStageColorClass(pipelineStages, deal.status);
 
   return (
     <div className="bg-gray-50 rounded-2xl shadow-sm border-2 border-gray-300 p-6 hover:shadow-lg transition-all">
@@ -872,7 +1220,7 @@ function ArchivedDealCard({ deal, onRestore, onDelete, onViewProfile, onViewHist
             <p className="text-sm text-gray-600 mb-1">Deal Value</p>
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(deal.price || 0)}</p>
           </div>
-          <div className={`px-4 py-2 rounded-xl font-semibold text-sm border flex items-center gap-2 ${colorClasses[status?.color]}`}>
+          <div className={`px-4 py-2 rounded-xl font-semibold text-sm border flex items-center gap-2 ${colorClass}`}>
             <StatusIcon className="w-4 h-4" strokeWidth={2.5} />
             {status?.label || deal.status}
           </div>
@@ -957,6 +1305,33 @@ function SelectField({ label, value, onChange, options }) {
           <option key={opt.value} value={opt.value}>{opt.label}</option>
         ))}
       </select>
+    </div>
+  );
+}
+
+function MultiSelectField({ label, value, options, onToggle }) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {options.map(option => {
+          const checked = value.includes(option.value);
+          return (
+            <label
+              key={option.value}
+              className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all"
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => onToggle(option.value)}
+                className="w-4 h-4 text-blue-600 rounded"
+              />
+              <span className="text-sm text-gray-700 font-medium">{option.label}</span>
+            </label>
+          );
+        })}
+      </div>
     </div>
   );
 }

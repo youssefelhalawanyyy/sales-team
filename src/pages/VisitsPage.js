@@ -69,25 +69,35 @@ export default function VisitsPage() {
 
   async function loadDeals() {
     try {
-      let snapshot;
-
       if (userRole === 'admin' || userRole === 'sales_manager') {
         // Admin/Manager sees all deals - simple query
         const q = query(collection(db, 'sales'));
-        snapshot = await getDocs(q);
-      } else {
-        // Reps see only their deals
-        const q = query(
-          collection(db, 'sales'),
-          where('createdBy', '==', currentUser.uid)
-        );
-        snapshot = await getDocs(q);
+        const snapshot = await getDocs(q);
+        const allDeals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        const activeDeals = allDeals.filter(deal => !deal.archived);
+        setDeals(activeDeals);
+        return;
       }
 
-      const allDeals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      // Filter out archived deals in memory
-      const activeDeals = allDeals.filter(deal => !deal.archived);
-      
+      const queries = [
+        query(collection(db, 'sales'), where('ownerId', '==', currentUser.uid)),
+        query(collection(db, 'sales'), where('createdBy', '==', currentUser.uid)),
+        query(collection(db, 'sales'), where('sharedWith', 'array-contains', currentUser.uid))
+      ];
+
+      if (currentUser?.teamId) {
+        queries.push(query(collection(db, 'sales'), where('teamId', '==', currentUser.teamId)));
+      }
+
+      const snapshots = await Promise.all(queries.map(queryRef => getDocs(queryRef)));
+      const dealMap = new Map();
+      snapshots.forEach(snapshot => {
+        snapshot.docs.forEach(docSnap => {
+          dealMap.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
+        });
+      });
+
+      const activeDeals = Array.from(dealMap.values()).filter(deal => !deal.archived);
       setDeals(activeDeals);
     } catch (e) {
       console.error('Error loading deals:', e);

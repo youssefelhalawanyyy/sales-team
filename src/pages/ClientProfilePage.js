@@ -36,17 +36,15 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../utils/currency';
 import { formatDate, formatDateTime } from '../utils/dateHelpers';
+import { fetchPipelineSettings } from '../services/pipelineService';
+import { DEFAULT_PIPELINE_STAGES, getStageByValue, getStageColorClass } from '../utils/pipeline';
 
-/* ============================= */
-
-const STATUSES = [
-  { value: 'potential_client', label: 'Potential Client', color: 'blue', icon: Users },
-  { value: 'pending_approval', label: 'Pending Approval', color: 'yellow', icon: Clock },
-  { value: 'closed', label: 'Closed', color: 'green', icon: CheckCircle2 },
-  { value: 'lost', label: 'Lost', color: 'red', icon: XCircle }
-];
-
-/* ============================= */
+const STATUS_ICON_MAP = {
+  potential_client: Users,
+  pending_approval: Clock,
+  closed: CheckCircle2,
+  lost: XCircle
+};
 
 export default function ClientProfilePage() {
   const { dealId } = useParams();
@@ -58,6 +56,7 @@ export default function ClientProfilePage() {
   const [followups, setFollowups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pipelineStages, setPipelineStages] = useState(DEFAULT_PIPELINE_STAGES);
 
   // Notes editing state
   const [isEditingNotes, setIsEditingNotes] = useState(false);
@@ -71,6 +70,15 @@ export default function ClientProfilePage() {
       loadClientData();
     }
   }, [currentUser, dealId]);
+
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+    const loadPipeline = async () => {
+      const stages = await fetchPipelineSettings();
+      setPipelineStages(stages);
+    };
+    loadPipeline();
+  }, [currentUser?.uid]);
 
   /* ============================= */
 
@@ -89,9 +97,32 @@ export default function ClientProfilePage() {
       }
 
       const dealData = { id: dealDoc.id, ...dealDoc.data() };
+      const resolveTeamId = async () => {
+        if (currentUser.teamId) return currentUser.teamId;
+        if (userRole === 'team_leader') {
+          const teamSnap = await getDocs(
+            query(collection(db, 'teams'), where('leaderId', '==', currentUser.uid))
+          );
+          return teamSnap.docs[0]?.id || null;
+        }
+        const memberSnap = await getDocs(
+          query(collection(db, 'teamMembers'), where('userId', '==', currentUser.uid))
+        );
+        return memberSnap.docs[0]?.data()?.teamId || null;
+      };
 
-      // Check permissions - only admin or the creator can view
-      if (userRole !== 'admin' && dealData.createdBy !== currentUser.uid) {
+      const teamId = await resolveTeamId();
+      const ownerId = dealData.ownerId || dealData.createdBy;
+      const sharedWith = Array.isArray(dealData.sharedWith) ? dealData.sharedWith : [];
+      const canView =
+        userRole === 'admin' ||
+        userRole === 'sales_manager' ||
+        ownerId === currentUser.uid ||
+        dealData.createdBy === currentUser.uid ||
+        sharedWith.includes(currentUser.uid) ||
+        (teamId && dealData.teamId === teamId);
+
+      if (!canView) {
         setError('You do not have permission to view this client');
         setLoading(false);
         return;
@@ -219,15 +250,9 @@ export default function ClientProfilePage() {
     );
   }
 
-  const status = STATUSES.find(s => s.value === deal.status) || STATUSES[0];
-  const StatusIcon = status.icon;
-
-  const colorClasses = {
-    blue: 'bg-blue-100 text-blue-700 border-blue-200',
-    green: 'bg-green-100 text-green-700 border-green-200',
-    yellow: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    red: 'bg-red-100 text-red-700 border-red-200',
-  };
+  const status = getStageByValue(pipelineStages, deal.status) || pipelineStages[0];
+  const StatusIcon = STATUS_ICON_MAP[deal.status] || Briefcase;
+  const statusColorClass = getStageColorClass(pipelineStages, deal.status);
 
   /* ============================= */
 
@@ -259,9 +284,9 @@ export default function ClientProfilePage() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <div className={`px-4 py-2 rounded-xl font-semibold text-sm border flex items-center gap-2 ${colorClasses[status?.color]}`}>
+            <div className={`px-4 py-2 rounded-xl font-semibold text-sm border flex items-center gap-2 ${statusColorClass}`}>
               <StatusIcon className="w-4 h-4" strokeWidth={2.5} />
-              {status?.label}
+              {status?.label || deal.status}
             </div>
           </div>
         </div>
@@ -339,9 +364,9 @@ export default function ClientProfilePage() {
 
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Status</p>
-              <div className={`inline-flex px-4 py-2 rounded-xl font-semibold text-sm border items-center gap-2 ${colorClasses[status?.color]}`}>
+              <div className={`inline-flex px-4 py-2 rounded-xl font-semibold text-sm border items-center gap-2 ${statusColorClass}`}>
                 <StatusIcon className="w-4 h-4" strokeWidth={2.5} />
-                {status?.label}
+                {status?.label || deal.status}
               </div>
             </div>
 
@@ -352,6 +377,28 @@ export default function ClientProfilePage() {
                 </p>
                 <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 border border-gray-200">
                   {deal.address}
+                </p>
+              </div>
+            )}
+
+            {deal.ownerName && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-1">
+                  <Users className="w-3 h-3" /> Owner
+                </p>
+                <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                  {deal.ownerName}
+                </p>
+              </div>
+            )}
+
+            {deal.teamName && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-1">
+                  <Users className="w-3 h-3" /> Team
+                </p>
+                <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                  {deal.teamName}
                 </p>
               </div>
             )}

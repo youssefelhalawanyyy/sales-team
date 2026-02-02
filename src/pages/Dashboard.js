@@ -79,12 +79,47 @@ export const Dashboard = () => {
     try {
       setLoading(true);
       
-      // Fetch all data in parallel for better performance
-      const [usersSnap, salesSnap, financeSnap] = await Promise.all([
-        getDocs(collection(db, 'users')),
-        getDocs(collection(db, 'sales')),
-        userRole === 'admin' ? getDocs(collection(db, 'finances')) : Promise.resolve(null)
-      ]);
+      const usersSnap = await getDocs(collection(db, 'users'));
+
+      const resolveTeamId = async () => {
+        if (currentUser?.teamId) return currentUser.teamId;
+        if (userRole === 'team_leader') {
+          const teamSnap = await getDocs(
+            query(collection(db, 'teams'), where('leaderId', '==', currentUser.uid))
+          );
+          return teamSnap.docs[0]?.id || null;
+        }
+        const memberSnap = await getDocs(
+          query(collection(db, 'teamMembers'), where('userId', '==', currentUser.uid))
+        );
+        return memberSnap.docs[0]?.data()?.teamId || null;
+      };
+
+      let deals = [];
+      if (userRole === 'admin' || userRole === 'sales_manager') {
+        const salesSnap = await getDocs(collection(db, 'sales'));
+        deals = salesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } else {
+        const teamId = await resolveTeamId();
+        const queries = [
+          query(collection(db, 'sales'), where('ownerId', '==', currentUser.uid)),
+          query(collection(db, 'sales'), where('createdBy', '==', currentUser.uid)),
+          query(collection(db, 'sales'), where('sharedWith', 'array-contains', currentUser.uid))
+        ];
+        if (teamId) {
+          queries.push(query(collection(db, 'sales'), where('teamId', '==', teamId)));
+        }
+        const snapshots = await Promise.all(queries.map(q => getDocs(q)));
+        const dealMap = new Map();
+        snapshots.forEach(snapshot => {
+          snapshot.docs.forEach(docSnap => {
+            dealMap.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
+          });
+        });
+        deals = Array.from(dealMap.values());
+      }
+
+      const financeSnap = userRole === 'admin' ? await getDocs(collection(db, 'finances')) : null;
 
       let totalDeals = 0;
       let totalIncome = 0;
@@ -110,9 +145,8 @@ export const Dashboard = () => {
       }
 
       /* Process DEALS */
-      totalDeals = salesSnap.docs.length;
-      salesSnap.docs.forEach((doc) => {
-        const data = doc.data();
+      totalDeals = deals.length;
+      deals.forEach((data) => {
 
         if (data.createdBy === currentUser?.uid) {
           myDeals++;

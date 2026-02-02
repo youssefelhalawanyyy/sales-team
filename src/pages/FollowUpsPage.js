@@ -85,17 +85,30 @@ export default function FollowUpsPage() {
           collection(db, 'sales'),
           where('archived', '==', false)
         );
-      } else {
-        q = query(
-          collection(db, 'sales'),
-          where('createdBy', '==', currentUser.uid),
-          where('archived', '==', false)
-        );
+        const snap = await getDocs(q);
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setDeals(list);
+        return;
       }
 
-      const snap = await getDocs(q);
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setDeals(list);
+      const queries = [
+        query(collection(db, 'sales'), where('ownerId', '==', currentUser.uid), where('archived', '==', false)),
+        query(collection(db, 'sales'), where('createdBy', '==', currentUser.uid), where('archived', '==', false)),
+        query(collection(db, 'sales'), where('sharedWith', 'array-contains', currentUser.uid), where('archived', '==', false))
+      ];
+
+      if (currentUser?.teamId) {
+        queries.push(query(collection(db, 'sales'), where('teamId', '==', currentUser.teamId), where('archived', '==', false)));
+      }
+
+      const snapshots = await Promise.all(queries.map(queryRef => getDocs(queryRef)));
+      const dealMap = new Map();
+      snapshots.forEach(snapshot => {
+        snapshot.docs.forEach(docSnap => {
+          dealMap.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
+        });
+      });
+      setDeals(Array.from(dealMap.values()));
     } catch (e) {
       console.error('Error loading deals:', e);
     }
