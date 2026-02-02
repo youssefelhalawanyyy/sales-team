@@ -19,32 +19,75 @@ export const NotificationProvider = ({ children }) => {
 
     console.log('🔔 NotificationProvider: Setting up listener for user:', currentUser.uid);
 
-    const q = query(
-      collection(db, 'notifications'),
-      where('userId', '==', currentUser.uid),
-      orderBy('createdAt', 'desc'),
-      limit(50)
-    );
+    let unsubscribe = null;
+    let fellBackToUnordered = false;
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('📬 NotificationProvider: Got snapshot with', snapshot.docs.length, 'notifications');
-      const notifs = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.() || new Date()
-      }));
-      console.log('📋 NotificationProvider: Parsed notifications:', notifs);
-      setNotifications(notifs);
-      const unread = notifs.filter(n => !n.read).length;
-      console.log('🔴 NotificationProvider: Unread count:', unread);
-      setUnreadCount(unread);
-    }, (error) => {
-      console.error('❌ NotificationProvider: Snapshot error:', error);
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
-    });
+    const normalizeNotifications = (snapshot) => {
+      const notifs = snapshot.docs.map(doc => {
+        const data = doc.data();
+        const createdAt =
+          data?.createdAt?.toDate?.() ||
+          (data?.createdAt instanceof Date ? data.createdAt : null) ||
+          (data?.createdAt ? new Date(data.createdAt) : new Date());
+        return {
+          id: doc.id,
+          ...data,
+          createdAt
+        };
+      });
+      return notifs
+        .filter(n => !n.deleted)
+        .sort((a, b) => (b.createdAt?.getTime?.() || 0) - (a.createdAt?.getTime?.() || 0));
+    };
 
-    return unsubscribe;
+    const subscribe = (useOrderedQuery) => {
+      const q = useOrderedQuery
+        ? query(
+            collection(db, 'notifications'),
+            where('userId', '==', currentUser.uid),
+            orderBy('createdAt', 'desc'),
+            limit(50)
+          )
+        : query(
+            collection(db, 'notifications'),
+            where('userId', '==', currentUser.uid)
+          );
+
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        console.log('📬 NotificationProvider: Got snapshot with', snapshot.docs.length, 'notifications');
+        let notifs = normalizeNotifications(snapshot);
+        if (!useOrderedQuery) {
+          notifs = notifs.slice(0, 50);
+        }
+        console.log('📋 NotificationProvider: Parsed notifications:', notifs);
+        setNotifications(notifs);
+        const unread = notifs.filter(n => !n.read).length;
+        console.log('🔴 NotificationProvider: Unread count:', unread);
+        setUnreadCount(unread);
+      }, (error) => {
+        console.error('❌ NotificationProvider: Snapshot error:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+
+        // Fallback for missing composite index on (userId, createdAt)
+        if (!fellBackToUnordered && error?.code === 'failed-precondition') {
+          fellBackToUnordered = true;
+          console.warn('⚠️ Missing index for notifications. Falling back to unordered query.');
+          if (unsubscribe) {
+            unsubscribe();
+          }
+          subscribe(false);
+        }
+      });
+    };
+
+    subscribe(true);
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [currentUser?.uid]);
 
   const markAsRead = useCallback(async (notificationId) => {

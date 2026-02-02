@@ -2,7 +2,7 @@ import React from 'react';
 import { Clock, User, Edit2, ArrowRight } from 'lucide-react';
 import { formatCurrency } from '../utils/currency';
 
-export default function DealHistory({ deal }) {
+export default function DealHistory({ deal, pipelineStages }) {
   const editHistory = deal?.editHistory || [];
 
   if (!editHistory || editHistory.length === 0) {
@@ -49,22 +49,36 @@ export default function DealHistory({ deal }) {
       phoneNumber: 'Phone Number',
       status: 'Status',
       price: 'Deal Value',
-      notes: 'Notes'
+      notes: 'Notes',
+      lossReason: 'Loss Reason',
+      owner: 'Owner',
+      ownerId: 'Owner',
+      ownerName: 'Owner',
+      teamId: 'Team',
+      teamName: 'Team',
+      sharedWith: 'Shared With'
     };
     return fieldNames[fieldName] || fieldName;
   };
 
   const formatFieldValue = (fieldName, value) => {
+    if (Array.isArray(value)) {
+      return value.length > 0 ? value.join(', ') : '(none)';
+    }
     if (fieldName === 'price') {
       return formatCurrency(value || 0);
     }
     if (fieldName === 'status') {
-      const statusLabels = {
-        potential_client: 'Potential Client',
-        pending_approval: 'Pending Approval',
-        closed: 'Closed',
-        lost: 'Lost'
-      };
+      const statusLabels = {};
+      (pipelineStages || []).forEach(stage => {
+        statusLabels[stage.value] = stage.label;
+      });
+      if (Object.keys(statusLabels).length === 0) {
+        statusLabels.potential_client = 'Potential Client';
+        statusLabels.pending_approval = 'Pending Approval';
+        statusLabels.closed = 'Closed';
+        statusLabels.lost = 'Lost';
+      }
       return statusLabels[value] || value;
     }
     return value || '(empty)';

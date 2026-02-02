@@ -51,6 +51,7 @@ const TeamPerformanceLeaderboardPage = React.lazy(() => import('./pages/TeamPerf
 const RevenuePipelineForecastPage = React.lazy(() => import('./pages/RevenuePipelineForecastPage'));
 const WinLossAnalysisPage = React.lazy(() => import('./pages/WinLossAnalysisPage'));
 const SalesVelocityMetricsPage = React.lazy(() => import('./pages/SalesVelocityMetricsPage'));
+const PipelineSettingsPage = React.lazy(() => import('./pages/PipelineSettingsPage'));
 
 // Loading fallback component - lightweight for fast rendering
 const LoadingFallback = React.memo(() => (
@@ -139,6 +140,18 @@ const AppContent = React.memo(() => {
                   <AdminUsersPage />
                 </Suspense>
               </div>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= PIPELINE SETTINGS ================= */}
+        <Route
+          path="/admin/pipeline"
+          element={
+            <ProtectedRoute requiredRoles={['admin', 'sales_manager']}>
+              <Suspense fallback={<LoadingFallback />}>
+                <PipelineSettingsPage />
+              </Suspense>
             </ProtectedRoute>
           }
         />

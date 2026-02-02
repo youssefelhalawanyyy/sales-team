@@ -155,6 +155,7 @@ export const Navigation = React.memo(({ userRole }) => {
         icon: Settings,
         children: [
           { label: 'Users', path: '/admin/users', icon: Users },
+          { label: 'Pipeline', path: '/admin/pipeline', icon: TrendingUp },
           { label: 'Audit Log', path: '/admin/audit-log', icon: History },
           { label: 'Data Import/Export', path: '/admin/data', icon: Database },
           { label: 'Analytics', path: '/analytics', icon: BarChart2 },
