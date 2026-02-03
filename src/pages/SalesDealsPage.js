@@ -435,25 +435,33 @@ export default function SalesDealsPage() {
         return;
       }
 
+      // ── BUILD EDIT-HISTORY CHANGES OBJECT ──────────────────────────────
+      // Every `from` / `to` value is coerced with ?? null so that fields
+      // which don't yet exist on the Firestore document (e.g. lossReason)
+      // never produce a bare `undefined`.  Firestore's arrayUnion() rejects
+      // objects that contain undefined anywhere in their tree.
       const changes = {};
 
       ['businessName', 'contactPerson', 'phoneNumber', 'status', 'price', 'notes', 'lossReason', 'forecastCategory'].forEach(field => {
         if (originalDeal[field] !== editDeal[field]) {
-          changes[field] = { from: originalDeal[field], to: editDeal[field] };
+          changes[field] = {
+            from: originalDeal[field] ?? null,
+            to:   editDeal[field]     ?? null
+          };
         }
       });
 
       if ((originalDeal.ownerId || originalDeal.createdBy) !== (editDeal.ownerId || editDeal.createdBy)) {
         changes.owner = {
-          from: originalDeal.ownerName || originalDeal.createdByName || originalDeal.ownerId || originalDeal.createdBy,
-          to: editDeal.ownerName || editDeal.createdByName || editDeal.ownerId || editDeal.createdBy
+          from: (originalDeal.ownerName || originalDeal.createdByName || originalDeal.ownerId || originalDeal.createdBy) ?? null,
+          to:   (editDeal.ownerName     || editDeal.createdByName     || editDeal.ownerId     || editDeal.createdBy)     ?? null
         };
       }
 
       if (originalDeal.teamId !== editDeal.teamId) {
         changes.teamName = {
           from: originalDeal.teamName || originalDeal.teamId || '(none)',
-          to: editDeal.teamName || editDeal.teamId || '(none)'
+          to:   editDeal.teamName     || editDeal.teamId     || '(none)'
         };
       }
 
@@ -467,6 +475,7 @@ export default function SalesDealsPage() {
         const fromNames = originalShared.map(id => usersById[id]?.label || id);
         changes.sharedWith = { from: fromNames, to: toNames };
       }
+      // ── END CHANGES OBJECT ──────────────────────────────────────────────
 
       const historyEntry = {
         timestamp: new Date(),

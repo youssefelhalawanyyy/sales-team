@@ -295,10 +295,11 @@ export default function ContactsPage() {
   // canView360 – who is allowed to open the 360 view
   //
   // admin / sales_manager  → always yes
-  // sales_member            → yes on every UNLOCKED contact;
-  //                           yes on a LOCKED contact only if they own the lock
-  // team_leader             → same as sales_member PLUS
-  //                           yes on any contact locked by a team-mate
+  // team_leader            → yes on every UNLOCKED contact;
+  //                           yes on a LOCKED contact only if the lock
+  //                           owner is someone on this leader's team
+  // sales_member           → yes on every UNLOCKED contact;
+  //                           no on every LOCKED contact (even their own)
   // ──────────────────────────────────────────────
   function canView360(contact) {
     // Admins and sales managers can always view 360
@@ -310,7 +311,7 @@ export default function ContactsPage() {
     if (userRole === 'team_leader') {
       // Unlocked → always allowed
       if (!locked) return true;
-      // Locked → allowed if the lock owner is in this leader's team (includes the leader themselves)
+      // Locked → allowed only if the lock owner is on this leader's team
       const lockOwner = getLockOwnerId(contact);
       return teamContext.memberIds.includes(lockOwner);
     }
@@ -318,9 +319,8 @@ export default function ContactsPage() {
     // --- sales_member (and any other non-admin, non-manager, non-leader role) ---
     // Unlocked → allowed
     if (!locked) return true;
-    // Locked → allowed only if the current user is the one who locked it
-    const lockOwner = getLockOwnerId(contact);
-    return lockOwner === currentUser.uid;
+    // Locked → blocked regardless of who locked it
+    return false;
   }
 
   function canWorkOnContact(contact) {
