@@ -245,10 +245,10 @@ export default function ContactsPage() {
   }
 
   function isContactInProgress(contact) {
-    // Check if contact has an active deal marker
+    // Check if contact has an active deal marker that hasn't been cleared
     if (contact?.activeDealId && contact?.activeDealStatus === 'active') return true;
     
-    // Double-check against active deals
+    // Double-check against active deals list
     return activeDeals.some(deal => 
       deal.sourceContactId === contact.id || 
       (deal.businessName?.toLowerCase() === contact.companyName?.toLowerCase() && 
@@ -267,6 +267,22 @@ export default function ContactsPage() {
     return deal ? (deal.ownerName || deal.createdByName) : null;
   }
 
+  // ──────────────────────────────────────────────
+  // Get the ownerId of whoever locked this contact
+  // ──────────────────────────────────────────────
+  function getLockOwnerId(contact) {
+    // Prefer the field written directly on the contact document
+    if (contact?.activeDealOwnerId) return contact.activeDealOwnerId;
+
+    // Fall back to scanning the active-deals list
+    const deal = activeDeals.find(deal =>
+      deal.sourceContactId === contact.id ||
+      (deal.businessName?.toLowerCase() === contact.companyName?.toLowerCase() &&
+       deal.phoneNumber === contact.phone)
+    );
+    return deal?.ownerId || deal?.createdBy || null;
+  }
+
   function canViewContact(contact) {
     // Admin and sales managers can see everything
     if (canSeeAllContacts) return true;
@@ -275,28 +291,36 @@ export default function ContactsPage() {
     return true;
   }
 
+  // ──────────────────────────────────────────────
+  // canView360 – who is allowed to open the 360 view
+  //
+  // admin / sales_manager  → always yes
+  // sales_member            → yes on every UNLOCKED contact;
+  //                           yes on a LOCKED contact only if they own the lock
+  // team_leader             → same as sales_member PLUS
+  //                           yes on any contact locked by a team-mate
+  // ──────────────────────────────────────────────
   function canView360(contact) {
-    // Admin and sales managers can see everything
+    // Admins and sales managers can always view 360
     if (canSeeAllContacts) return true;
 
-    // Team leaders can see their team's contact 360s
+    const locked = isContactInProgress(contact);
+
+    // --- team_leader ---
     if (userRole === 'team_leader') {
-      // If contact has an active deal owned by team member
-      if (contact.activeDealOwnerId) {
-        return teamContext.memberIds.includes(contact.activeDealOwnerId);
-      }
-      // If contact was created by team member
-      if (contact.createdBy) {
-        return teamContext.memberIds.includes(contact.createdBy);
-      }
-      return true;
+      // Unlocked → always allowed
+      if (!locked) return true;
+      // Locked → allowed if the lock owner is in this leader's team (includes the leader themselves)
+      const lockOwner = getLockOwnerId(contact);
+      return teamContext.memberIds.includes(lockOwner);
     }
 
-    // Sales members can only see 360 for their own contacts
-    if (contact.createdBy === currentUser.uid) return true;
-    if (contact.activeDealOwnerId === currentUser.uid) return true;
-    
-    return false;
+    // --- sales_member (and any other non-admin, non-manager, non-leader role) ---
+    // Unlocked → allowed
+    if (!locked) return true;
+    // Locked → allowed only if the current user is the one who locked it
+    const lockOwner = getLockOwnerId(contact);
+    return lockOwner === currentUser.uid;
   }
 
   function canWorkOnContact(contact) {
@@ -1164,7 +1188,7 @@ export default function ContactsPage() {
         </Modal>
       )}
 
-      {/* Quality Modal - Continue with duplicates and missing fields sections... */}
+      {/* Quality Modal */}
       {showQualityModal && (
         <Modal onClose={() => setShowQualityModal(false)} title="Data Quality Center">
           <div className="flex gap-2 mb-6">

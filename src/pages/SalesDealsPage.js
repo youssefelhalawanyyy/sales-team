@@ -356,6 +356,33 @@ export default function SalesDealsPage() {
     }
   }
 
+  // ──────────────────────────────────────────────
+  // releaseContact – clears the lock so the contact
+  // shows as "Available" again on the Contacts page.
+  // Called when a deal is closed, lost, archived, or deleted.
+  // ──────────────────────────────────────────────
+  async function releaseContact(contactId) {
+    if (!contactId) return;
+    
+    try {
+      const contactRef = doc(db, 'contacts', contactId);
+      await updateDoc(contactRef, {
+        // ── clear every lock field ──
+        activeDealId: null,
+        activeDealOwnerId: null,
+        activeDealOwnerName: null,
+        activeDealStage: null,
+        activeDealStatus: null,       // this is the key flag isContactInProgress checks
+        // ── audit trail ──
+        releasedAt: serverTimestamp(),
+        releasedBy: currentUser.uid,
+        releasedByName: `${currentUser.firstName} ${currentUser.lastName}`
+      });
+    } catch (e) {
+      console.error('Error releasing contact:', e);
+    }
+  }
+
   async function saveEdit() {
     try {
       const dealRef = doc(db, 'sales', editDeal.id);
@@ -474,14 +501,13 @@ export default function SalesDealsPage() {
 
       await updateDoc(dealRef, updatePayload);
 
-      // Handle contact when deal is closed or lost
+      // ── is the new status a terminal one? ──
       const isClosedOrLost = editDeal.status === 'closed' || editDeal.status === 'lost';
-      
+
       // Send notifications
       if (statusChanged) {
         try {
           console.log('Sending notification for deal update...');
-          // Notify the deal creator (current user)
           if (isClosedOrLost) {
             const result = await notifyDealClosed(currentUser.uid, editDeal, editDeal.status === 'closed' ? 'Won' : 'Lost');
             console.log('Deal closed notification result:', result);
@@ -538,31 +564,32 @@ export default function SalesDealsPage() {
         }
       }
       
+      // ── contact updates when deal reaches a terminal status ──
       if (statusChanged && isClosedOrLost && originalDeal.sourceContactId) {
         try {
           const contactRef = doc(db, 'contacts', originalDeal.sourceContactId);
-          
-          // Get current contact data to preserve existing deal history
-          const contactSnap = await getDocs(query(collection(db, 'contacts'), where('__name__', '==', originalDeal.sourceContactId)));
-          const currentContact = contactSnap.docs[0]?.data();
+
+          // 1. Bump the deal-history counters on the contact
+          const contactSnap = await getDoc(contactRef);
+          const currentContact = contactSnap.exists() ? contactSnap.data() : {};
           const currentHistory = currentContact?.dealHistory || { closedDeals: 0, lostDeals: 0 };
-          
-          // Update deal history on the contact
-          const dealHistoryUpdate = {
+
+          await updateDoc(contactRef, {
             dealHistory: {
               closedDeals: currentHistory.closedDeals + (editDeal.status === 'closed' ? 1 : 0),
               lostDeals: currentHistory.lostDeals + (editDeal.status === 'lost' ? 1 : 0),
               lastDealStatus: editDeal.status,
               lastDealDate: serverTimestamp()
             }
-          };
-          
-          await updateDoc(contactRef, dealHistoryUpdate);
-          
-          const statusLabel = editDeal.status === 'closed' ? 'closed' : 'lost';
-          alert(`✅ Deal updated successfully!\n\nThe contact has been updated with a "${statusLabel}" deal in their history.`);
+          });
+
+          // 2. Release the lock so the contact becomes Available again
+          await releaseContact(originalDeal.sourceContactId);
+
+          const statusLabel = editDeal.status === 'closed' ? 'closed (won)' : 'lost';
+          alert(`✅ Deal updated successfully!\n\nThe contact has been updated with a "${statusLabel}" deal in their history and is now available for new deals.`);
         } catch (e) {
-          console.error('Error updating contact:', e);
+          console.error('Error updating contact after close/lost:', e);
           alert('Deal updated successfully, but failed to update contact status.');
         }
       } else {
@@ -577,21 +604,6 @@ export default function SalesDealsPage() {
     } catch (e) {
       console.error('Error updating deal:', e);
       alert('Failed to update deal: ' + e.message);
-    }
-  }
-
-  async function releaseContact(contactId) {
-    if (!contactId) return;
-    
-    try {
-      const contactRef = doc(db, 'contacts', contactId);
-      await updateDoc(contactRef, {
-        releasedAt: serverTimestamp(),
-        releasedBy: currentUser.uid,
-        releasedByName: `${currentUser.firstName} ${currentUser.lastName}`
-      });
-    } catch (e) {
-      console.error('Error releasing contact:', e);
     }
   }
 
@@ -642,16 +654,22 @@ export default function SalesDealsPage() {
         restoredByName: `${currentUser.firstName} ${currentUser.lastName}`
       });
 
+      // Re-lock the contact if this deal has a source contact
       if (deal?.sourceContactId) {
         try {
           const contactRef = doc(db, 'contacts', deal.sourceContactId);
           await updateDoc(contactRef, {
+            activeDealId: deal.id,
+            activeDealOwnerId: deal.ownerId || deal.createdBy,
+            activeDealOwnerName: deal.ownerName || deal.createdByName || 'Unknown',
+            activeDealStage: deal.status,
+            activeDealStatus: 'active',
             restoredAt: serverTimestamp(),
             restoredBy: currentUser.uid,
             restoredByName: `${currentUser.firstName} ${currentUser.lastName}`
           });
         } catch (e) {
-          console.error('Error updating contact:', e);
+          console.error('Error re-locking contact on restore:', e);
         }
       }
 
