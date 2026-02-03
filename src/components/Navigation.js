@@ -31,7 +31,8 @@ import {
   MessageSquare,
   Zap,
   LifeBuoy,
-  AlertCircle
+  AlertCircle,
+  ClipboardList
 } from 'lucide-react';
 
 export const Navigation = React.memo(({ userRole }) => {
@@ -105,6 +106,18 @@ export const Navigation = React.memo(({ userRole }) => {
     icon: LifeBuoy
   };
 
+  const playbooksItem = {
+    label: 'Playbooks',
+    path: '/admin/playbooks',
+    icon: ClipboardList
+  };
+
+  const revenueIntelligenceItem = {
+    label: 'Revenue Intelligence',
+    path: '/forecasting',
+    icon: TrendingUp
+  };
+
   const infoGroup = {
     label: 'Info',
     icon: Info,
@@ -129,6 +142,8 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
+          revenueIntelligenceItem,
+          playbooksItem,
           { label: 'SLA Dashboard', path: '/admin/sla', icon: AlertCircle },
           { label: 'Teams', path: '/sales/teams', icon: Users2 },
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
@@ -176,7 +191,7 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Audit Log', path: '/admin/audit-log', icon: History },
           { label: 'Data Import/Export', path: '/admin/data', icon: Database },
           { label: 'Analytics', path: '/analytics', icon: BarChart2 },
-          { label: 'Forecasting', path: '/forecasting', icon: TrendingUp },
+          { label: 'Revenue Intelligence', path: '/forecasting', icon: TrendingUp },
           { label: 'Calendar', path: '/calendar', icon: Calendar }
         ]
       },
@@ -212,6 +227,8 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
+          revenueIntelligenceItem,
+          playbooksItem,
           { label: 'SLA Dashboard', path: '/admin/sla', icon: AlertCircle },
           { label: 'Teams', path: '/sales/teams', icon: Users2 },
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
@@ -245,6 +262,8 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Visits', path: '/sales/visits', icon: MapPin },
           { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
           { label: 'Reports', path: '/sales/reports', icon: BarChart3 },
+          revenueIntelligenceItem,
+          playbooksItem,
           { label: 'SLA Dashboard', path: '/admin/sla', icon: AlertCircle },
           { label: 'Teams', path: '/sales/teams', icon: Users2 },
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
@@ -274,7 +293,8 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Contacts', path: '/sales/contacts', icon: Users },
           { label: 'Deals', path: '/sales/deals', icon: Users2 },
           { label: 'Visits', path: '/sales/visits', icon: MapPin },
-          { label: 'Follow-Ups', path: '/sales/followups', icon: Bell }
+          { label: 'Follow-Ups', path: '/sales/followups', icon: Bell },
+          playbooksItem
         ]
       },
       { label: 'Commissions', path: '/my/commissions', icon: DollarSign },

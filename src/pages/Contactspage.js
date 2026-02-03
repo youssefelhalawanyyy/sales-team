@@ -829,7 +829,9 @@ export default function ContactsPage() {
           phone: originalContact.phone, // PROTECTED - cannot change
           email: originalContact.email, // PROTECTED - cannot change
           category: editContact.category,
-          notes: editContact.notes
+          notes: editContact.notes,
+          parentAccountId: editContact.parentAccountId || null,
+          parentAccountName: editContact.parentAccountName || null
         });
         
         alert('✅ Contact updated!\n\n⚠️ Note: Phone and email are protected while a deal is active and were not changed.');
@@ -842,7 +844,9 @@ export default function ContactsPage() {
           phone: editContact.phone,
           email: editContact.email,
           category: editContact.category,
-          notes: editContact.notes
+          notes: editContact.notes,
+          parentAccountId: editContact.parentAccountId || null,
+          parentAccountName: editContact.parentAccountName || null
         });
         
         alert('Contact updated successfully!');
@@ -903,6 +907,8 @@ export default function ContactsPage() {
         createdAt: serverTimestamp(),
         statusUpdatedAt: serverTimestamp(),
         lastActivityAt: serverTimestamp(),
+        forecastCategory: 'pipeline',
+        checklists: {},
         editHistory: []
       });
 
@@ -1047,22 +1053,26 @@ export default function ContactsPage() {
     }
   }
 
-  const filtered = contacts.filter(c => {
-    const searchMatch = 
-      c.companyName?.toLowerCase().includes(search.toLowerCase()) ||
-      c.contactName?.toLowerCase().includes(search.toLowerCase()) ||
-      c.email?.toLowerCase().includes(search.toLowerCase()) ||
-      c.phone?.toLowerCase().includes(search.toLowerCase());
-    
-    const categoryMatch = categoryFilter === 'all' || c.category === categoryFilter;
-    
-    return searchMatch && categoryMatch;
-  });
+  const filtered = useMemo(() => {
+    return contacts.filter(c => {
+      const searchMatch = 
+        c.companyName?.toLowerCase().includes(search.toLowerCase()) ||
+        c.contactName?.toLowerCase().includes(search.toLowerCase()) ||
+        c.email?.toLowerCase().includes(search.toLowerCase()) ||
+        c.phone?.toLowerCase().includes(search.toLowerCase());
+      
+      const categoryMatch = categoryFilter === 'all' || c.category === categoryFilter;
+      
+      return searchMatch && categoryMatch;
+    });
+  }, [contacts, search, categoryFilter]);
 
-  const categoryCounts = contacts.reduce((acc, c) => {
-    acc[c.category] = (acc[c.category] || 0) + 1;
-    return acc;
-  }, {});
+  const categoryCounts = useMemo(() => {
+    return contacts.reduce((acc, c) => {
+      acc[c.category] = (acc[c.category] || 0) + 1;
+      return acc;
+    }, {});
+  }, [contacts]);
 
   const missingContacts = useMemo(
     () => contacts.filter(contact =>
@@ -1119,8 +1129,14 @@ export default function ContactsPage() {
     return [...emailGroups, ...phoneGroups, ...companyGroups];
   }, [contacts]);
 
-  const availableContacts = filtered.filter(c => !isContactInProgress(c));
-  const inProgressContacts = filtered.filter(c => isContactInProgress(c));
+  const availableContacts = useMemo(
+    () => filtered.filter(c => !isContactInProgress(c)),
+    [filtered, activeDeals]
+  );
+  const inProgressContacts = useMemo(
+    () => filtered.filter(c => isContactInProgress(c)),
+    [filtered, activeDeals]
+  );
 
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
@@ -1324,6 +1340,7 @@ export default function ContactsPage() {
                 onEdit={() => setEditContact(contact)}
                 onDelete={() => deleteContact(contact.id)}
                 onStartWorking={() => startWorkingOnContact(contact)}
+                onView360={() => navigate(`/sales/account/${contact.id}`)}
                 userRole={userRole}
                 isAvailable={true}
               />
@@ -1348,6 +1365,7 @@ export default function ContactsPage() {
                 onEdit={() => setEditContact(contact)}
                 onDelete={() => deleteContact(contact.id)}
                 onStartWorking={() => startWorkingOnContact(contact)}
+                onView360={() => navigate(`/sales/account/${contact.id}`)}
                 userRole={userRole}
                 isAvailable={false}
                 workingUser={getWorkingUser(contact)}
@@ -1474,15 +1492,15 @@ export default function ContactsPage() {
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <InputField 
-                  label="Phone Number" 
-                  icon={Phone} 
-                  value={editContact.phone} 
-                  onChange={e => setEditContact({ ...editContact, phone: e.target.value })}
-                  disabled={isContactInProgress(editContact)}
-                />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <InputField 
+                label="Phone Number" 
+                icon={Phone} 
+                value={editContact.phone} 
+                onChange={e => setEditContact({ ...editContact, phone: e.target.value })}
+                disabled={isContactInProgress(editContact)}
+              />
                 {isContactInProgress(editContact) && (
                   <p className="text-xs text-yellow-600 mt-1 ml-1 flex items-center gap-1">
                     <Lock className="w-3 h-3" />
@@ -1513,6 +1531,29 @@ export default function ContactsPage() {
               value={editContact.category} 
               onChange={e => setEditContact({ ...editContact, category: e.target.value })} 
               options={CATEGORIES.map(cat => ({ value: cat, label: cat }))} 
+            />
+
+            <SelectField
+              label="Parent Account"
+              value={editContact.parentAccountId || ''}
+              onChange={e => {
+                const parentId = e.target.value || null;
+                const parent = contacts.find(contact => contact.id === parentId);
+                setEditContact({
+                  ...editContact,
+                  parentAccountId: parentId,
+                  parentAccountName: parent?.companyName || parent?.contactName || null
+                });
+              }}
+              options={[
+                { value: '', label: 'None' },
+                ...contacts
+                  .filter(contact => contact.id !== editContact.id)
+                  .map(contact => ({
+                    value: contact.id,
+                    label: contact.companyName || contact.contactName || 'Unnamed'
+                  }))
+              ]}
             />
 
             <TextAreaField 
@@ -1737,7 +1778,7 @@ function StatCard({ title, value, icon: Icon, color }) {
   );
 }
 
-function ContactCard({ contact, dealHistory, onEdit, onDelete, onStartWorking, userRole, isAvailable, workingUser }) {
+function ContactCard({ contact, dealHistory, onEdit, onDelete, onStartWorking, onView360, userRole, isAvailable, workingUser }) {
   const hasClosedDeals = dealHistory.filter(d => d.status === 'closed').length > 0;
   const hasLostDeals = dealHistory.filter(d => d.status === 'lost').length > 0;
   const totalDeals = dealHistory.length;
@@ -1859,6 +1900,14 @@ function ContactCard({ contact, dealHistory, onEdit, onDelete, onStartWorking, u
               <span>Locked</span>
             </button>
           )}
+
+          <button
+            onClick={onView360}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg font-medium transition-all"
+          >
+            <TrendingUp className="w-4 h-4" />
+            <span>360</span>
+          </button>
           
           <button 
             onClick={onEdit} 

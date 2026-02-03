@@ -128,6 +128,8 @@ export default function QuickAddFab() {
       sharedWith: [],
       archived: false,
       editHistory: [],
+      forecastCategory: 'pipeline',
+      checklists: {},
       statusUpdatedAt: now,
       lastActivityAt: now
     };

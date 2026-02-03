@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import {
   collection,
+  addDoc,
   getDoc,
   getDocs,
   updateDoc,
   deleteDoc,
   doc,
   serverTimestamp,
+  Timestamp,
   orderBy,
   query,
   arrayUnion,
@@ -25,12 +27,14 @@ import DealHistory from '../components/DealHistory';
 import { notifyDealUpdated, notifyDealClosed } from '../services/notificationService';
 import { runAutoFollowups } from '../services/autoFollowupService';
 import { fetchPipelineSettings } from '../services/pipelineService';
+import { fetchPlaybooks } from '../services/playbookService';
 import {
   DEFAULT_PIPELINE_STAGES,
   PIPELINE_FIELD_LABELS,
   getRequiredFieldsForStage,
   getStageByValue,
-  getStageColorClass
+  getStageColorClass,
+  getStageLabel
 } from '../utils/pipeline';
 import { scoreDeal, getPriorityBadge } from '../utils/leadScoring';
 
@@ -78,6 +82,7 @@ export default function SalesDealsPage() {
   const [teamContext, setTeamContext] = useState({ teamId: null, teamName: null, memberOptions: [] });
   const [availableUsers, setAvailableUsers] = useState([]);
   const [usersById, setUsersById] = useState({});
+  const [playbooks, setPlaybooks] = useState({});
   const autoFollowupRunRef = useRef(false);
 
   useEffect(() => {
@@ -89,6 +94,15 @@ export default function SalesDealsPage() {
     };
 
     loadPipeline();
+  }, [currentUser?.uid]);
+
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+    const loadPlaybooks = async () => {
+      const data = await fetchPlaybooks();
+      setPlaybooks(data.stages || {});
+    };
+    loadPlaybooks();
   }, [currentUser?.uid]);
 
   useEffect(() => {
@@ -362,6 +376,15 @@ export default function SalesDealsPage() {
       };
 
       if (statusChanged) {
+        const checklistItems = playbooks?.[originalDeal.status]?.checklist || [];
+        const completedChecklist = editDeal.checklists?.[originalDeal.status] || [];
+        const missingChecklist = checklistItems.filter(item => !completedChecklist.includes(item));
+
+        if (missingChecklist.length > 0) {
+          alert(`Please complete the stage checklist before moving forward:\n\n${missingChecklist.join(', ')}`);
+          return;
+        }
+
         const requiredFields = getRequiredFieldsForStage(pipelineStages, editDeal.status);
         const missingFields = requiredFields.filter(field => isFieldMissing(editDeal, field));
 
@@ -387,7 +410,7 @@ export default function SalesDealsPage() {
 
       const changes = {};
 
-      ['businessName', 'contactPerson', 'phoneNumber', 'status', 'price', 'notes', 'lossReason'].forEach(field => {
+      ['businessName', 'contactPerson', 'phoneNumber', 'status', 'price', 'notes', 'lossReason', 'forecastCategory'].forEach(field => {
         if (originalDeal[field] !== editDeal[field]) {
           changes[field] = { from: originalDeal[field], to: editDeal[field] };
         }
@@ -433,11 +456,13 @@ export default function SalesDealsPage() {
         price: Number(editDeal.price) || 0,
         notes: editDeal.notes,
         lossReason: editDeal.lossReason || null,
+        forecastCategory: editDeal.forecastCategory || 'pipeline',
         ownerId: editDeal.ownerId || editDeal.createdBy,
         ownerName: editDeal.ownerName || editDeal.createdByName || 'Unknown',
         teamId: editDeal.teamId || null,
         teamName: editDeal.teamName || null,
         sharedWith: Array.isArray(editDeal.sharedWith) ? editDeal.sharedWith : [],
+        checklists: editDeal.checklists || {},
         editHistory: arrayUnion(historyEntry),
         updatedAt: serverTimestamp(),
         lastActivityAt: serverTimestamp()
@@ -466,6 +491,50 @@ export default function SalesDealsPage() {
           }
         } catch (notifError) {
           console.error('Error sending notification:', notifError);
+        }
+      }
+
+      if (statusChanged) {
+        if (editDeal.status === 'closed' || editDeal.status === 'lost') {
+          // Skip playbook tasks on closed/lost stages
+        } else {
+          const taskTemplates = playbooks?.[editDeal.status]?.tasks || [];
+          const canAutoCreateTasks = ['admin', 'sales_manager', 'team_leader'].includes(userRole);
+
+          if (canAutoCreateTasks && taskTemplates.length > 0) {
+            try {
+              const ownerId = editDeal.ownerId || editDeal.createdBy;
+              const ownerEmail = usersById?.[ownerId]?.email || '';
+              const stageLabel = getStageLabel(pipelineStages, editDeal.status);
+              const deadline = Timestamp.fromDate(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000));
+
+              await Promise.all(
+                taskTemplates.map(template =>
+                  addDoc(collection(db, 'tasks'), {
+                    title: template,
+                    description: `Stage: ${stageLabel}\nDeal: ${editDeal.businessName}`,
+                    assignedTo: ownerId,
+                    assignedToEmail: ownerEmail,
+                    createdBy: currentUser.uid,
+                    createdByEmail: currentUser.email,
+                    creatorRole: userRole,
+                    status: 'pending',
+                    deadline,
+                    priority: 'medium',
+                    notes: [],
+                    submissions: [],
+                    rejectionReason: null,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    source: 'playbook',
+                    dealId: editDeal.id
+                  })
+                )
+              );
+            } catch (taskError) {
+              console.error('Error creating playbook tasks:', taskError);
+            }
+          }
         }
       }
       
@@ -656,6 +725,23 @@ export default function SalesDealsPage() {
     });
   };
 
+  const handleChecklistToggle = (stageValue, item) => {
+    setEditDeal(prev => {
+      const currentChecklists = prev.checklists || {};
+      const currentItems = Array.isArray(currentChecklists[stageValue]) ? currentChecklists[stageValue] : [];
+      const nextItems = currentItems.includes(item)
+        ? currentItems.filter(value => value !== item)
+        : [...currentItems, item];
+      return {
+        ...prev,
+        checklists: {
+          ...currentChecklists,
+          [stageValue]: nextItems
+        }
+      };
+    });
+  };
+
   const dealScores = useMemo(() => {
     const map = {};
     deals.forEach(deal => {
@@ -742,6 +828,13 @@ export default function SalesDealsPage() {
       ...ownerOptions
     ];
   }, [ownerOptions, editDeal]);
+
+  const editOriginalDeal = editDeal
+    ? deals.find(d => d.id === editDeal.id) || archivedDeals.find(d => d.id === editDeal.id)
+    : null;
+  const checklistStage = editOriginalDeal?.status || editDeal?.status;
+  const checklistItems = checklistStage ? (playbooks?.[checklistStage]?.checklist || []) : [];
+  const completedChecklist = checklistStage ? (editDeal?.checklists?.[checklistStage] || []) : [];
 
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
@@ -960,7 +1053,9 @@ export default function SalesDealsPage() {
                       ...d,
                       ownerId: d.ownerId || d.createdBy,
                       ownerName: d.ownerName || d.createdByName || 'Unknown',
-                      sharedWith: Array.isArray(d.sharedWith) ? d.sharedWith : []
+                      sharedWith: Array.isArray(d.sharedWith) ? d.sharedWith : [],
+                      forecastCategory: d.forecastCategory || 'pipeline',
+                      checklists: d.checklists || {}
                     })}
                     onArchive={() => archiveDeal(d.id)}
                     onDelete={() => deleteDeal(d.id)}
@@ -1026,7 +1121,40 @@ export default function SalesDealsPage() {
               <SelectField label="Status" value={editDeal.status} onChange={e => setEditDeal({ ...editDeal, status: e.target.value })} options={statusOptions} />
               <InputField label="Deal Value" icon={DollarSign} type="number" step="0.01" value={editDeal.price} onChange={e => setEditDeal({ ...editDeal, price: e.target.value })} />
             </div>
+            <SelectField
+              label="Forecast Category"
+              value={editDeal.forecastCategory || 'pipeline'}
+              onChange={e => setEditDeal({ ...editDeal, forecastCategory: e.target.value })}
+              options={[
+                { value: 'pipeline', label: 'Pipeline' },
+                { value: 'best', label: 'Best Case' },
+                { value: 'commit', label: 'Commit' }
+              ]}
+            />
             <TextAreaField label="Notes" icon={FileText} value={editDeal.notes || ''} onChange={e => setEditDeal({ ...editDeal, notes: e.target.value })} />
+            {checklistItems.length > 0 && (
+              <div className="border-t border-gray-200 pt-4">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">
+                  Stage Checklist ({getStageLabel(pipelineStages, checklistStage)})
+                </h3>
+                <div className="space-y-2">
+                  {checklistItems.map(item => (
+                    <label key={item} className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={completedChecklist.includes(item)}
+                        onChange={() => handleChecklistToggle(checklistStage, item)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                      />
+                      <span>{item}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-3">
+                  Complete all checklist items to move to the next stage.
+                </p>
+              </div>
+            )}
             {canManageSharing(editDeal) && (
               <div className="border-t border-gray-200 pt-4 space-y-4">
                 <h3 className="text-sm font-semibold text-gray-800">Ownership & Sharing</h3>

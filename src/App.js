@@ -34,6 +34,7 @@ const TeamManagementPage = React.lazy(() => import('./pages/TeamManagementPage')
 const AIHelper = React.lazy(() => import('./pages/aiHelper'));
 const FollowUpsPage = React.lazy(() => import('./pages/FollowUpsPage'));
 const ClientProfilePage = React.lazy(() => import('./pages/ClientProfilePage'));
+const Account360Page = React.lazy(() => import('./pages/Account360Page'));
 const VisitsPage = React.lazy(() => import('./pages/VisitsPage'));
 const ContactsPage = React.lazy(() => import('./pages/Contactspage'));
 const TasksPageV2 = React.lazy(() => import('./pages/TasksPageV2'));
@@ -54,6 +55,7 @@ const RevenuePipelineForecastPage = React.lazy(() => import('./pages/RevenuePipe
 const WinLossAnalysisPage = React.lazy(() => import('./pages/WinLossAnalysisPage'));
 const SalesVelocityMetricsPage = React.lazy(() => import('./pages/SalesVelocityMetricsPage'));
 const PipelineSettingsPage = React.lazy(() => import('./pages/PipelineSettingsPage'));
+const PlaybooksPage = React.lazy(() => import('./pages/PlaybooksPage'));
 const HelpCenterPage = React.lazy(() => import('./pages/HelpCenterPage'));
 const SLADashboardPage = React.lazy(() => import('./pages/SLADashboardPage'));
 
@@ -156,6 +158,18 @@ const AppContent = React.memo(() => {
             <ProtectedRoute requiredRoles={['admin', 'sales_manager']}>
               <Suspense fallback={<LoadingFallback />}>
                 <PipelineSettingsPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= PLAYBOOKS ================= */}
+        <Route
+          path="/admin/playbooks"
+          element={
+            <ProtectedRoute requiredRoles={['admin', 'sales_manager', 'team_leader', 'sales_member']}>
+              <Suspense fallback={<LoadingFallback />}>
+                <PlaybooksPage />
               </Suspense>
             </ProtectedRoute>
           }
@@ -324,6 +338,25 @@ const AppContent = React.memo(() => {
           }
         />
 
+        {/* ================= ACCOUNT 360 ================= */}
+        <Route
+          path="/sales/account/:contactId"
+          element={
+            <ProtectedRoute requiredRoles={[
+              'admin',
+              'sales_manager',
+              'team_leader',
+              'sales_member'
+            ]}>
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <Suspense fallback={<LoadingFallback />}>
+                  <Account360Page />
+                </Suspense>
+              </div>
+            </ProtectedRoute>
+          }
+        />
+
         {/* ================= SALES ACHIEVEMENTS ================= */}
         <Route
           path="/sales/achievements"
@@ -480,7 +513,7 @@ const AppContent = React.memo(() => {
         <Route
           path="/forecasting"
           element={
-            <ProtectedRoute requiredRoles={['admin']}>
+            <ProtectedRoute requiredRoles={['admin', 'sales_manager', 'team_leader']}>
               <Suspense fallback={<LoadingFallback />}>
                 <SalesForecasting />
               </Suspense>

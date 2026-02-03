@@ -42,6 +42,7 @@ import { formatCurrency } from '../utils/currency';
 import { formatDate, formatDateTime } from '../utils/dateHelpers';
 import { fetchPipelineSettings } from '../services/pipelineService';
 import { DEFAULT_PIPELINE_STAGES, getStageByValue, getStageColorClass } from '../utils/pipeline';
+import { buildDealCoach } from '../utils/dealCoach';
 
 const STATUS_ICON_MAP = {
   potential_client: Users,
@@ -405,6 +406,10 @@ export default function ClientProfilePage() {
     return items;
   }, [deal, visits, followups, clientUpdates, pipelineStages]);
 
+  const dealCoach = useMemo(() => {
+    return buildDealCoach(deal, { pipelineStages, followups, visits, clientUpdates });
+  }, [deal, pipelineStages, followups, visits, clientUpdates]);
+
   if (loading) {
     return (
       <div className="flex flex-col justify-center items-center py-20">
@@ -690,6 +695,51 @@ export default function ClientProfilePage() {
             <p className="text-sm text-gray-700 line-clamp-3 whitespace-pre-wrap">{deal.notes}</p>
           </div>
         )}
+      </div>
+
+      {/* AI DEAL COACH */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <Target className="w-5 h-5 text-emerald-600" />
+            AI Deal Coach
+          </h3>
+          <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+            dealCoach.status === 'attention'
+              ? 'bg-red-50 text-red-600'
+              : dealCoach.status === 'won'
+                ? 'bg-green-50 text-green-600'
+                : dealCoach.status === 'lost'
+                  ? 'bg-gray-100 text-gray-600'
+                  : 'bg-emerald-50 text-emerald-600'
+          }`}>
+            {dealCoach.status === 'attention' ? 'Needs Attention' : dealCoach.status === 'won' ? 'Won' : dealCoach.status === 'lost' ? 'Lost' : 'Healthy'}
+          </span>
+        </div>
+        <p className="text-sm text-gray-700 mb-4">{dealCoach.summary}</p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-red-50 border border-red-100 rounded-xl p-4">
+            <p className="text-xs font-semibold text-red-600 uppercase mb-2">Risks</p>
+            {dealCoach.risks.length === 0 ? (
+              <p className="text-sm text-red-600/70">No major risks detected.</p>
+            ) : (
+              <ul className="text-sm text-red-700 space-y-2">
+                {dealCoach.risks.map((risk, idx) => (
+                  <li key={idx}>• {risk}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+            <p className="text-xs font-semibold text-emerald-600 uppercase mb-2">Next Best Actions</p>
+            <ul className="text-sm text-emerald-700 space-y-2">
+              {dealCoach.nextSteps.map((step, idx) => (
+                <li key={idx}>• {step}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
 
       {/* CLIENT UPDATES */}

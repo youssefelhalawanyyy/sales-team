@@ -80,6 +80,8 @@ export async function flushOfflineQueue(currentUser) {
           statusUpdatedAt: serverTimestamp(),
           lastActivityAt: serverTimestamp(),
           editHistory: item.payload.editHistory || [],
+          forecastCategory: item.payload.forecastCategory || 'pipeline',
+          checklists: item.payload.checklists || {},
           source: 'offline'
         });
         flushed += 1;

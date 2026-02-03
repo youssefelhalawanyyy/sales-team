@@ -51,6 +51,7 @@ export default function DealHistory({ deal, pipelineStages }) {
       price: 'Deal Value',
       notes: 'Notes',
       lossReason: 'Loss Reason',
+      forecastCategory: 'Forecast Category',
       owner: 'Owner',
       ownerId: 'Owner',
       ownerName: 'Owner',
@@ -80,6 +81,14 @@ export default function DealHistory({ deal, pipelineStages }) {
         statusLabels.lost = 'Lost';
       }
       return statusLabels[value] || value;
+    }
+    if (fieldName === 'forecastCategory') {
+      const labels = {
+        commit: 'Commit',
+        best: 'Best Case',
+        pipeline: 'Pipeline'
+      };
+      return labels[value] || value;
     }
     return value || '(empty)';
   };
