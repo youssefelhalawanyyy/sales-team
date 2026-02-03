@@ -94,7 +94,7 @@ export default function ContactsPage() {
   const canMergeDuplicates = userRole === 'admin' || userRole === 'sales_manager';
   const canDeleteContacts = userRole === 'admin';
   const canSeeAllContacts = userRole === 'admin' || userRole === 'sales_manager';
-  const canStartWorking = userRole !== 'admin'; // Everyone except admin can start working
+  const canStartWorking = true; // Everyone can start working on contacts
 
   useEffect(() => {
     if (currentUser?.uid) {
@@ -271,9 +271,17 @@ export default function ContactsPage() {
     // Admin and sales managers can see everything
     if (canSeeAllContacts) return true;
 
-    // Team leaders can see their team's contacts
+    // Everyone can see all contacts (to know who's working on what)
+    return true;
+  }
+
+  function canView360(contact) {
+    // Admin and sales managers can see everything
+    if (canSeeAllContacts) return true;
+
+    // Team leaders can see their team's contact 360s
     if (userRole === 'team_leader') {
-      // If contact has an active deal
+      // If contact has an active deal owned by team member
       if (contact.activeDealOwnerId) {
         return teamContext.memberIds.includes(contact.activeDealOwnerId);
       }
@@ -281,16 +289,13 @@ export default function ContactsPage() {
       if (contact.createdBy) {
         return teamContext.memberIds.includes(contact.createdBy);
       }
-      return true; // Show all contacts to team leader, but they can only work on available ones
+      return true;
     }
 
-    // Sales members can only see their own contacts
+    // Sales members can only see 360 for their own contacts
     if (contact.createdBy === currentUser.uid) return true;
     if (contact.activeDealOwnerId === currentUser.uid) return true;
     
-    // Also show contacts that have no owner (available to all)
-    if (!contact.activeDealId && !contact.activeDealOwnerId) return true;
-
     return false;
   }
 
@@ -406,11 +411,6 @@ export default function ContactsPage() {
   }
 
   async function startWorkingOnContact(contact) {
-    if (!canStartWorking) {
-      alert('⚠️ Only sales team members and team leaders can start working on contacts.');
-      return;
-    }
-
     if (isContactInProgress(contact)) {
       const workingUser = getWorkingUser(contact);
       alert(`⚠️ This contact is already being worked on by ${workingUser}.\n\nYou cannot start a new deal for this contact until the current deal is closed or marked as lost.`);
@@ -893,6 +893,7 @@ export default function ContactsPage() {
                 userRole={userRole}
                 canDelete={canDeleteContacts}
                 canWork={canWorkOnContact(contact)}
+                canView360={canView360(contact)}
                 isAvailable={true}
               />
             ))}
@@ -921,6 +922,7 @@ export default function ContactsPage() {
                 userRole={userRole}
                 canDelete={canDeleteContacts}
                 canWork={false}
+                canView360={canView360(contact)}
                 isAvailable={false}
                 workingUser={getWorkingUser(contact)}
               />
@@ -1314,7 +1316,7 @@ function StatCard({ title, value, icon: Icon, color }) {
   );
 }
 
-function ContactCard({ contact, dealHistory, onEdit, onDelete, onStartWorking, onView360, userRole, canDelete, canWork, isAvailable, workingUser }) {
+function ContactCard({ contact, dealHistory, onEdit, onDelete, onStartWorking, onView360, userRole, canDelete, canWork, canView360, isAvailable, workingUser }) {
   const hasClosedDeals = dealHistory.filter(d => d.status === 'closed').length > 0;
   const hasLostDeals = dealHistory.filter(d => d.status === 'lost').length > 0;
   const totalDeals = dealHistory.length;
@@ -1438,13 +1440,24 @@ function ContactCard({ contact, dealHistory, onEdit, onDelete, onStartWorking, o
             </button>
           )}
           
-          <button
-            onClick={onView360}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg font-medium transition-all text-xs sm:text-sm"
-          >
-            <TrendingUp className="w-4 h-4" />
-            <span>360</span>
-          </button>
+          {canView360 ? (
+            <button
+              onClick={onView360}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg font-medium transition-all text-xs sm:text-sm"
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span>360</span>
+            </button>
+          ) : (
+            <button
+              disabled
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gray-100 text-gray-400 rounded-lg font-medium cursor-not-allowed text-xs sm:text-sm"
+              title="You don't have permission to view this account's 360 view"
+            >
+              <EyeOff className="w-4 h-4" />
+              <span>360</span>
+            </button>
+          )}
           
           <button 
             onClick={onEdit} 
