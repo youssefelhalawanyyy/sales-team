@@ -23,6 +23,7 @@ import {
   MapPin,
   Bell,
   TrendingUp,
+  TrendingDown,
   Calendar,
   CheckCircle2,
   FileText,
@@ -35,13 +36,20 @@ import {
   X,
   MessageSquare,
   ClipboardList,
-  Activity
+  Activity,
+  ShieldAlert,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  UserPlus,
+  UserCheck,
+  UserX
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../utils/currency';
 import { formatDate, formatDateTime } from '../utils/dateHelpers';
 import { fetchPipelineSettings } from '../services/pipelineService';
-import { DEFAULT_PIPELINE_STAGES, getStageByValue, getStageColorClass } from '../utils/pipeline';
+import { DEFAULT_PIPELINE_STAGES, getStageByValue, getStageColorClass, getRequiredFieldsForStage } from '../utils/pipeline';
 import { buildDealCoach } from '../utils/dealCoach';
 
 const STATUS_ICON_MAP = {
@@ -59,6 +67,8 @@ export default function ClientProfilePage() {
   const [deal, setDeal] = useState(null);
   const [visits, setVisits] = useState([]);
   const [followups, setFollowups] = useState([]);
+  const [quotes, setQuotes] = useState([]);
+  const [communications, setCommunications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pipelineStages, setPipelineStages] = useState(DEFAULT_PIPELINE_STAGES);
@@ -72,6 +82,47 @@ export default function ClientProfilePage() {
   const [updateText, setUpdateText] = useState('');
   const [updateStatus, setUpdateStatus] = useState('');
   const [savingUpdate, setSavingUpdate] = useState(false);
+
+  // Objections & risk tracker
+  const [objections, setObjections] = useState([]);
+  const [objectionText, setObjectionText] = useState('');
+  const [savingObjection, setSavingObjection] = useState(false);
+  const [riskLevel, setRiskLevel] = useState('medium');
+  const [mitigationPlan, setMitigationPlan] = useState('');
+  const [savingRisk, setSavingRisk] = useState(false);
+
+  // Stakeholders
+  const [stakeholders, setStakeholders] = useState([]);
+  const [stakeholderForm, setStakeholderForm] = useState({
+    name: '',
+    type: 'decision_maker',
+    relationship: 'neutral',
+    lastTouch: '',
+    email: '',
+    phone: '',
+    notes: ''
+  });
+  const [savingStakeholder, setSavingStakeholder] = useState(false);
+
+  // Timeline filters & collapse
+  const [timelineFilters, setTimelineFilters] = useState({
+    visit: true,
+    followup: true,
+    update: true,
+    email: true,
+    status: true,
+    edit: true,
+    created: true
+  });
+  const [timelineExpanded, setTimelineExpanded] = useState({
+    visit: true,
+    followup: true,
+    update: true,
+    email: true,
+    status: true,
+    edit: true,
+    created: true
+  });
 
   /* ============================= */
 
@@ -146,6 +197,10 @@ export default function ClientProfilePage() {
 
       setDeal(dealData);
       setNotesText(dealData.notes || ''); // Initialize notes text
+      setObjections(Array.isArray(dealData.objections) ? dealData.objections : []);
+      setRiskLevel(dealData.riskLevel || 'medium');
+      setMitigationPlan(dealData.mitigationPlan || '');
+      setStakeholders(Array.isArray(dealData.stakeholders) ? dealData.stakeholders : []);
 
       // Load visits for this deal (WITHOUT orderBy to avoid index requirement)
       const visitsQuery = query(
@@ -190,6 +245,42 @@ export default function ClientProfilePage() {
       
       console.log('Loaded follow-ups:', followupsList); // Debug log
       setFollowups(followupsList);
+
+      // Load quotes for this deal
+      try {
+        const quotesQuery = query(
+          collection(db, 'quotes'),
+          where('dealId', '==', dealId)
+        );
+        const quotesSnap = await getDocs(quotesQuery);
+        const quotesList = quotesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        quotesList.sort((a, b) => {
+          const dateA = a.updatedAt?.toMillis?.() || a.createdAt?.toMillis?.() || 0;
+          const dateB = b.updatedAt?.toMillis?.() || b.createdAt?.toMillis?.() || 0;
+          return dateB - dateA;
+        });
+        setQuotes(quotesList);
+      } catch (quoteError) {
+        console.error('Error loading quotes:', quoteError);
+      }
+
+      // Load communications (emails, logs)
+      try {
+        const commQuery = query(
+          collection(db, 'communications'),
+          where('clientId', '==', dealId)
+        );
+        const commSnap = await getDocs(commQuery);
+        const commList = commSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        commList.sort((a, b) => {
+          const dateA = a.timestamp?.toMillis?.() || a.createdAt?.toMillis?.() || 0;
+          const dateB = b.timestamp?.toMillis?.() || b.createdAt?.toMillis?.() || 0;
+          return dateB - dateA;
+        });
+        setCommunications(commList);
+      } catch (commError) {
+        console.error('Error loading communications:', commError);
+      }
 
     } catch (e) {
       console.error('Error loading client data:', e);
@@ -292,11 +383,155 @@ export default function ClientProfilePage() {
 
   /* ============================= */
 
+  async function handleAddObjection() {
+    if (!dealId) return;
+    const trimmed = objectionText.trim();
+    if (!trimmed) {
+      alert('Please enter an objection.');
+      return;
+    }
+
+    try {
+      setSavingObjection(true);
+      const entry = {
+        id: `obj_${Date.now()}`,
+        text: trimmed,
+        createdAt: new Date(),
+        createdBy: currentUser.uid,
+        createdByName: `${currentUser.firstName} ${currentUser.lastName}`
+      };
+
+      await updateDoc(doc(db, 'sales', dealId), {
+        objections: arrayUnion(entry),
+        updatedAt: serverTimestamp(),
+        lastActivityAt: serverTimestamp()
+      });
+
+      setObjections(prev => [entry, ...prev]);
+      setObjectionText('');
+    } catch (e) {
+      console.error('Error adding objection:', e);
+      alert('Failed to add objection: ' + e.message);
+    } finally {
+      setSavingObjection(false);
+    }
+  }
+
+  async function handleRemoveObjection(id) {
+    if (!dealId) return;
+    if (!window.confirm('Remove this objection?')) return;
+    try {
+      const next = objections.filter(obj => obj.id !== id);
+      await updateDoc(doc(db, 'sales', dealId), {
+        objections: next,
+        updatedAt: serverTimestamp()
+      });
+      setObjections(next);
+    } catch (e) {
+      console.error('Error removing objection:', e);
+      alert('Failed to remove objection: ' + e.message);
+    }
+  }
+
+  async function handleSaveRisk() {
+    if (!dealId) return;
+    try {
+      setSavingRisk(true);
+      await updateDoc(doc(db, 'sales', dealId), {
+        riskLevel,
+        mitigationPlan,
+        updatedAt: serverTimestamp(),
+        lastActivityAt: serverTimestamp()
+      });
+      setDeal(prev => ({
+        ...prev,
+        riskLevel,
+        mitigationPlan
+      }));
+      alert('Risk plan saved!');
+    } catch (e) {
+      console.error('Error saving risk plan:', e);
+      alert('Failed to save risk plan: ' + e.message);
+    } finally {
+      setSavingRisk(false);
+    }
+  }
+
+  async function handleAddStakeholder() {
+    if (!dealId) return;
+    if (!stakeholderForm.name.trim()) {
+      alert('Please enter a stakeholder name.');
+      return;
+    }
+
+    try {
+      setSavingStakeholder(true);
+      const entry = {
+        id: `stk_${Date.now()}`,
+        name: stakeholderForm.name.trim(),
+        type: stakeholderForm.type,
+        relationship: stakeholderForm.relationship,
+        lastTouchAt: stakeholderForm.lastTouch ? new Date(stakeholderForm.lastTouch) : null,
+        email: stakeholderForm.email || '',
+        phone: stakeholderForm.phone || '',
+        notes: stakeholderForm.notes || '',
+        createdAt: new Date(),
+        createdBy: currentUser.uid,
+        createdByName: `${currentUser.firstName} ${currentUser.lastName}`
+      };
+
+      await updateDoc(doc(db, 'sales', dealId), {
+        stakeholders: arrayUnion(entry),
+        updatedAt: serverTimestamp(),
+        lastActivityAt: serverTimestamp()
+      });
+
+      setStakeholders(prev => [entry, ...prev]);
+      setStakeholderForm({
+        name: '',
+        type: 'decision_maker',
+        relationship: 'neutral',
+        lastTouch: '',
+        email: '',
+        phone: '',
+        notes: ''
+      });
+    } catch (e) {
+      console.error('Error adding stakeholder:', e);
+      alert('Failed to add stakeholder: ' + e.message);
+    } finally {
+      setSavingStakeholder(false);
+    }
+  }
+
+  async function handleRemoveStakeholder(id) {
+    if (!dealId) return;
+    if (!window.confirm('Remove this stakeholder?')) return;
+    try {
+      const next = stakeholders.filter(item => item.id !== id);
+      await updateDoc(doc(db, 'sales', dealId), {
+        stakeholders: next,
+        updatedAt: serverTimestamp()
+      });
+      setStakeholders(next);
+    } catch (e) {
+      console.error('Error removing stakeholder:', e);
+      alert('Failed to remove stakeholder: ' + e.message);
+    }
+  }
+
   const getStageLabel = (value) => getStageByValue(pipelineStages, value)?.label || value;
 
   const toDateValue = (value) => {
     if (!value) return null;
     return value?.toDate?.() || new Date(value);
+  };
+
+  const daysSince = (value) => {
+    const date = toDateValue(value);
+    if (!date) return null;
+    const diff = Date.now() - date.getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
   };
 
   const clientUpdates = useMemo(() => {
@@ -359,6 +594,23 @@ export default function ClientProfilePage() {
       });
     });
 
+    communications
+      .filter(com => {
+        const type = (com.type || com.communicationType || '').toString().toLowerCase();
+        const channel = (com.channel || '').toString().toLowerCase();
+        return type.includes('email') || channel.includes('email');
+      })
+      .forEach(com => {
+        items.push({
+          id: `email-${com.id}`,
+          type: 'email',
+          date: com.timestamp || com.createdAt,
+          title: 'Email logged',
+          description: com.subject || com.action || com.notes || 'Email activity',
+          meta: com.createdByName || com.createdBy
+        });
+      });
+
     clientUpdates.forEach(update => {
       items.push({
         id: `update-${update.id}`,
@@ -404,11 +656,89 @@ export default function ClientProfilePage() {
     });
 
     return items;
-  }, [deal, visits, followups, clientUpdates, pipelineStages]);
+  }, [deal, visits, followups, communications, clientUpdates, pipelineStages]);
 
   const dealCoach = useMemo(() => {
     return buildDealCoach(deal, { pipelineStages, followups, visits, clientUpdates });
   }, [deal, pipelineStages, followups, visits, clientUpdates]);
+
+  const healthScore = useMemo(() => {
+    if (!deal) return { score: 0, status: 'N/A', trend: 'stable' };
+
+    const activityDays = daysSince(deal.lastActivityAt || deal.statusUpdatedAt || deal.createdAt) ?? 0;
+    const stageDays = daysSince(deal.statusUpdatedAt || deal.createdAt) ?? 0;
+    const value = Number(deal.price || deal.amount || 0);
+    const missingFields = getRequiredFieldsForStage(pipelineStages, deal.status || '').filter(field => {
+      const val = deal[field];
+      if (field === 'price') return !val || Number(val) <= 0;
+      if (typeof val === 'string') return val.trim() === '';
+      return val === undefined || val === null;
+    });
+
+    let score = 50;
+    if (activityDays <= 3) score += 15;
+    else if (activityDays <= 7) score += 8;
+    else if (activityDays <= 14) score += 4;
+    else if (activityDays > 30) score -= 15;
+
+    if (stageDays <= 7) score += 6;
+    else if (stageDays > 30) score -= 12;
+    else if (stageDays > 14) score -= 6;
+
+    if (value >= 100000) score += 10;
+    else if (value >= 25000) score += 6;
+    else if (value >= 5000) score += 3;
+
+    if (missingFields.length > 0) score -= 10;
+
+    score = Math.max(0, Math.min(100, Math.round(score)));
+
+    let status = 'Healthy';
+    if (score < 40) status = 'At Risk';
+    else if (score < 70) status = 'Watch';
+
+    let trend = 'stable';
+    if (activityDays <= 7) trend = 'improving';
+    else if (activityDays > 14) trend = 'declining';
+
+    return { score, status, trend };
+  }, [deal, pipelineStages]);
+
+  const latestQuote = useMemo(() => quotes[0] || null, [quotes]);
+
+  const quoteStatusLabel = (status) => {
+    if (status === 'accepted') return 'Signed';
+    if (status === 'sent') return 'Pending Approval';
+    if (status === 'draft') return 'Draft';
+    return status || 'N/A';
+  };
+
+  const timelineByType = useMemo(() => {
+    const map = {
+      created: [],
+      visit: [],
+      followup: [],
+      update: [],
+      email: [],
+      status: [],
+      edit: []
+    };
+
+    timelineItems.forEach(item => {
+      if (!map[item.type]) map[item.type] = [];
+      map[item.type].push(item);
+    });
+
+    return map;
+  }, [timelineItems]);
+
+  const toggleTimelineFilter = (type) => {
+    setTimelineFilters(prev => ({ ...prev, [type]: !prev[type] }));
+  };
+
+  const toggleTimelineSection = (type) => {
+    setTimelineExpanded(prev => ({ ...prev, [type]: !prev[type] }));
+  };
 
   if (loading) {
     return (
@@ -633,6 +963,52 @@ export default function ClientProfilePage() {
         </div>
       </div>
 
+      {/* HEALTH SCORE */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <ShieldAlert className="w-5 h-5 text-emerald-600" />
+            Health Score
+          </h3>
+          <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+            healthScore.status === 'Healthy'
+              ? 'bg-emerald-50 text-emerald-600'
+              : healthScore.status === 'Watch'
+                ? 'bg-yellow-50 text-yellow-700'
+                : 'bg-red-50 text-red-600'
+          }`}>
+            {healthScore.status}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+            <p className="text-xs font-semibold text-emerald-700 uppercase">Score</p>
+            <p className="text-3xl font-bold text-emerald-700 mt-2">{healthScore.score}</p>
+            <p className="text-xs text-emerald-600 mt-1">Out of 100</p>
+          </div>
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-blue-700 uppercase">Trend</p>
+              <p className="text-lg font-bold text-blue-700 mt-2">
+                {healthScore.trend === 'improving' ? 'Improving' : healthScore.trend === 'declining' ? 'Declining' : 'Stable'}
+              </p>
+            </div>
+            {healthScore.trend === 'declining' ? (
+              <TrendingDown className="w-8 h-8 text-blue-600" />
+            ) : (
+              <TrendingUp className="w-8 h-8 text-blue-600" />
+            )}
+          </div>
+          <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
+            <p className="text-xs font-semibold text-purple-700 uppercase">Last Activity</p>
+            <p className="text-lg font-bold text-purple-700 mt-2">
+              {deal.lastActivityAt ? formatDateTime(deal.lastActivityAt) : 'N/A'}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* MEETING PREP */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
@@ -697,6 +1073,128 @@ export default function ClientProfilePage() {
         )}
       </div>
 
+      {/* STAKEHOLDERS */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <Users className="w-5 h-5 text-blue-600" />
+            Stakeholders & Buying Committee
+          </h3>
+          <span className="text-xs text-gray-500">{stakeholders.length} contacts</span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 space-y-3">
+            {stakeholders.length === 0 ? (
+              <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                <Users className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">No stakeholders added yet</p>
+                <p className="text-xs text-gray-500 mt-1">Add decision makers, influencers, blockers, and finance contacts.</p>
+              </div>
+            ) : (
+              stakeholders.map(member => (
+                <div key={member.id} className="border border-gray-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{member.name}</p>
+                      <p className="text-xs text-gray-500 mt-1">{member.email || member.phone || 'No contact info'}</p>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveStakeholder(member.id)}
+                      className="text-xs text-red-500 hover:text-red-600"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    <span className="px-2 py-1 rounded-lg bg-blue-50 text-blue-600">
+                      {member.type?.replace('_', ' ') || 'Stakeholder'}
+                    </span>
+                    <span className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600">
+                      Relationship: {member.relationship || 'neutral'}
+                    </span>
+                    {member.lastTouchAt && (
+                      <span className="px-2 py-1 rounded-lg bg-purple-50 text-purple-600">
+                        Last touch: {formatDateTime(member.lastTouchAt)}
+                      </span>
+                    )}
+                  </div>
+                  {member.notes && (
+                    <p className="text-xs text-gray-600 mt-2">{member.notes}</p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <UserPlus className="w-4 h-4" />
+              Add Stakeholder
+            </h4>
+            <div className="space-y-3">
+              <input
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                placeholder="Name"
+                value={stakeholderForm.name}
+                onChange={(e) => setStakeholderForm({ ...stakeholderForm, name: e.target.value })}
+              />
+              <input
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                placeholder="Email"
+                value={stakeholderForm.email}
+                onChange={(e) => setStakeholderForm({ ...stakeholderForm, email: e.target.value })}
+              />
+              <input
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                placeholder="Phone"
+                value={stakeholderForm.phone}
+                onChange={(e) => setStakeholderForm({ ...stakeholderForm, phone: e.target.value })}
+              />
+              <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                value={stakeholderForm.type}
+                onChange={(e) => setStakeholderForm({ ...stakeholderForm, type: e.target.value })}
+              >
+                <option value="decision_maker">Decision Maker</option>
+                <option value="influencer">Influencer</option>
+                <option value="blocker">Blocker</option>
+                <option value="finance">Finance</option>
+              </select>
+              <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                value={stakeholderForm.relationship}
+                onChange={(e) => setStakeholderForm({ ...stakeholderForm, relationship: e.target.value })}
+              >
+                <option value="strong">Strong Relationship</option>
+                <option value="neutral">Neutral Relationship</option>
+                <option value="weak">Weak Relationship</option>
+              </select>
+              <input
+                type="date"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                value={stakeholderForm.lastTouch}
+                onChange={(e) => setStakeholderForm({ ...stakeholderForm, lastTouch: e.target.value })}
+              />
+              <textarea
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none"
+                placeholder="Notes"
+                value={stakeholderForm.notes}
+                onChange={(e) => setStakeholderForm({ ...stakeholderForm, notes: e.target.value })}
+              />
+              <button
+                onClick={handleAddStakeholder}
+                disabled={savingStakeholder}
+                className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60"
+              >
+                {savingStakeholder ? 'Adding...' : 'Add Stakeholder'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* AI DEAL COACH */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
@@ -740,6 +1238,151 @@ export default function ClientProfilePage() {
             </ul>
           </div>
         </div>
+      </div>
+
+      {/* OBJECTIONS & RISK */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <ShieldAlert className="w-5 h-5 text-red-600" />
+            Objections & Risk Tracker
+          </h3>
+          <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+            riskLevel === 'high'
+              ? 'bg-red-50 text-red-600'
+              : riskLevel === 'medium'
+                ? 'bg-yellow-50 text-yellow-700'
+                : 'bg-green-50 text-green-600'
+          }`}>
+            Risk: {riskLevel}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold text-gray-700">Common Objections</p>
+              <span className="text-xs text-gray-500">{objections.length} logged</span>
+            </div>
+            <div className="space-y-3">
+              {objections.length === 0 ? (
+                <div className="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                  <p className="text-sm text-gray-500">No objections logged yet</p>
+                </div>
+              ) : (
+                objections.map(item => (
+                  <div key={item.id} className="border border-gray-200 rounded-xl p-3 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm text-gray-800">{item.text}</p>
+                      <p className="text-xs text-gray-500 mt-1">Added by {item.createdByName || 'Unknown'}</p>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveObjection(item.id)}
+                      className="text-xs text-red-500 hover:text-red-600"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <input
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                placeholder="Add objection..."
+                value={objectionText}
+                onChange={(e) => setObjectionText(e.target.value)}
+              />
+              <button
+                onClick={handleAddObjection}
+                disabled={savingObjection}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 disabled:opacity-60"
+              >
+                {savingObjection ? 'Saving...' : 'Add'}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-gray-700 mb-3">Risk Level & Mitigation Plan</p>
+            <div className="space-y-3">
+              <select
+                value={riskLevel}
+                onChange={(e) => setRiskLevel(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+              >
+                <option value="low">Low Risk</option>
+                <option value="medium">Medium Risk</option>
+                <option value="high">High Risk</option>
+              </select>
+              <textarea
+                rows={4}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm resize-none"
+                placeholder="Mitigation plan..."
+                value={mitigationPlan}
+                onChange={(e) => setMitigationPlan(e.target.value)}
+              />
+              <button
+                onClick={handleSaveRisk}
+                disabled={savingRisk}
+                className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-gray-800 disabled:opacity-60"
+              >
+                {savingRisk ? 'Saving...' : 'Save Risk Plan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* QUOTE & CONTRACT */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-indigo-600" />
+            Quote & Contract
+          </h3>
+          <button
+            onClick={() => navigate('/quotes')}
+            className="text-xs font-semibold text-indigo-600 hover:underline"
+          >
+            Open Quote Maker
+          </button>
+        </div>
+
+        {latestQuote ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-1 bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+              <p className="text-xs font-semibold text-indigo-700 uppercase">Latest Quote</p>
+              <p className="text-lg font-bold text-indigo-900 mt-2">{latestQuote.title}</p>
+              <p className="text-xs text-indigo-700 mt-1">#{latestQuote.quoteNumber}</p>
+              <p className="text-sm text-indigo-900 mt-3">{formatCurrency(latestQuote.total || 0)}</p>
+              <p className="text-xs text-indigo-700 mt-1">Status: {quoteStatusLabel(latestQuote.status)}</p>
+            </div>
+            <div className="lg:col-span-2 border border-gray-200 rounded-xl p-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase">Version History</p>
+              <div className="mt-3 space-y-2 max-h-48 overflow-y-auto pr-2">
+                {quotes.map(quote => (
+                  <div key={quote.id} className="border border-gray-200 rounded-lg p-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{quote.title}</p>
+                      <p className="text-xs text-gray-500">#{quote.quoteNumber}</p>
+                    </div>
+                    <div className="text-right text-xs text-gray-500">
+                      <p>{quoteStatusLabel(quote.status)}</p>
+                      <p>{formatDateTime(quote.updatedAt || quote.createdAt)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            <FileText className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+            <p className="text-sm text-gray-600">No quotes found for this deal.</p>
+          </div>
+        )}
       </div>
 
       {/* CLIENT UPDATES */}
@@ -830,6 +1473,58 @@ export default function ClientProfilePage() {
           </span>
         </div>
 
+        <div className="flex flex-wrap gap-2 mb-4">
+          {[
+            { type: 'visit', label: 'Visits' },
+            { type: 'followup', label: 'Follow-ups' },
+            { type: 'update', label: 'Updates' },
+            { type: 'email', label: 'Emails' },
+            { type: 'status', label: 'Status' },
+            { type: 'edit', label: 'Edits' },
+            { type: 'created', label: 'Created' }
+          ].map(item => (
+            <button
+              key={item.type}
+              onClick={() => toggleTimelineFilter(item.type)}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                timelineFilters[item.type]
+                  ? 'bg-purple-600 text-white border-purple-600'
+                  : 'bg-white text-gray-500 border-gray-200'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+          <button
+            onClick={() => setTimelineExpanded({
+              visit: true,
+              followup: true,
+              update: true,
+              email: true,
+              status: true,
+              edit: true,
+              created: true
+            })}
+            className="px-3 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600"
+          >
+            Expand All
+          </button>
+          <button
+            onClick={() => setTimelineExpanded({
+              visit: false,
+              followup: false,
+              update: false,
+              email: false,
+              status: false,
+              edit: false,
+              created: false
+            })}
+            className="px-3 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600"
+          >
+            Collapse All
+          </button>
+        </div>
+
         {timelineItems.length === 0 ? (
           <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
             <Activity className="w-10 h-10 text-gray-400 mx-auto mb-2" />
@@ -837,9 +1532,47 @@ export default function ClientProfilePage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {timelineItems.map(item => (
-              <TimelineItem key={item.id} item={item} />
-            ))}
+            {[
+              { type: 'created', label: 'Created', icon: Briefcase },
+              { type: 'status', label: 'Status Changes', icon: TrendingUp },
+              { type: 'visit', label: 'Visits', icon: MapPin },
+              { type: 'followup', label: 'Follow-ups', icon: Bell },
+              { type: 'update', label: 'Updates', icon: MessageSquare },
+              { type: 'email', label: 'Emails', icon: Mail },
+              { type: 'edit', label: 'Edits', icon: Edit }
+            ].map(section => {
+              const items = timelineByType[section.type] || [];
+              if (!timelineFilters[section.type]) return null;
+              return (
+                <div key={section.type} className="border border-gray-200 rounded-xl p-4">
+                  <button
+                    onClick={() => toggleTimelineSection(section.type)}
+                    className="w-full flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                      <section.icon className="w-4 h-4 text-gray-500" />
+                      {section.label}
+                      <span className="text-xs text-gray-400">({items.length})</span>
+                    </div>
+                    {timelineExpanded[section.type] ? (
+                      <ChevronUp className="w-4 h-4 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
+                    )}
+                  </button>
+
+                  {timelineExpanded[section.type] && (
+                    <div className="mt-3 space-y-3">
+                      {items.length === 0 ? (
+                        <p className="text-sm text-gray-500">No events yet.</p>
+                      ) : (
+                        items.map(item => <TimelineItem key={item.id} item={item} />)
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
