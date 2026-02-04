@@ -187,7 +187,7 @@ export default function ClientProfilePage() {
         ownerId === currentUser.uid ||
         dealData.createdBy === currentUser.uid ||
         sharedWith.includes(currentUser.uid) ||
-        (teamId && dealData.teamId === teamId);
+        (userRole === 'team_leader' && teamId && dealData.teamId === teamId);
 
       if (!canView) {
         setError('You do not have permission to view this client');

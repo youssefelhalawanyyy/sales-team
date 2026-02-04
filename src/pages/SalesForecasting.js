@@ -82,6 +82,46 @@ export const SalesForecasting = () => {
           };
         });
         setUsers(map);
+      } else if (userRole === 'team_leader') {
+        const resolveTeamId = async () => {
+          if (currentUser?.teamId) return currentUser.teamId;
+          const teamSnap = await getDocs(
+            query(collection(db, 'teams'), where('leaderId', '==', currentUser.uid))
+          );
+          return teamSnap.docs[0]?.id || null;
+        };
+
+        const teamId = await resolveTeamId();
+        const map = {};
+        if (teamId) {
+          const memberSnap = await getDocs(
+            query(collection(db, 'teamMembers'), where('teamId', '==', teamId))
+          );
+          const memberIds = memberSnap.docs.map(docSnap => docSnap.data().userId).filter(Boolean);
+          const uniqueIds = Array.from(new Set([...memberIds, currentUser.uid]));
+          await Promise.all(uniqueIds.map(async (id) => {
+            try {
+              const userDoc = await getDoc(doc(db, 'users', id));
+              if (userDoc.exists()) {
+                const data = userDoc.data();
+                map[id] = {
+                  id,
+                  name: `${data.firstName || ''} ${data.lastName || ''}`.trim() || data.email || id,
+                  email: data.email
+                };
+              }
+            } catch (e) {
+              console.error('Error loading user:', e);
+            }
+          }));
+        } else {
+          map[currentUser.uid] = {
+            id: currentUser.uid,
+            name: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email,
+            email: currentUser.email
+          };
+        }
+        setUsers(map);
       } else {
         setUsers({
           [currentUser.uid]: {
@@ -105,11 +145,24 @@ export const SalesForecasting = () => {
         const dealsSnap = await getDocs(collection(db, 'sales'));
         dealsList = dealsSnap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
       } else {
+        const resolveTeamId = async () => {
+          if (userRole !== 'team_leader') return null;
+          if (currentUser?.teamId) return currentUser.teamId;
+          const teamSnap = await getDocs(
+            query(collection(db, 'teams'), where('leaderId', '==', currentUser.uid))
+          );
+          return teamSnap.docs[0]?.id || null;
+        };
+
+        const teamId = await resolveTeamId();
         const queries = [
           query(collection(db, 'sales'), where('ownerId', '==', currentUser.uid)),
           query(collection(db, 'sales'), where('createdBy', '==', currentUser.uid)),
           query(collection(db, 'sales'), where('sharedWith', 'array-contains', currentUser.uid))
         ];
+        if (teamId) {
+          queries.push(query(collection(db, 'sales'), where('teamId', '==', teamId)));
+        }
         const snapshots = await Promise.all(queries.map(q => getDocs(q)));
         const map = new Map();
         snapshots.forEach(snapshot => {

@@ -97,8 +97,17 @@ export default function FollowUpsPage() {
         query(collection(db, 'sales'), where('sharedWith', 'array-contains', currentUser.uid), where('archived', '==', false))
       ];
 
-      if (currentUser?.teamId) {
-        queries.push(query(collection(db, 'sales'), where('teamId', '==', currentUser.teamId), where('archived', '==', false)));
+      if (userRole === 'team_leader') {
+        let teamId = currentUser?.teamId || null;
+        if (!teamId) {
+          const teamSnap = await getDocs(
+            query(collection(db, 'teams'), where('leaderId', '==', currentUser.uid))
+          );
+          teamId = teamSnap.docs[0]?.id || null;
+        }
+        if (teamId) {
+          queries.push(query(collection(db, 'sales'), where('teamId', '==', teamId), where('archived', '==', false)));
+        }
       }
 
       const snapshots = await Promise.all(queries.map(queryRef => getDocs(queryRef)));
@@ -127,6 +136,50 @@ export default function FollowUpsPage() {
         q = query(
           collection(db, 'followups')
         );
+      } else if (userRole === 'team_leader') {
+        let teamId = currentUser?.teamId || null;
+        if (!teamId) {
+          const teamSnap = await getDocs(
+            query(collection(db, 'teams'), where('leaderId', '==', currentUser.uid))
+          );
+          teamId = teamSnap.docs[0]?.id || null;
+        }
+        let memberIds = [];
+        if (teamId) {
+          const membersSnap = await getDocs(
+            query(collection(db, 'teamMembers'), where('teamId', '==', teamId))
+          );
+          memberIds = membersSnap.docs
+            .map(docSnap => docSnap.data().userId)
+            .filter(Boolean);
+        }
+        const uniqueIds = Array.from(new Set([currentUser.uid, ...memberIds]));
+        if (uniqueIds.length <= 10) {
+          q = query(
+            collection(db, 'followups'),
+            where('assignedTo', 'in', uniqueIds)
+          );
+        } else {
+          q = query(collection(db, 'followups'));
+          const allSnap = await getDocs(q);
+          const setIds = new Set(uniqueIds);
+          const filtered = allSnap.docs.filter(docSnap => setIds.has(docSnap.data()?.assignedTo));
+          let list = filtered.map(d => ({ id: d.id, ...d.data() }));
+          list.sort((a, b) => {
+            const dateA = a.reminderDate?.toMillis?.() || 0;
+            const dateB = b.reminderDate?.toMillis?.() || 0;
+            return dateA - dateB;
+          });
+          list = list.map(f => {
+            if (f.status === 'pending' && isOverdue(f.reminderDate)) {
+              return { ...f, status: 'overdue' };
+            }
+            return f;
+          });
+          setFollowups(list);
+          setLoading(false);
+          return;
+        }
       } else {
         // Regular users: Only load their assigned follow-ups
         q = query(

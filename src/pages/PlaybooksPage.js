@@ -13,6 +13,84 @@ export default function PlaybooksPage() {
   const [saving, setSaving] = useState(false);
 
   const canEdit = userRole === 'admin' || userRole === 'sales_manager';
+  const isPlaybooksEmpty = Object.keys(playbooks || {}).length === 0;
+
+  const buildDefaultPlaybooks = (stages) => {
+    const defaults = {};
+    (stages || []).forEach(stage => {
+      const value = stage.value;
+      const label = stage.label || value;
+
+      if (value === 'potential_client') {
+        defaults[value] = {
+          checklist: [
+            'Verify contact details',
+            'Research company and needs',
+            'Initial outreach logged',
+            'Next step scheduled'
+          ],
+          tasks: [
+            'Send intro email',
+            'Make discovery call',
+            'Add discovery notes'
+          ]
+        };
+      } else if (value === 'pending_approval') {
+        defaults[value] = {
+          checklist: [
+            'Decision makers identified',
+            'Requirements confirmed',
+            'Quote sent',
+            'Follow-up scheduled'
+          ],
+          tasks: [
+            'Prepare and send quote',
+            'Schedule demo/meeting',
+            'Confirm budget and timeline'
+          ]
+        };
+      } else if (value === 'closed') {
+        defaults[value] = {
+          checklist: [
+            'Contract signed',
+            'Invoice sent',
+            'Handoff completed',
+            'Success plan created'
+          ],
+          tasks: [
+            'Send thank-you email',
+            'Create onboarding tasks',
+            'Introduce CS owner'
+          ]
+        };
+      } else if (value === 'lost') {
+        defaults[value] = {
+          checklist: [
+            'Loss reason captured',
+            'Competitor noted',
+            'Nurture follow-up set'
+          ],
+          tasks: [
+            'Document loss reason',
+            'Set re-engagement reminder'
+          ]
+        };
+      } else {
+        defaults[value] = {
+          checklist: [
+            `Confirm ${label} requirements`,
+            `Update ${label} notes`,
+            'Set next step'
+          ],
+          tasks: [
+            `Complete ${label} task`,
+            'Schedule next action'
+          ]
+        };
+      }
+    });
+    return defaults;
+  };
 
   useEffect(() => {
     if (!currentUser?.uid) return;
@@ -33,6 +111,12 @@ export default function PlaybooksPage() {
     };
     loadPlaybooks();
   }, [currentUser?.uid]);
+
+  useEffect(() => {
+    if (!pipelineStages.length) return;
+    if (!isPlaybooksEmpty) return;
+    setPlaybooks(buildDefaultPlaybooks(pipelineStages));
+  }, [pipelineStages, isPlaybooksEmpty]);
 
   const handleChecklistChange = (stageValue, value) => {
     const list = value

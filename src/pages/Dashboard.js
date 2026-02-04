@@ -92,17 +92,12 @@ export const Dashboard = () => {
       const usersSnap = await getDocs(collection(db, 'users'));
 
       const resolveTeamId = async () => {
+        if (userRole !== 'team_leader') return null;
         if (currentUser?.teamId) return currentUser.teamId;
-        if (userRole === 'team_leader') {
-          const teamSnap = await getDocs(
-            query(collection(db, 'teams'), where('leaderId', '==', currentUser.uid))
-          );
-          return teamSnap.docs[0]?.id || null;
-        }
-        const memberSnap = await getDocs(
-          query(collection(db, 'teamMembers'), where('userId', '==', currentUser.uid))
+        const teamSnap = await getDocs(
+          query(collection(db, 'teams'), where('leaderId', '==', currentUser.uid))
         );
-        return memberSnap.docs[0]?.data()?.teamId || null;
+        return teamSnap.docs[0]?.id || null;
       };
 
       let deals = [];

@@ -55,8 +55,17 @@ export default function SLADashboardPage() {
           query(collection(db, 'sales'), where('createdBy', '==', currentUser.uid)),
           query(collection(db, 'sales'), where('sharedWith', 'array-contains', currentUser.uid))
         ];
-        if (currentUser?.teamId) {
-          queries.push(query(collection(db, 'sales'), where('teamId', '==', currentUser.teamId)));
+        if (userRole === 'team_leader') {
+          let teamId = currentUser?.teamId || null;
+          if (!teamId) {
+            const teamSnap = await getDocs(
+              query(collection(db, 'teams'), where('leaderId', '==', currentUser.uid))
+            );
+            teamId = teamSnap.docs[0]?.id || null;
+          }
+          if (teamId) {
+            queries.push(query(collection(db, 'sales'), where('teamId', '==', teamId)));
+          }
         }
         const snapshots = await Promise.all(queries.map(q => getDocs(q)));
         const map = new Map();

@@ -85,8 +85,17 @@ export default function VisitsPage() {
         query(collection(db, 'sales'), where('sharedWith', 'array-contains', currentUser.uid))
       ];
 
-      if (currentUser?.teamId) {
-        queries.push(query(collection(db, 'sales'), where('teamId', '==', currentUser.teamId)));
+      if (userRole === 'team_leader') {
+        let teamId = currentUser?.teamId || null;
+        if (!teamId) {
+          const teamSnap = await getDocs(
+            query(collection(db, 'teams'), where('leaderId', '==', currentUser.uid))
+          );
+          teamId = teamSnap.docs[0]?.id || null;
+        }
+        if (teamId) {
+          queries.push(query(collection(db, 'sales'), where('teamId', '==', teamId)));
+        }
       }
 
       const snapshots = await Promise.all(queries.map(queryRef => getDocs(queryRef)));
@@ -117,6 +126,37 @@ export default function VisitsPage() {
         // Admin/Manager sees all visits - simple query WITHOUT orderBy
         const q = query(collection(db, 'visits'));
         snapshot = await getDocs(q);
+      } else if (userRole === 'team_leader') {
+        let teamId = currentUser?.teamId || null;
+        if (!teamId) {
+          const teamSnap = await getDocs(
+            query(collection(db, 'teams'), where('leaderId', '==', currentUser.uid))
+          );
+          teamId = teamSnap.docs[0]?.id || null;
+        }
+        let memberIds = [];
+        if (teamId) {
+          const membersSnap = await getDocs(
+            query(collection(db, 'teamMembers'), where('teamId', '==', teamId))
+          );
+          memberIds = membersSnap.docs
+            .map(docSnap => docSnap.data().userId)
+            .filter(Boolean);
+        }
+        const uniqueIds = Array.from(new Set([currentUser.uid, ...memberIds]));
+        if (uniqueIds.length <= 10) {
+          const q = query(
+            collection(db, 'visits'),
+            where('salesRepId', 'in', uniqueIds)
+          );
+          snapshot = await getDocs(q);
+        } else {
+          const q = query(collection(db, 'visits'));
+          const allSnap = await getDocs(q);
+          const setIds = new Set(uniqueIds);
+          const filtered = allSnap.docs.filter(docSnap => setIds.has(docSnap.data()?.salesRepId));
+          snapshot = { docs: filtered };
+        }
       } else {
         // Reps see only their visits - query WITHOUT orderBy
         const q = query(

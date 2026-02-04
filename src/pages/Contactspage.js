@@ -440,7 +440,31 @@ export default function ContactsPage() {
       alert(`⚠️ This contact is already being worked on by ${workingUser}.\n\nYou cannot start a new deal for this contact until the current deal is closed or marked as lost.`);
       return;
     }
-    
+
+    try {
+      const activeSnap = await getDocs(
+        query(collection(db, 'sales'), where('sourceContactId', '==', contact.id))
+      );
+      const activeDeal = activeSnap.docs
+        .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+        .find(deal => deal.status !== 'closed' && deal.status !== 'lost' && !deal.archived);
+
+      if (activeDeal) {
+        await updateDoc(doc(db, 'contacts', contact.id), {
+          activeDealId: activeDeal.id,
+          activeDealOwnerId: activeDeal.ownerId || activeDeal.createdBy,
+          activeDealOwnerName: activeDeal.ownerName || activeDeal.createdByName || 'Unknown',
+          activeDealStage: activeDeal.status,
+          activeDealStatus: 'active'
+        });
+
+        alert(`⚠️ This contact is already being worked on by ${activeDeal.ownerName || activeDeal.createdByName || 'another user'}.\n\nYou cannot start a new deal for this contact until the current deal is closed or marked as lost.`);
+        return;
+      }
+    } catch (e) {
+      console.error('Error checking active deals for contact:', e);
+    }
+
     if (!window.confirm(`Start working on ${contact.companyName}?\n\nThis will create a sales deal and lock this contact so others can't work on it simultaneously.`)) return;
     
     try {

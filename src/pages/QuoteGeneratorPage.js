@@ -738,6 +738,7 @@ export default function QuoteGeneratorPage() {
     discount: 0, tax: 10, notes: '', validUntil: '', terms: 'Net 30'
   };
   const [form, setForm] = useState(initialForm);
+  const canCreateQuotes = userRole === 'admin';
 
   useEffect(() => {
     if (currentUser) { loadDeals(); loadQuotes(); }
@@ -776,6 +777,10 @@ export default function QuoteGeneratorPage() {
   }
 
   async function handleCreateQuote() {
+    if (!canCreateQuotes) {
+      alert('Only administrators can create quotes.');
+      return;
+    }
     const hasInvalidItem = form.items.some(i => !i.description || i.unitPrice === '' || isNaN(Number(i.unitPrice)) || Number(i.unitPrice) < 0);
     if (!form.dealId || !form.title || hasInvalidItem) { alert('Please fill in all required fields correctly.'); return; }
     setIsSubmitting(true);
@@ -860,11 +865,17 @@ export default function QuoteGeneratorPage() {
             <div className="bg-gradient-to-br from-orange-500 to-red-600 p-3 rounded-xl"><FileText className="text-white" size={28} /></div>
             <div><h1 className="text-3xl font-bold text-gray-900">Quote Generator</h1><p className="text-gray-500">Create and manage professional quotes</p></div>
           </div>
-          <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-red-700 transition-all shadow-lg"><Plus size={20} />{showForm ? 'Close Form' : 'New Quote'}</button>
+          {canCreateQuotes ? (
+            <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-red-700 transition-all shadow-lg"><Plus size={20} />{showForm ? 'Close Form' : 'New Quote'}</button>
+          ) : (
+            <div className="text-sm text-gray-500 font-medium bg-gray-100 border border-gray-200 px-4 py-2 rounded-lg">
+              Quote creation is restricted to admins
+            </div>
+          )}
         </div>
       </div>
 
-      {showForm && (
+      {showForm && canCreateQuotes && (
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 lg:p-8 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Create New Quote</h2>
           

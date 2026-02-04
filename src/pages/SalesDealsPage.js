@@ -173,7 +173,7 @@ export default function SalesDealsPage() {
           query(collection(db, 'sales'), where('sharedWith', 'array-contains', currentUser.uid))
         ];
 
-        if (teamContext.teamId) {
+        if (userRole === 'team_leader' && teamContext.teamId) {
           queries.push(query(collection(db, 'sales'), where('teamId', '==', teamContext.teamId)));
         }
 
@@ -451,7 +451,8 @@ export default function SalesDealsPage() {
         }
       });
 
-      if ((originalDeal.ownerId || originalDeal.createdBy) !== (editDeal.ownerId || editDeal.createdBy)) {
+      const ownerChanged = (originalDeal.ownerId || originalDeal.createdBy) !== (editDeal.ownerId || editDeal.createdBy);
+      if (ownerChanged) {
         changes.owner = {
           from: (originalDeal.ownerName || originalDeal.createdByName || originalDeal.ownerId || originalDeal.createdBy) ?? null,
           to:   (editDeal.ownerName     || editDeal.createdByName     || editDeal.ownerId     || editDeal.createdBy)     ?? null
@@ -510,8 +511,35 @@ export default function SalesDealsPage() {
 
       await updateDoc(dealRef, updatePayload);
 
+      // Keep contact lock ownership in sync while deal is active
+      if (ownerChanged && originalDeal.sourceContactId && editDeal.status !== 'closed' && editDeal.status !== 'lost') {
+        try {
+          await updateDoc(doc(db, 'contacts', originalDeal.sourceContactId), {
+            activeDealId: editDeal.id,
+            activeDealOwnerId: editDeal.ownerId || editDeal.createdBy,
+            activeDealOwnerName: editDeal.ownerName || editDeal.createdByName || 'Unknown',
+            activeDealStage: editDeal.status,
+            activeDealStatus: 'active'
+          });
+        } catch (ownerSyncError) {
+          console.error('Error syncing contact owner:', ownerSyncError);
+        }
+      }
+
       // ── is the new status a terminal one? ──
       const isClosedOrLost = editDeal.status === 'closed' || editDeal.status === 'lost';
+
+      if (statusChanged && !isClosedOrLost && originalDeal.sourceContactId) {
+        try {
+          await updateDoc(doc(db, 'contacts', originalDeal.sourceContactId), {
+            activeDealId: editDeal.id,
+            activeDealStage: editDeal.status,
+            activeDealStatus: 'active'
+          });
+        } catch (stageSyncError) {
+          console.error('Error syncing contact stage:', stageSyncError);
+        }
+      }
 
       // Send notifications
       if (statusChanged) {
