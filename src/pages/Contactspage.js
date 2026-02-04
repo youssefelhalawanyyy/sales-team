@@ -442,12 +442,29 @@ export default function ContactsPage() {
     }
 
     try {
+      // 1) Try by sourceContactId (best match)
+      let activeDeal = null;
       const activeSnap = await getDocs(
         query(collection(db, 'sales'), where('sourceContactId', '==', contact.id))
       );
-      const activeDeal = activeSnap.docs
+      activeDeal = activeSnap.docs
         .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
         .find(deal => deal.status !== 'closed' && deal.status !== 'lost' && !deal.archived);
+
+      // 2) Fallback: try by business name + phone (legacy deals without sourceContactId)
+      if (!activeDeal && contact.companyName) {
+        const nameSnap = await getDocs(
+          query(collection(db, 'sales'), where('businessName', '==', contact.companyName))
+        );
+        activeDeal = nameSnap.docs
+          .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+          .find(deal =>
+            deal.status !== 'closed' &&
+            deal.status !== 'lost' &&
+            !deal.archived &&
+            (!contact.phone || !deal.phoneNumber || deal.phoneNumber === contact.phone)
+          );
+      }
 
       if (activeDeal) {
         await updateDoc(doc(db, 'contacts', contact.id), {
