@@ -1,5 +1,17 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { db } from '../../firebase';
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc
+} from 'firebase/firestore';
 import {
   ArrowRight,
   CheckCircle2,
@@ -403,6 +415,157 @@ const MODULES = [
   }
 ];
 
+const COLLECTION_BY_KEY = {
+  onboarding: 'dm_onboarding',
+  'campaign-briefs': 'dm_campaign_briefs',
+  approvals: 'dm_approvals',
+  'content-calendar': 'dm_content_calendar',
+  'asset-library': 'dm_asset_library',
+  'performance-dashboard': 'dm_performance_dashboard',
+  'utm-builder': 'dm_utm_builder',
+  reporting: 'dm_reporting',
+  'kpi-scorecard': 'dm_kpi_scorecard',
+  'client-portal': 'dm_client_portal',
+  'change-requests': 'dm_change_requests',
+  'meeting-notes': 'dm_meeting_notes'
+};
+
+const FIELD_DEFS = {
+  onboarding: [
+    { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
+    { name: 'projectName', label: 'Project', type: 'text', placeholder: 'Onboarding project' },
+    { name: 'owner', label: 'Owner', type: 'text', placeholder: 'Owner' },
+    { name: 'status', label: 'Stage', type: 'select', options: ['intake', 'assets', 'access', 'kickoff', 'complete'] },
+    { name: 'dueDate', label: 'Due Date', type: 'date' },
+    { name: 'checklist', label: 'Checklist', type: 'textarea', placeholder: 'One item per line' },
+    { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Extra context' }
+  ],
+  'campaign-briefs': [
+    { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
+    { name: 'campaignName', label: 'Campaign', type: 'text', placeholder: 'Campaign name' },
+    { name: 'objective', label: 'Goal', type: 'text', placeholder: 'Primary goal' },
+    { name: 'audience', label: 'Audience', type: 'text', placeholder: 'Target audience' },
+    { name: 'budget', label: 'Budget', type: 'number', placeholder: 'Budget' },
+    { name: 'channels', label: 'Channels', type: 'text', placeholder: 'Meta, Google, TikTok...' },
+    { name: 'kpis', label: 'KPIs', type: 'text', placeholder: 'CTR, CPL, CAC...' },
+    { name: 'startDate', label: 'Start Date', type: 'date' },
+    { name: 'endDate', label: 'End Date', type: 'date' },
+    { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Creative direction, constraints, etc.' }
+  ],
+  approvals: [
+    { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
+    { name: 'assetName', label: 'Asset', type: 'text', placeholder: 'Creative title' },
+    { name: 'assetType', label: 'Type', type: 'select', options: ['creative', 'copy', 'landing page', 'video', 'email'] },
+    { name: 'reviewer', label: 'Reviewer', type: 'text', placeholder: 'Reviewer' },
+    { name: 'status', label: 'Status', type: 'select', options: ['draft', 'in_review', 'approved', 'revisions'] },
+    { name: 'dueDate', label: 'Due Date', type: 'date' },
+    { name: 'feedback', label: 'Feedback', type: 'textarea', placeholder: 'Client notes' }
+  ],
+  'content-calendar': [
+    { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
+    { name: 'campaignName', label: 'Campaign', type: 'text', placeholder: 'Campaign name' },
+    { name: 'platform', label: 'Platform', type: 'select', options: ['Meta', 'Google Ads', 'TikTok', 'LinkedIn', 'Email', 'Blog', 'Other'] },
+    { name: 'channel', label: 'Channel', type: 'text', placeholder: 'Channel' },
+    { name: 'publishDate', label: 'Publish Date', type: 'date' },
+    { name: 'publishTime', label: 'Publish Time', type: 'time' },
+    { name: 'deliverable', label: 'Deliverable', type: 'text', placeholder: 'Asset or post' },
+    { name: 'status', label: 'Status', type: 'select', options: ['planned', 'in_review', 'scheduled', 'published'] },
+    { name: 'owner', label: 'Owner', type: 'text', placeholder: 'Owner' },
+    { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Details, links, or notes' }
+  ],
+  'asset-library': [
+    { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
+    { name: 'assetName', label: 'Asset', type: 'text', placeholder: 'Asset name' },
+    { name: 'assetType', label: 'Type', type: 'select', options: ['logo', 'brand guide', 'template', 'creative', 'video', 'copy'] },
+    { name: 'fileUrl', label: 'File URL', type: 'url', placeholder: 'https://...' },
+    { name: 'tags', label: 'Tags', type: 'text', placeholder: 'Brand, campaign, channel' },
+    { name: 'status', label: 'Status', type: 'select', options: ['approved', 'draft', 'archived'] },
+    { name: 'owner', label: 'Owner', type: 'text', placeholder: 'Owner' },
+    { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Usage rights or notes' }
+  ],
+  'performance-dashboard': [
+    { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
+    { name: 'period', label: 'Period', type: 'text', placeholder: 'e.g., Sep 2024' },
+    { name: 'spend', label: 'Spend', type: 'number', placeholder: 'Spend' },
+    { name: 'roi', label: 'ROI', type: 'number', placeholder: 'ROI' },
+    { name: 'cpl', label: 'CPL', type: 'number', placeholder: 'CPL' },
+    { name: 'cac', label: 'CAC', type: 'number', placeholder: 'CAC' },
+    { name: 'ctr', label: 'CTR', type: 'number', placeholder: 'CTR' },
+    { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Insights' }
+  ],
+  'utm-builder': [
+    { name: 'campaignName', label: 'Campaign', type: 'text', placeholder: 'Campaign name' },
+    { name: 'source', label: 'Source', type: 'text', placeholder: 'facebook, google' },
+    { name: 'medium', label: 'Medium', type: 'text', placeholder: 'cpc, email' },
+    { name: 'content', label: 'Content', type: 'text', placeholder: 'creative id' },
+    { name: 'term', label: 'Term', type: 'text', placeholder: 'keyword' },
+    { name: 'baseUrl', label: 'Base URL', type: 'url', placeholder: 'https://...' },
+    { name: 'utmUrl', label: 'Generated URL', type: 'text', readOnly: true },
+    { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Notes' }
+  ],
+  reporting: [
+    { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
+    { name: 'reportTitle', label: 'Report Title', type: 'text', placeholder: 'Monthly report' },
+    { name: 'periodStart', label: 'Period Start', type: 'date' },
+    { name: 'periodEnd', label: 'Period End', type: 'date' },
+    { name: 'status', label: 'Status', type: 'select', options: ['draft', 'sent'] },
+    { name: 'reportLink', label: 'Report Link', type: 'url', placeholder: 'https://...' },
+    { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Highlights' }
+  ],
+  'kpi-scorecard': [
+    { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
+    { name: 'kpiName', label: 'KPI', type: 'text', placeholder: 'Lead volume' },
+    { name: 'target', label: 'Target', type: 'number', placeholder: 'Target' },
+    { name: 'actual', label: 'Actual', type: 'number', placeholder: 'Actual' },
+    { name: 'trend', label: 'Trend', type: 'select', options: ['up', 'flat', 'down'] },
+    { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Notes' }
+  ],
+  'client-portal': [
+    { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
+    { name: 'deliverable', label: 'Deliverable', type: 'text', placeholder: 'Deliverable' },
+    { name: 'status', label: 'Status', type: 'select', options: ['pending', 'in_progress', 'approved', 'delivered'] },
+    { name: 'dueDate', label: 'Due Date', type: 'date' },
+    { name: 'link', label: 'Link', type: 'url', placeholder: 'https://...' },
+    { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Notes' }
+  ],
+  'change-requests': [
+    { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
+    { name: 'requestTitle', label: 'Request', type: 'text', placeholder: 'Change request' },
+    { name: 'scopeChange', label: 'Scope Change', type: 'textarea', placeholder: 'What changed?' },
+    { name: 'impactCost', label: 'Impact Cost', type: 'number', placeholder: 'Extra cost' },
+    { name: 'impactTimeline', label: 'Timeline Impact', type: 'text', placeholder: 'e.g., +1 week' },
+    { name: 'status', label: 'Status', type: 'select', options: ['review', 'approved', 'rejected'] },
+    { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Notes' }
+  ],
+  'meeting-notes': [
+    { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
+    { name: 'meetingDate', label: 'Meeting Date', type: 'date' },
+    { name: 'attendees', label: 'Attendees', type: 'text', placeholder: 'Names' },
+    { name: 'summary', label: 'Summary', type: 'textarea', placeholder: 'Key points' },
+    { name: 'actionItems', label: 'Action Items', type: 'textarea', placeholder: 'One per line' },
+    { name: 'nextMeeting', label: 'Next Meeting', type: 'date' },
+    { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Notes' }
+  ]
+};
+
+const buildFormDefaults = (fields) => fields.reduce((acc, field) => {
+  acc[field.name] = field.default || '';
+  return acc;
+}, {});
+
+const buildUtmUrl = (data) => {
+  const base = (data.baseUrl || '').trim();
+  if (!base) return '';
+  const params = new URLSearchParams();
+  if (data.source) params.set('utm_source', data.source);
+  if (data.medium) params.set('utm_medium', data.medium);
+  if (data.campaignName) params.set('utm_campaign', data.campaignName);
+  if (data.content) params.set('utm_content', data.content);
+  if (data.term) params.set('utm_term', data.term);
+  const joiner = base.includes('?') ? '&' : '?';
+  return `${base}${params.toString() ? joiner + params.toString() : ''}`;
+};
+
 const ModuleCard = ({ module }) => (
   <Link
     to={`/digital-marketing/${module.key}`}
@@ -454,10 +617,190 @@ const IntegrationChip = ({ name }) => (
   </div>
 );
 
+const FieldInput = ({ field, value, onChange }) => {
+  const baseClasses = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-100';
+  if (field.type === 'textarea') {
+    return (
+      <textarea
+        rows={4}
+        value={value}
+        onChange={(e) => onChange(field.name, e.target.value)}
+        placeholder={field.placeholder || ''}
+        className={`${baseClasses} resize-none`}
+      />
+    );
+  }
+  if (field.type === 'select') {
+    return (
+      <select
+        value={value}
+        onChange={(e) => onChange(field.name, e.target.value)}
+        className={baseClasses}
+      >
+        <option value="">Select</option>
+        {field.options.map(option => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    );
+  }
+  return (
+    <input
+      type={field.type || 'text'}
+      value={value}
+      onChange={(e) => onChange(field.name, e.target.value)}
+      placeholder={field.placeholder || ''}
+      readOnly={field.readOnly}
+      className={`${baseClasses} ${field.readOnly ? 'bg-slate-50 text-slate-500' : ''}`}
+    />
+  );
+};
+
 export default function DigitalMarketingPage() {
   const { pageKey } = useParams();
 
   const module = useMemo(() => MODULES.find(item => item.key === pageKey), [pageKey]);
+  const [items, setItems] = useState([]);
+  const [loadingItems, setLoadingItems] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [formState, setFormState] = useState({});
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+
+  const fieldDefs = useMemo(() => {
+    if (!module) return [];
+    return FIELD_DEFS[module.key] || [];
+  }, [module]);
+
+  const collectionName = module ? COLLECTION_BY_KEY[module.key] : null;
+
+  useEffect(() => {
+    if (!module) return;
+    setFormState(buildFormDefaults(fieldDefs));
+    setEditingId(null);
+    setFormOpen(false);
+    setCalendarMonth(new Date());
+  }, [module, fieldDefs]);
+
+  useEffect(() => {
+    if (!module || !collectionName) return;
+    const loadItems = async () => {
+      try {
+        setLoadingItems(true);
+        const snap = await getDocs(
+          query(collection(db, collectionName), orderBy('createdAt', 'desc'))
+        );
+        setItems(snap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() })));
+      } catch (error) {
+        console.error('Error loading digital marketing items:', error);
+        setItems([]);
+      } finally {
+        setLoadingItems(false);
+      }
+    };
+    loadItems();
+  }, [module, collectionName]);
+
+  const handleFieldChange = (name, value) => {
+    setFormState(prev => {
+      const next = { ...prev, [name]: value };
+      if (module?.key === 'utm-builder') {
+        next.utmUrl = buildUtmUrl(next);
+      }
+      return next;
+    });
+  };
+
+  const handleEdit = (item) => {
+    const defaults = buildFormDefaults(fieldDefs);
+    const next = { ...defaults, ...item };
+    if (module?.key === 'utm-builder') {
+      next.utmUrl = buildUtmUrl(next);
+    }
+    setFormState(next);
+    setEditingId(item.id);
+    setFormOpen(true);
+  };
+
+  const handleReset = () => {
+    setFormState(buildFormDefaults(fieldDefs));
+    setEditingId(null);
+    setFormOpen(false);
+  };
+
+  const handleSave = async () => {
+    if (!collectionName) return;
+    const payload = {
+      ...formState,
+      updatedAt: serverTimestamp()
+    };
+
+    if (module?.key === 'utm-builder') {
+      payload.utmUrl = buildUtmUrl(formState);
+    }
+
+    try {
+      if (editingId) {
+        await updateDoc(doc(db, collectionName, editingId), payload);
+        setItems(prev => prev.map(item => item.id === editingId ? { ...item, ...payload } : item));
+      } else {
+        const ref = await addDoc(collection(db, collectionName), {
+          ...payload,
+          createdAt: serverTimestamp()
+        });
+        setItems(prev => [{ id: ref.id, ...payload }, ...prev]);
+      }
+      handleReset();
+    } catch (error) {
+      console.error('Error saving item:', error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!collectionName) return;
+    try {
+      await deleteDoc(doc(db, collectionName, id));
+      setItems(prev => prev.filter(item => item.id !== id));
+    } catch (error) {
+      console.error('Error deleting item:', error);
+    }
+  };
+
+  const isCalendar = module?.key === 'content-calendar';
+
+  const eventsByDate = useMemo(() => {
+    if (!isCalendar) return {};
+    const map = {};
+    items.forEach(item => {
+      if (!item.publishDate) return;
+      if (!map[item.publishDate]) map[item.publishDate] = [];
+      map[item.publishDate].push(item);
+    });
+    return map;
+  }, [items, isCalendar]);
+
+  const monthLabel = useMemo(() => {
+    return calendarMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  }, [calendarMonth]);
+
+  const calendarCells = useMemo(() => {
+    if (!isCalendar) return [];
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < 42; i += 1) {
+      const dayNumber = i - firstDay + 1;
+      if (dayNumber < 1 || dayNumber > daysInMonth) {
+        cells.push({ dayNumber: null, dateKey: null, events: [] });
+      } else {
+        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
+        cells.push({ dayNumber, dateKey, events: eventsByDate[dateKey] || [] });
+      }
+    }
+    return cells;
+  }, [calendarMonth, eventsByDate, isCalendar]);
 
   if (!module) {
     return (
@@ -523,6 +866,185 @@ export default function DigitalMarketingPage() {
           {module.kpis.map(item => (
             <StatCard key={item.label} label={item.label} value={item.value} />
           ))}
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-slate-400">Editable Workspace</p>
+              <h3 className="mt-1 text-lg font-semibold text-slate-900">Add and manage records</h3>
+              <p className="text-sm text-slate-500">Track real client work, campaigns, assets, and approvals from here.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setFormOpen(prev => !prev)}
+                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+              >
+                {formOpen ? 'Close form' : 'Add new'}
+              </button>
+              {editingId && (
+                <button
+                  onClick={handleReset}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
+                >
+                  Cancel edit
+                </button>
+              )}
+            </div>
+          </div>
+
+          {formOpen && (
+            <div className="mt-6 space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                {fieldDefs.map(field => (
+                  <div key={field.name} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
+                    <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                      {field.label}
+                    </label>
+                    <div className="mt-2">
+                      <FieldInput
+                        field={field}
+                        value={formState[field.name] || ''}
+                        onChange={handleFieldChange}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={handleSave}
+                  className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white"
+                >
+                  {editingId ? 'Update' : 'Save'}
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {isCalendar && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-slate-400">Client Calendar</p>
+                <h3 className="mt-1 text-lg font-semibold text-slate-900">Content calendar</h3>
+                <p className="text-sm text-slate-500">Schedule deliverables with platforms, owners, and status.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600"
+                >
+                  Prev
+                </button>
+                <span className="text-sm font-semibold text-slate-700">{monthLabel}</span>
+                <button
+                  onClick={() => setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-7 gap-2 text-xs font-semibold text-slate-400">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="text-center">{day}</div>
+              ))}
+            </div>
+
+            <div className="mt-2 grid grid-cols-7 gap-2">
+              {calendarCells.map((cell, index) => (
+                <div
+                  key={`${cell.dateKey || 'empty'}-${index}`}
+                  className="min-h-[90px] rounded-xl border border-slate-100 bg-slate-50 p-2 text-xs text-slate-600"
+                >
+                  {cell.dayNumber && (
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-700">{cell.dayNumber}</span>
+                      {cell.dateKey && (
+                        <button
+                          onClick={() => {
+                            setFormOpen(true);
+                            setFormState(prev => ({ ...prev, publishDate: cell.dateKey }));
+                          }}
+                          className="text-[10px] text-teal-600"
+                        >
+                          + Add
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <div className="mt-2 space-y-1">
+                    {cell.events.slice(0, 2).map(event => (
+                      <div key={event.id} className="rounded-lg bg-white px-2 py-1 shadow-sm">
+                        <p className="font-semibold text-slate-700">{event.deliverable || event.campaignName}</p>
+                        <p className="text-[10px] text-slate-400">{event.platform || event.channel}</p>
+                      </div>
+                    ))}
+                    {cell.events.length > 2 && (
+                      <p className="text-[10px] text-slate-400">+{cell.events.length - 2} more</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-slate-400">Records</p>
+              <h3 className="mt-1 text-lg font-semibold text-slate-900">Saved entries</h3>
+            </div>
+            <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
+              {items.length}
+            </span>
+          </div>
+
+          {loadingItems ? (
+            <p className="mt-4 text-sm text-slate-500">Loading...</p>
+          ) : items.length === 0 ? (
+            <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
+              No entries yet. Use “Add new” to create one.
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {items.map(item => {
+                const previewFields = fieldDefs.filter(field => field.type !== 'textarea' && field.name !== 'notes').slice(0, 4);
+                return (
+                  <div key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">{item.title || item.campaignName || item.assetName || item.reportTitle || item.requestTitle || item.deliverable || 'Untitled'}</p>
+                        <p className="text-xs text-slate-400">{item.clientName || 'No client set'}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => handleEdit(item)} className="text-xs font-semibold text-teal-600">Edit</button>
+                        <button onClick={() => handleDelete(item.id)} className="text-xs font-semibold text-rose-500">Delete</button>
+                      </div>
+                    </div>
+                    <div className="mt-3 space-y-1 text-xs text-slate-500">
+                      {previewFields.map(field => (
+                        <div key={field.name} className="flex items-center justify-between gap-2">
+                          <span className="uppercase tracking-widest text-[10px] text-slate-400">{field.label}</span>
+                          <span className="text-slate-600">{item[field.name] || '—'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="grid gap-5 lg:grid-cols-2">
