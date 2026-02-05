@@ -26,6 +26,7 @@ import {
   History,
   Database,
   FileText,
+  Link as LinkIcon,
   Mail,
   Heart,
   MessageSquare,
@@ -118,6 +119,25 @@ export const Navigation = React.memo(({ userRole }) => {
     icon: TrendingUp
   };
 
+  const digitalMarketingGroup = {
+    label: 'Digital Marketing',
+    icon: Zap,
+    children: [
+      { label: 'Onboarding', path: '/digital-marketing/onboarding', icon: Users },
+      { label: 'Campaign Briefs', path: '/digital-marketing/campaign-briefs', icon: FileText },
+      { label: 'Approvals', path: '/digital-marketing/approvals', icon: CheckSquare },
+      { label: 'Content Calendar', path: '/digital-marketing/content-calendar', icon: Calendar },
+      { label: 'Asset Library', path: '/digital-marketing/asset-library', icon: Database },
+      { label: 'Performance', path: '/digital-marketing/performance-dashboard', icon: BarChart3 },
+      { label: 'UTM Builder', path: '/digital-marketing/utm-builder', icon: LinkIcon },
+      { label: 'Reporting', path: '/digital-marketing/reporting', icon: Mail },
+      { label: 'KPI Scorecard', path: '/digital-marketing/kpi-scorecard', icon: TrendingUp },
+      { label: 'Client Portal', path: '/digital-marketing/client-portal', icon: Users2 },
+      { label: 'Change Requests', path: '/digital-marketing/change-requests', icon: History },
+      { label: 'Meeting Notes', path: '/digital-marketing/meeting-notes', icon: MessageSquare }
+    ]
+  };
+
   const infoGroup = {
     label: 'Info',
     icon: Info,
@@ -149,6 +169,7 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
         ]
       },
+      digitalMarketingGroup,
       { label: 'Pipeline', path: '/admin/pipeline', icon: TrendingUp },
       {
         label: 'Finance',

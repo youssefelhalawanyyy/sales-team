@@ -58,6 +58,7 @@ const PipelineSettingsPage = React.lazy(() => import('./pages/PipelineSettingsPa
 const PlaybooksPage = React.lazy(() => import('./pages/PlaybooksPage'));
 const HelpCenterPage = React.lazy(() => import('./pages/HelpCenterPage'));
 const SLADashboardPage = React.lazy(() => import('./pages/SLADashboardPage'));
+const DigitalMarketingPage = React.lazy(() => import('./pages/digital-marketing/DigitalMarketingPage'));
 
 // Loading fallback component - lightweight for fast rendering
 const LoadingFallback = React.memo(() => (
@@ -170,6 +171,28 @@ const AppContent = React.memo(() => {
             <ProtectedRoute requiredRoles={['admin', 'sales_manager', 'team_leader', 'sales_member']}>
               <Suspense fallback={<LoadingFallback />}>
                 <PlaybooksPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= DIGITAL MARKETING ================= */}
+        <Route
+          path="/digital-marketing"
+          element={
+            <ProtectedRoute requiredRoles={['admin']}>
+              <Suspense fallback={<LoadingFallback />}>
+                <DigitalMarketingPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/digital-marketing/:pageKey"
+          element={
+            <ProtectedRoute requiredRoles={['admin']}>
+              <Suspense fallback={<LoadingFallback />}>
+                <DigitalMarketingPage />
               </Suspense>
             </ProtectedRoute>
           }
