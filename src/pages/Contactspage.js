@@ -65,6 +65,7 @@ export default function ContactsPage() {
   
   const [contacts, setContacts] = useState([]);
   const [activeDeals, setActiveDeals] = useState([]);
+  const [globalActiveDeals, setGlobalActiveDeals] = useState([]);
   const [closedDeals, setClosedDeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
@@ -115,6 +116,7 @@ export default function ContactsPage() {
   useEffect(() => {
     if (currentUser?.uid) {
       loadActiveDeals();
+      loadGlobalActiveDeals();
       loadDealHistory();
     }
   }, [currentUser, pipelineStages, teamContext.teamId]);
@@ -234,6 +236,36 @@ export default function ContactsPage() {
     }
   }
 
+  async function loadGlobalActiveDeals() {
+    try {
+      const activeStages = pipelineStages
+        .map(stage => stage.value)
+        .filter(value => !PIPELINE_RESERVED_VALUES.includes(value));
+
+      if (activeStages.length === 0) {
+        setGlobalActiveDeals([]);
+        return;
+      }
+
+      let dealsList = [];
+      if (activeStages.length <= 10) {
+        const snap = await getDocs(
+          query(collection(db, 'sales'), where('status', 'in', activeStages))
+        );
+        dealsList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      } else {
+        const snap = await getDocs(collection(db, 'sales'));
+        dealsList = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(deal => activeStages.includes(deal.status));
+      }
+
+      setGlobalActiveDeals(dealsList);
+    } catch (e) {
+      console.error('Error loading global active deals:', e);
+    }
+  }
+
   async function loadDealHistory() {
     try {
       const deals = await fetchAccessibleDeals();
@@ -248,8 +280,8 @@ export default function ContactsPage() {
     // Check if contact has an active deal marker that hasn't been cleared
     if (contact?.activeDealId && contact?.activeDealStatus === 'active') return true;
     
-    // Double-check against active deals list
-    return activeDeals.some(deal => 
+    // Double-check against global active deals list
+    return globalActiveDeals.some(deal => 
       deal.sourceContactId === contact.id || 
       (deal.businessName?.toLowerCase() === contact.companyName?.toLowerCase() && 
        deal.phoneNumber === contact.phone)
@@ -259,7 +291,7 @@ export default function ContactsPage() {
   function getWorkingUser(contact) {
     if (contact?.activeDealOwnerName) return contact.activeDealOwnerName;
     
-    const deal = activeDeals.find(deal => 
+    const deal = globalActiveDeals.find(deal => 
       deal.sourceContactId === contact.id || 
       (deal.businessName?.toLowerCase() === contact.companyName?.toLowerCase() && 
        deal.phoneNumber === contact.phone)
@@ -754,12 +786,12 @@ export default function ContactsPage() {
 
   const availableContacts = useMemo(
     () => filtered.filter(c => !isContactInProgress(c)),
-    [filtered, activeDeals]
+    [filtered, activeDeals, globalActiveDeals]
   );
 
   const inProgressContacts = useMemo(
     () => filtered.filter(c => isContactInProgress(c)),
-    [filtered, activeDeals]
+    [filtered, activeDeals, globalActiveDeals]
   );
 
   return (
