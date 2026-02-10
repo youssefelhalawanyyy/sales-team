@@ -17,14 +17,13 @@ import {
   Plus,
   Search,
   ShieldCheck,
-  Bell,
+  Filter,
   Calendar,
   FileText,
   DollarSign,
   Users,
   CheckCircle2,
   Clock,
-  TrendingUp,
   Download,
   X,
   AlertCircle,
@@ -368,113 +367,125 @@ export const CommissionPage = () => {
   /* ---------------- UI ---------------- */
 
   return (
-    <div className="p-4 md:p-6 space-y-6 bg-gray-50 min-h-screen max-w-7xl mx-auto">
-      {/* HEADER */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-            <Wallet className="w-7 h-7 text-white" strokeWidth={2.5} />
-          </div>
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* HEADER */}
+        <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
           <div>
-            <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">Commission & Payroll</h1>
-            <p className="text-gray-600 mt-1">Manage employee commissions and payroll schedules</p>
+            <nav className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+              <span>Finance Suite</span>
+              <span className="text-xs">/</span>
+              <span className="text-slate-900 font-semibold">Commissions Ledger</span>
+            </nav>
+            <h1 className="text-3xl font-extrabold tracking-tight">Sales Payouts</h1>
+            <p className="text-slate-500 mt-1">Manage and track commissions for Jonix Air sales representatives.</p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {(isAdmin || isFinance) && (
+                <button
+                  onClick={runPayout}
+                  disabled={loading}
+                  className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-xl font-semibold shadow-sm hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Calendar size={18} />
+                  <span>Run Payroll</span>
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="flex items-center gap-2 px-5 py-3 bg-emerald-400 text-slate-900 rounded-xl font-semibold shadow-sm hover:opacity-90"
+                >
+                  <Plus size={18} />
+                  <span>Add Commission</span>
+                </button>
+              )}
+            </div>
           </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm min-w-[280px]">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-slate-500">Total Commission Due</span>
+              <Wallet className="text-emerald-400" size={18} />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-extrabold text-emerald-400 tracking-tight">
+                {formatCurrency(stats.totalPending)}
+              </span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">USD</span>
+            </div>
+          </div>
+        </header>
+
+        {/* STATS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Total Paid"
+            value={formatCurrency(stats.totalPaid)}
+            icon={CheckCircle2}
+            color="green"
+            subtitle="Completed payments"
+          />
+          <StatCard
+            title="Pending Payout"
+            value={formatCurrency(stats.totalPending)}
+            icon={Clock}
+            color="yellow"
+            subtitle="Awaiting payment"
+          />
+          <StatCard
+            title="Approved"
+            value={stats.approvedCount}
+            icon={ShieldCheck}
+            color="blue"
+            subtitle="Ready for payout"
+          />
+          <StatCard
+            title="Pending Approval"
+            value={stats.pendingApproval}
+            icon={AlertCircle}
+            color="orange"
+            subtitle="Needs admin approval"
+          />
         </div>
 
-        <div className="flex gap-3 flex-wrap">
-          {(isAdmin || isFinance) && (
+        {/* PAYROLL EXPORT */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-emerald-500" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Employee Payroll Report</h3>
+              <p className="text-sm text-slate-500">Generate PDF reports for employees</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <select
+                value={payrollUser}
+                onChange={(e) => setPayrollUser(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 transition-all appearance-none bg-white cursor-pointer"
+              >
+                <option value="">Select Employee</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.firstName} {u.lastName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <button
-              onClick={runPayout}
-              disabled={loading}
-              className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white rounded-xl font-semibold shadow-lg shadow-green-500/30 transition-all hover:shadow-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={generatePayroll}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-400 text-slate-900 rounded-xl font-semibold shadow-sm hover:opacity-90 whitespace-nowrap"
             >
-              <Calendar size={20} strokeWidth={2.5} />
-              <span>Run Payroll</span>
+              <Download size={18} />
+              <span>Generate PDF</span>
             </button>
-          )}
-
-          {isAdmin && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/30 transition-all hover:shadow-indigo-500/50"
-            >
-              <Plus size={20} strokeWidth={2.5} />
-              <span>Add Commission</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* STATS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <StatCard
-          title="Total Paid"
-          value={formatCurrency(stats.totalPaid)}
-          icon={CheckCircle2}
-          color="green"
-          subtitle="Completed payments"
-        />
-        <StatCard
-          title="Pending Payout"
-          value={formatCurrency(stats.totalPending)}
-          icon={Clock}
-          color="yellow"
-          subtitle="Awaiting payment"
-        />
-        <StatCard
-          title="Approved"
-          value={stats.approvedCount}
-          icon={ShieldCheck}
-          color="blue"
-          subtitle="Ready for payout"
-        />
-        <StatCard
-          title="Pending Approval"
-          value={stats.pendingApproval}
-          icon={AlertCircle}
-          color="orange"
-          subtitle="Needs admin approval"
-        />
-      </div>
-
-      {/* PAYROLL EXPORT */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-            <FileText className="w-5 h-5 text-blue-600" strokeWidth={2.5} />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">Employee Payroll Report</h3>
-            <p className="text-sm text-gray-600">Generate PDF reports for employees</p>
           </div>
         </div>
-
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 relative">
-            <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <select
-              value={payrollUser}
-              onChange={(e) => setPayrollUser(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none bg-white cursor-pointer"
-            >
-              <option value="">Select Employee</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.firstName} {u.lastName}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            onClick={generatePayroll}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 transition-all hover:shadow-blue-500/50 whitespace-nowrap"
-          >
-            <Download size={20} strokeWidth={2.5} />
-            <span>Generate PDF</span>
-          </button>
-        </div>
-      </div>
 
       {/* ADD FORM MODAL */}
       {showForm && (
@@ -559,46 +570,49 @@ export const CommissionPage = () => {
         </Modal>
       )}
 
-      {/* SEARCH */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            placeholder="Search by employee name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-          />
-        </div>
-
-        {search && (
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-sm text-gray-600">Searching for:</span>
-            <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium flex items-center gap-2">
-              "{search}"
-              <X className="w-3 h-3 cursor-pointer" onClick={() => setSearch('')} />
-            </span>
+        {/* FILTERS */}
+        <section className="bg-white/70 border border-slate-200 rounded-2xl p-4">
+          <div className="flex flex-col lg:flex-row gap-4 justify-between items-center">
+            <div className="flex items-center gap-1 p-1 bg-slate-200/60 rounded-lg">
+              <button className="px-6 py-2 text-sm font-bold rounded-md bg-white shadow-sm text-slate-900">Pending</button>
+              <button className="px-6 py-2 text-sm font-bold rounded-md text-slate-500">Paid History</button>
+              <button className="px-6 py-2 text-sm font-bold rounded-md text-slate-500">All Transactions</button>
+            </div>
+            <div className="flex items-center gap-4 w-full lg:w-auto">
+              <div className="relative flex-grow lg:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input
+                  placeholder="Search representatives..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-emerald-200 focus:border-emerald-400"
+                />
+              </div>
+              <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-bold bg-white hover:bg-slate-50">
+                <Filter size={16} />
+                <span>Filters</span>
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </section>
 
       {/* LOADING */}
       {loading && (
         <div className="flex flex-col justify-center items-center py-12">
-          <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-          <p className="mt-4 text-gray-600 font-medium">Processing...</p>
+          <div className="w-12 h-12 border-4 border-emerald-100 border-t-emerald-400 rounded-full animate-spin"></div>
+          <p className="mt-4 text-slate-500 font-medium">Processing...</p>
         </div>
       )}
 
       {/* COMMISSIONS TABLE */}
       {!loading && filtered.length === 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Wallet className="w-10 h-10 text-gray-400" />
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
+          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Wallet className="w-10 h-10 text-emerald-400" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">No commissions found</h3>
-          <p className="text-gray-600 mb-6">
-            {search 
+          <h3 className="text-xl font-bold text-slate-900 mb-2">No commissions found</h3>
+          <p className="text-slate-500 mb-6">
+            {search
               ? 'Try adjusting your search terms'
               : 'Get started by adding a new commission'
             }
@@ -606,7 +620,7 @@ export const CommissionPage = () => {
           {!search && isAdmin && (
             <button
               onClick={() => setShowForm(true)}
-              className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all"
+              className="px-6 py-3 bg-emerald-400 text-slate-900 rounded-xl font-semibold shadow-sm hover:opacity-90 transition"
             >
               Add First Commission
             </button>
@@ -615,10 +629,10 @@ export const CommissionPage = () => {
       )}
 
       {!loading && filtered.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+              <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
                   <Th>Employee</Th>
                   <Th>Offer/Deal</Th>
@@ -629,30 +643,30 @@ export const CommissionPage = () => {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-slate-100">
                 {filtered.map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={c.id} className="hover:bg-emerald-50/40 transition-colors">
                     <Td>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                          <Users className="w-5 h-5 text-gray-600" />
+                        <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center">
+                          <Users className="w-5 h-5 text-slate-600" />
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900">{c.name}</p>
-                          <p className="text-sm text-gray-500">{c.role}</p>
+                          <p className="font-semibold text-slate-900">{c.name}</p>
+                          <p className="text-sm text-slate-500">{c.role}</p>
                         </div>
                       </div>
                     </Td>
                     <Td>
-                      <p className="font-medium text-gray-900">{c.offerName || '-'}</p>
+                      <p className="font-medium text-slate-900">{c.offerName || '-'}</p>
                     </Td>
                     <Td>
-                      <p className="font-bold text-gray-900 text-lg">{formatCurrency(c.commissionAmount)}</p>
+                      <p className="font-bold text-slate-900 text-lg">{formatCurrency(c.commissionAmount)}</p>
                     </Td>
                     <Td>
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-700">{c.payoutDate}</span>
+                        <Calendar className="w-4 h-4 text-slate-400" />
+                        <span className="text-slate-700">{c.payoutDate}</span>
                       </div>
                     </Td>
                     <Td>
@@ -674,36 +688,36 @@ export const CommissionPage = () => {
                     </Td>
 
                     <Td>
-                      <div className="flex gap-2">
-                        {isAdmin && !c.approved && (
-                          <button
-                            onClick={() => approve(c)}
-                            className="flex items-center gap-1 px-3 py-2 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-lg font-medium transition-all"
-                            title="Approve commission"
-                          >
-                            <ShieldCheck size={16} strokeWidth={2.5} />
-                            <span className="hidden sm:inline">Approve</span>
-                          </button>
-                        )}
+                        <div className="flex gap-2">
+                          {isAdmin && !c.approved && (
+                            <button
+                              onClick={() => approve(c)}
+                              className="flex items-center gap-1 px-3 py-2 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-lg font-medium transition-all"
+                              title="Approve commission"
+                            >
+                              <ShieldCheck size={16} strokeWidth={2.5} />
+                              <span className="hidden sm:inline">Approve</span>
+                            </button>
+                          )}
 
-                        {(isAdmin || isFinance) && c.status === "unpaid" && c.approved && (
-                          <button
-                            onClick={() => markPaid(c)}
-                            className="flex items-center gap-1 px-3 py-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg font-medium transition-all"
-                            title="Mark as paid"
-                          >
-                            <CreditCard size={16} strokeWidth={2.5} />
-                            <span className="hidden sm:inline">Pay</span>
-                          </button>
-                        )}
+                          {(isAdmin || isFinance) && c.status === "unpaid" && c.approved && (
+                            <button
+                              onClick={() => markPaid(c)}
+                              className="flex items-center gap-1 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg font-medium transition-all"
+                              title="Mark as paid"
+                            >
+                              <CreditCard size={16} strokeWidth={2.5} />
+                              <span className="hidden sm:inline">Pay</span>
+                            </button>
+                          )}
 
-                        {c.status === "paid" && (
-                          <div className="flex items-center gap-1 px-3 py-2 text-green-600 text-sm">
-                            <CheckCircle2 size={16} />
-                            <span className="hidden sm:inline">Completed</span>
-                          </div>
-                        )}
-                      </div>
+                          {c.status === "paid" && (
+                            <div className="flex items-center gap-1 px-3 py-2 text-emerald-600 text-sm">
+                              <CheckCircle2 size={16} />
+                              <span className="hidden sm:inline">Completed</span>
+                            </div>
+                          )}
+                        </div>
                     </Td>
                   </tr>
                 ))}
@@ -712,25 +726,26 @@ export const CommissionPage = () => {
           </div>
 
           {/* Table Footer */}
-          <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+          <div className="bg-slate-50 px-6 py-4 border-t border-slate-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-              <p className="text-sm text-gray-600">
-                Showing <span className="font-semibold text-gray-900">{filtered.length}</span> commission{filtered.length !== 1 ? 's' : ''}
+              <p className="text-sm text-slate-600">
+                Showing <span className="font-semibold text-slate-900">{filtered.length}</span> commission{filtered.length !== 1 ? 's' : ''}
               </p>
               <div className="flex items-center gap-4">
                 <div className="text-sm">
-                  <span className="text-gray-600">Total Pending: </span>
-                  <span className="font-bold text-yellow-600">{formatCurrency(stats.totalPending)}</span>
+                  <span className="text-slate-600">Total Pending: </span>
+                  <span className="font-bold text-orange-600">{formatCurrency(stats.totalPending)}</span>
                 </div>
                 <div className="text-sm">
-                  <span className="text-gray-600">Total Paid: </span>
-                  <span className="font-bold text-green-600">{formatCurrency(stats.totalPaid)}</span>
+                  <span className="text-slate-600">Total Paid: </span>
+                  <span className="font-bold text-emerald-600">{formatCurrency(stats.totalPaid)}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
@@ -804,23 +819,26 @@ const Badge = ({ status }) => {
 const Modal = ({ children, onClose, title }) => {
   return (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center p-4 animate-fadeIn"
+      className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex justify-center items-center p-4 animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-slideUp"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-slate-200 animate-slideUp"
         onClick={e => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
-          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+        <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-slate-400">Finance Suite</p>
+            <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
+          </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all"
+            className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all"
           >
-            <X className="w-5 h-5 text-gray-600" />
+            <X className="w-5 h-5 text-slate-600" />
           </button>
         </div>
-        <div className="p-6">
+        <div className="p-6 bg-slate-50/40">
           {children}
         </div>
       </div>
