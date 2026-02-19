@@ -42,7 +42,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const initialized = useRef(false);
+  const loadingTimeoutRef = useRef(null);
+  const initialSafetyTimeoutRef = useRef(null);
 
   /* ===============================
      INIT
@@ -50,10 +51,13 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
 
-    if (initialized.current) return;
-    initialized.current = true;
-
     let unsubscribeUserData = null;
+
+    // Global safety fallback so the app doesn't hang on loading forever
+    if (initialSafetyTimeoutRef.current) clearTimeout(initialSafetyTimeoutRef.current);
+    initialSafetyTimeoutRef.current = setTimeout(() => {
+      setLoading(false);
+    }, 7000);
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
 
@@ -76,6 +80,21 @@ export const AuthProvider = ({ children }) => {
 
         setCurrentUser(baseUser);
 
+        // Safety: ensure loading resolves even if realtime listener stalls
+        if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = setTimeout(() => {
+          setLoading(false);
+          setUserRole(prev => prev || 'sales_member');
+        }, 7000);
+
+        if (initialSafetyTimeoutRef.current) {
+          clearTimeout(initialSafetyTimeoutRef.current);
+          initialSafetyTimeoutRef.current = null;
+        }
+
+        // Fetch user doc immediately (don’t rely solely on snapshot)
+        loadUserData(user);
+
         // Set up real-time listener for user data updates
         const userRef = doc(db, 'users', user.uid);
         unsubscribeUserData = onSnapshot(userRef, (snap) => {
@@ -94,6 +113,9 @@ export const AuthProvider = ({ children }) => {
               ...prev,
               ...userData
             }));
+          } else {
+            // Auto-create missing profile so userRole isn't stuck null
+            loadUserData(user);
           }
           setLoading(false);
         }, (error) => {
@@ -113,6 +135,8 @@ export const AuthProvider = ({ children }) => {
     return () => {
       unsubscribeAuth();
       if (unsubscribeUserData) unsubscribeUserData();
+      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+      if (initialSafetyTimeoutRef.current) clearTimeout(initialSafetyTimeoutRef.current);
     };
 
   }, []);

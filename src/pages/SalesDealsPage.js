@@ -38,13 +38,6 @@ import {
 } from '../utils/pipeline';
 import { scoreDeal, getPriorityBadge } from '../utils/leadScoring';
 
-const STATUS_ICON_MAP = {
-  potential_client: Users,
-  pending_approval: Clock,
-  closed: CheckCircle2,
-  lost: XCircle
-};
-
 const isDealFieldMissing = (deal, field) => {
   const value = deal?.[field];
   if (field === 'price') {
@@ -892,62 +885,66 @@ export default function SalesDealsPage() {
   const completedChecklist = checklistStage ? (editDeal?.checklists?.[checklistStage] || []) : [];
 
   return (
-    <div className="space-y-6 p-6 max-w-7xl mx-auto">
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <Briefcase className="w-6 h-6 text-white" />
-            </div>
-            Sales Deals
-          </h1>
-          <p className="text-gray-600 mt-1 ml-15">
-            {canViewArchive ? 'Manage and track all sales pipeline deals' : 'Manage and track your sales deals'}
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#f6f8f7] dark:bg-[#102218] text-slate-900 dark:text-slate-100">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-1">
+            <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+              <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-[#13ec6d] text-[#102218] shadow-[0_0_20px_rgba(19,236,109,0.3)]">
+                <Briefcase className="w-6 h-6" />
+              </span>
+              Sales Pipeline
+            </h1>
+            <p className="text-slate-500 font-medium">
+              Monitoring <span className="text-[#13ec6d] font-bold">{filtered.length} active deals</span> worth {formatCurrency(potentialRevenue)}
+            </p>
+            <p className="text-slate-500 text-sm">
+              {canViewArchive ? 'Manage and track all sales pipeline deals' : 'Manage and track your sales deals'}
+            </p>
+          </div>
 
-        <div className="flex gap-3">
-          {canViewArchive && (
+          <div className="flex items-center gap-3">
+            {canViewArchive && (
+              <button
+                onClick={() => setShowArchive(!showArchive)}
+                className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+                  showArchive
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:border-[#13ec6d]'
+                }`}
+              >
+                <Archive size={18} />
+                <span>{showArchive ? 'View Active Deals' : 'Archive'}</span>
+                {!showArchive && archivedDeals.length > 0 && (
+                  <span className="ml-1 px-2 py-0.5 bg-[#13ec6d]/20 text-[#13ec6d] rounded-full text-xs font-bold">
+                    {archivedDeals.length}
+                  </span>
+                )}
+              </button>
+            )}
+
             <button
-              onClick={() => setShowArchive(!showArchive)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg transition-all hover:scale-105 ${
-                showArchive
-                  ? 'bg-gradient-to-r from-gray-600 to-gray-500 hover:from-gray-700 hover:to-gray-600 text-white shadow-gray-500/30'
-                  : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-400'
-              }`}
+              onClick={goToContacts}
+              className="bg-[#13ec6d] text-[#102218] px-5 py-2.5 rounded-xl font-bold text-sm shadow-[0_0_20px_rgba(19,236,109,0.3)] hover:shadow-[0_0_30px_rgba(19,236,109,0.5)] transition-all flex items-center gap-2"
             >
-              <Archive size={20} strokeWidth={2.5} />
-              <span>{showArchive ? 'View Active Deals' : 'View Archive'}</span>
-              {!showArchive && archivedDeals.length > 0 && (
-                <span className="ml-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
-                  {archivedDeals.length}
-                </span>
-              )}
+              <Plus size={18} />
+              <span>Create Deal</span>
             </button>
-          )}
-
-          <button
-            onClick={goToContacts}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 transition-all hover:shadow-blue-500/50 hover:scale-105"
-          >
-            <Plus size={20} strokeWidth={2.5} />
-            <span>Create Deal from Contact</span>
-          </button>
+          </div>
         </div>
-      </div>
 
       {/* INFO BANNER */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-        <Users className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+      <div className="bg-white/70 dark:bg-[#102218]/70 backdrop-blur-xl border border-white/40 dark:border-[#13ec6d]/10 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+        <Users className="w-5 h-5 text-[#13ec6d] flex-shrink-0 mt-0.5" />
         <div className="flex-1">
-          <p className="text-sm font-semibold text-blue-900">How to Create Deals</p>
-          <p className="text-sm text-blue-700 mt-1">
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">How to Create Deals</p>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
             Deals are created from the Contact Directory. Select a contact and click "Start Working" to create a deal and lock the contact to prevent others from working on it simultaneously.
           </p>
           <button
             onClick={goToContacts}
-            className="mt-3 flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all text-sm"
+            className="mt-3 flex items-center gap-2 px-4 py-2 bg-[#13ec6d] text-[#102218] rounded-lg font-bold transition-all text-sm"
           >
             <span>Go to Contact Directory</span>
             <ArrowRight className="w-4 h-4" />
@@ -956,11 +953,11 @@ export default function SalesDealsPage() {
       </div>
 
       {!canViewArchive && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-          <UserCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+        <div className="bg-white/70 dark:bg-[#102218]/70 backdrop-blur-xl border border-white/40 dark:border-[#13ec6d]/10 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+          <UserCheck className="w-5 h-5 text-[#13ec6d] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-blue-900">Personal Deals View</p>
-            <p className="text-sm text-blue-700 mt-1">
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">Personal Deals View</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
               You are viewing deals you own, deals shared with you, and deals from your team (if assigned).
             </p>
           </div>
@@ -968,11 +965,11 @@ export default function SalesDealsPage() {
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+        <div className="bg-white/70 dark:bg-[#102218]/70 backdrop-blur-xl border border-red-200/60 dark:border-red-500/30 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-red-900">Error Loading Deals</p>
-            <p className="text-sm text-red-700 mt-1">{error}</p>
+            <p className="text-sm font-semibold text-red-600">Error Loading Deals</p>
+            <p className="text-sm text-red-500 mt-1">{error}</p>
           </div>
         </div>
       )}
@@ -996,13 +993,13 @@ export default function SalesDealsPage() {
       )}
 
       {/* FILTERS */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
+      <div className="bg-white/70 dark:bg-[#102218]/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/40 dark:border-[#13ec6d]/10 p-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
               placeholder="Search by business or contact name..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-[#13ec6d]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13ec6d]/40 focus:border-transparent transition-all"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -1010,9 +1007,9 @@ export default function SalesDealsPage() {
 
           {!showArchive && (
             <div className="relative sm:w-64">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
               <select
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none bg-white cursor-pointer"
+                className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-[#13ec6d]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13ec6d]/40 focus:border-transparent transition-all appearance-none cursor-pointer"
                 value={filter}
                 onChange={e => setFilter(e.target.value)}
               >
@@ -1026,9 +1023,9 @@ export default function SalesDealsPage() {
 
           {!showArchive && (
             <div className="relative sm:w-56">
-              <TrendingUp className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <TrendingUp className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
               <select
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none bg-white cursor-pointer"
+                className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-[#13ec6d]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#13ec6d]/40 focus:border-transparent transition-all appearance-none cursor-pointer"
                 value={sortMode}
                 onChange={e => setSortMode(e.target.value)}
               >
@@ -1042,21 +1039,21 @@ export default function SalesDealsPage() {
 
         {(search || filter !== 'all' || sortMode !== 'smart') && (
           <div className="mt-3 flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-gray-600">Active filters:</span>
+            <span className="text-sm text-slate-500">Active filters:</span>
             {search && (
-              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium flex items-center gap-2">
+              <span className="px-3 py-1 bg-[#13ec6d]/10 text-[#13ec6d] rounded-lg text-sm font-medium flex items-center gap-2">
                 Search: "{search}"
                 <X className="w-3 h-3 cursor-pointer" onClick={() => setSearch('')} />
               </span>
             )}
             {filter !== 'all' && (
-              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium flex items-center gap-2">
+              <span className="px-3 py-1 bg-[#13ec6d]/10 text-[#13ec6d] rounded-lg text-sm font-medium flex items-center gap-2">
                 Status: {statusLabelMap[filter] || filter}
                 <X className="w-3 h-3 cursor-pointer" onClick={() => setFilter('all')} />
               </span>
             )}
             {sortMode !== 'smart' && (
-              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium flex items-center gap-2">
+              <span className="px-3 py-1 bg-[#13ec6d]/10 text-[#13ec6d] rounded-lg text-sm font-medium flex items-center gap-2">
                 Sort: {sortMode === 'recent' ? 'Newest' : 'Needs Attention'}
                 <X className="w-3 h-3 cursor-pointer" onClick={() => setSortMode('smart')} />
               </span>
@@ -1068,19 +1065,19 @@ export default function SalesDealsPage() {
       {/* LOADING */}
       {loading && (
         <div className="flex flex-col justify-center items-center py-20">
-          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-          <p className="mt-4 text-gray-600 font-medium">Loading deals...</p>
+          <div className="w-16 h-16 border-4 border-[#13ec6d]/20 border-t-[#13ec6d] rounded-full animate-spin"></div>
+          <p className="mt-4 text-slate-500 font-medium">Loading deals...</p>
         </div>
       )}
 
       {/* ACTIVE DEALS */}
       {!loading && !showArchive && filtered.length === 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Briefcase className="w-10 h-10 text-blue-600" />
+        <div className="bg-white/70 dark:bg-[#102218]/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/40 dark:border-[#13ec6d]/10 p-12 text-center">
+          <div className="w-20 h-20 bg-[#13ec6d]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Briefcase className="w-10 h-10 text-[#13ec6d]" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">No deals found</h3>
-          <p className="text-gray-600 mb-6">
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No deals found</h3>
+          <p className="text-slate-500 mb-6">
             {search || filter !== 'all' 
               ? 'Try adjusting your filters or search terms' 
               : 'Get started by creating your first deal from a contact'}
@@ -1088,7 +1085,7 @@ export default function SalesDealsPage() {
           {!search && filter === 'all' && (
             <button
               onClick={goToContacts}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all hover:scale-105 inline-flex items-center gap-2"
+              className="px-6 py-3 bg-[#13ec6d] text-[#102218] rounded-xl font-semibold shadow-[0_0_20px_rgba(19,236,109,0.3)] hover:shadow-[0_0_30px_rgba(19,236,109,0.5)] transition-all inline-flex items-center gap-2"
             >
               <Users className="w-5 h-5" />
               <span>Go to Contact Directory</span>
@@ -1099,7 +1096,7 @@ export default function SalesDealsPage() {
       )}
 
       {!loading && !showArchive && filtered.length > 0 && (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filtered.map(d => (
                   <DealCard
                     key={d.id}
@@ -1128,26 +1125,26 @@ export default function SalesDealsPage() {
       {!loading && showArchive && canViewArchive && (
         <>
           {filteredArchived.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Archive className="w-10 h-10 text-gray-400" />
+            <div className="bg-white/70 dark:bg-[#102218]/70 backdrop-blur-xl rounded-2xl shadow-sm border border-white/40 dark:border-[#13ec6d]/10 p-12 text-center">
+              <div className="w-20 h-20 bg-slate-200/60 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Archive className="w-10 h-10 text-slate-500" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No archived deals</h3>
-              <p className="text-gray-600">{search ? 'Try adjusting your search terms' : 'Archived deals will appear here'}</p>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No archived deals</h3>
+              <p className="text-slate-500">{search ? 'Try adjusting your search terms' : 'Archived deals will appear here'}</p>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="bg-white/70 dark:bg-[#102218]/70 backdrop-blur-xl border border-yellow-200/60 dark:border-yellow-500/30 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+                <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-semibold text-yellow-900">Archive View</p>
-                  <p className="text-sm text-yellow-700 mt-1">
+                  <p className="text-sm font-semibold text-yellow-600">Archive View</p>
+                  <p className="text-sm text-yellow-500 mt-1">
                     You are viewing archived deals. These deals are hidden from the main view but can be restored at any time.
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredArchived.map(d => (
                   <ArchivedDealCard
                     key={d.id}
@@ -1310,36 +1307,36 @@ export default function SalesDealsPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
 
 function StatCard({ title, value, icon: Icon, color, subtitle }) {
-  const colorClasses = {
-    blue: 'from-blue-500 to-blue-600 shadow-blue-500/30',
-    green: 'from-green-500 to-green-600 shadow-green-500/30',
-    purple: 'from-purple-500 to-purple-600 shadow-purple-500/30',
-    yellow: 'from-yellow-500 to-yellow-600 shadow-yellow-500/30',
-    gray: 'from-gray-500 to-gray-600 shadow-gray-500/30',
+  const accentClasses = {
+    blue: 'text-blue-600 bg-blue-100',
+    green: 'text-emerald-600 bg-emerald-100',
+    purple: 'text-purple-600 bg-purple-100',
+    yellow: 'text-amber-600 bg-amber-100',
+    gray: 'text-slate-600 bg-slate-200',
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all">
+    <div className="glass-card bg-white/70 dark:bg-[#102218]/70 backdrop-blur-xl border border-white/40 dark:border-[#13ec6d]/10 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
       <div className="flex items-start justify-between mb-4">
-        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colorClasses[color]} flex items-center justify-center shadow-lg`}>
-          <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
+        <div className={`w-11 h-11 rounded-xl ${accentClasses[color]} flex items-center justify-center`}>
+          <Icon className="w-5 h-5" strokeWidth={2.5} />
         </div>
       </div>
-      <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-      <p className="text-2xl lg:text-3xl font-bold text-gray-900">{value}</p>
-      {subtitle && <p className="text-xs text-gray-500 mt-2">{subtitle}</p>}
+      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">{title}</p>
+      <p className="text-2xl lg:text-3xl font-black text-slate-900 dark:text-white">{value}</p>
+      {subtitle && <p className="text-xs text-slate-500 mt-2">{subtitle}</p>}
     </div>
   );
 }
 
 function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, onViewHistory, userRole, canModify, pipelineStages }) {
   const status = getStageByValue(pipelineStages, deal.status);
-  const StatusIcon = STATUS_ICON_MAP[deal.status] || TrendingUp;
   const colorClass = getStageColorClass(pipelineStages, deal.status);
   const priorityMeta = getPriorityBadge(deal.leadPriority);
   const missingFields = getMissingRequiredFields(deal, pipelineStages);
@@ -1347,62 +1344,88 @@ function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, onViewHist
   const missingSummary = missingLabels.length > 2
     ? `${missingLabels.slice(0, 2).join(', ')} +${missingLabels.length - 2}`
     : missingLabels.join(', ');
+  const stageIndex = Array.isArray(pipelineStages)
+    ? pipelineStages.findIndex(stage => stage.value === deal.status)
+    : -1;
+  const stageProgress = stageIndex >= 0 && pipelineStages.length > 1
+    ? Math.round((stageIndex / (pipelineStages.length - 1)) * 100)
+    : 0;
+  const stageLabel = status?.label || deal.status || 'Unknown';
+  const dealRef = deal.dealId || deal.referenceId || deal.id || '';
+  const dealRefLabel = dealRef ? `#${dealRef.slice(-6).toUpperCase()}` : null;
+  const stageColor = status?.color || 'gray';
+  const accentMap = {
+    blue: 'border-l-blue-400',
+    green: 'border-l-emerald-400',
+    yellow: 'border-l-amber-400',
+    red: 'border-l-red-400',
+    purple: 'border-l-purple-400',
+    gray: 'border-l-slate-300'
+  };
+  const accentClass = accentMap[stageColor] || accentMap.gray;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition-all">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex-1 space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center flex-shrink-0">
-              <Briefcase className="w-6 h-6 text-gray-600" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-gray-900 truncate">{deal.businessName}</h3>
-              <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
-                <Users className="w-4 h-4" />
-                {deal.contactPerson}
-              </p>
-            </div>
+    <div className={`bg-white/70 dark:bg-[#102218]/70 backdrop-blur-xl border border-white/40 dark:border-[#13ec6d]/10 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all border-l-4 ${accentClass}`}>
+      <div className="flex justify-between items-start mb-6">
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+            <Briefcase className="w-6 h-6 text-slate-500" />
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+          <div>
+            <h4 className="font-black text-lg text-slate-900 dark:text-white leading-tight">{deal.businessName}</h4>
+            {dealRefLabel && (
+              <p className="text-xs font-bold text-slate-400">ID: {dealRefLabel}</p>
+            )}
+          </div>
+        </div>
+        <span className={`px-2 py-1 rounded text-[10px] uppercase font-black tracking-tighter border ${colorClass}`}>
+          {stageLabel}
+        </span>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <div className="flex justify-between text-xs font-bold mb-1">
+            <span className="text-slate-500">{stageLabel}</span>
+            <span className="text-[#13ec6d]">{stageProgress}%</span>
+          </div>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full">
+            <div className="bg-[#13ec6d] h-full rounded-full" style={{ width: `${stageProgress}%` }}></div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+          {deal.contactPerson && (
             <span className="flex items-center gap-1">
-              <Phone className="w-4 h-4" />
+              <Users className="w-3.5 h-3.5" />
+              {deal.contactPerson}
+            </span>
+          )}
+          {deal.phoneNumber && (
+            <span className="flex items-center gap-1">
+              <Phone className="w-3.5 h-3.5" />
               {deal.phoneNumber}
             </span>
-            {deal.createdByName && (
-              <span className="flex items-center gap-1">
-                <Users className="w-4 h-4" />
-                by {deal.createdByName}
-              </span>
-            )}
-            {deal.ownerName && (
-              <span className="flex items-center gap-1">
-                <UserCheck className="w-4 h-4" />
-                Owner: {deal.ownerName}
-              </span>
-            )}
-            {Array.isArray(deal.sharedWith) && deal.sharedWith.length > 0 && (
-              <span className="flex items-center gap-1">
-                <Users className="w-4 h-4" />
-                Shared: {deal.sharedWith.length}
-              </span>
-            )}
-          </div>
-          {deal.sourceContactId && (
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold flex items-center gap-1">
-                <Users className="w-3 h-3" />
-                From Contact Directory
-              </span>
-            </div>
           )}
-          {deal.notes && (
-            <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 border border-gray-200">
-              💬 {deal.notes}
-            </p>
+          {deal.ownerName && (
+            <span className="flex items-center gap-1">
+              <UserCheck className="w-3.5 h-3.5" />
+              Owner: {deal.ownerName}
+            </span>
+          )}
+          {Array.isArray(deal.sharedWith) && deal.sharedWith.length > 0 && (
+            <span className="flex items-center gap-1">
+              <Users className="w-3.5 h-3.5" />
+              Shared: {deal.sharedWith.length}
+            </span>
           )}
         </div>
-        <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-4">
+
+        <div className="flex justify-between items-end pt-2">
+          <div>
+            <p className="text-xs text-slate-500 font-bold uppercase">Deal Value</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white">{formatCurrency(deal.price || 0)}</p>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${priorityMeta.color}`}>
               {priorityMeta.label} • {deal.leadScore ?? 0}
@@ -1413,18 +1436,26 @@ function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, onViewHist
               </span>
             )}
           </div>
-          <div className="text-left sm:text-center lg:text-right">
-            <p className="text-sm text-gray-600 mb-1">Deal Value</p>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(deal.price || 0)}</p>
-          </div>
-          <div className={`px-4 py-2 rounded-xl font-semibold text-sm border flex items-center gap-2 ${colorClass}`}>
-            <StatusIcon className="w-4 h-4" strokeWidth={2.5} />
-            {status?.label || deal.status}
-          </div>
         </div>
+
+        {deal.notes && (
+          <p className="text-sm text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-900/50 rounded-lg p-3 border border-white/40 dark:border-[#13ec6d]/10">
+            💬 {deal.notes}
+          </p>
+        )}
+
+        {deal.sourceContactId && (
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              From Contact Directory
+            </span>
+          </div>
+        )}
       </div>
-      <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap gap-2">
-        <button onClick={onViewProfile} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg font-medium transition-all">
+
+      <div className="mt-5 pt-4 border-t border-slate-200/70 dark:border-slate-800/60 flex flex-wrap gap-2">
+        <button onClick={onViewProfile} className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-all">
           <Eye className="w-4 h-4" />
           <span>View Profile</span>
         </button>
@@ -1440,7 +1471,7 @@ function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, onViewHist
               <Edit className="w-4 h-4" />
               <span>Edit</span>
             </button>
-            <button onClick={onArchive} className="flex items-center gap-2 px-4 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-600 rounded-lg font-medium transition-all">
+            <button onClick={onArchive} className="flex items-center gap-2 px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg font-medium transition-all">
               <Archive className="w-4 h-4" />
               <span>Archive</span>
             </button>
@@ -1459,77 +1490,80 @@ function DealCard({ deal, onEdit, onArchive, onDelete, onViewProfile, onViewHist
 
 function ArchivedDealCard({ deal, onRestore, onDelete, onViewProfile, onViewHistory, pipelineStages }) {
   const status = getStageByValue(pipelineStages, deal.status);
-  const StatusIcon = STATUS_ICON_MAP[deal.status] || TrendingUp;
   const colorClass = getStageColorClass(pipelineStages, deal.status);
 
   return (
-    <div className="bg-gray-50 rounded-2xl shadow-sm border-2 border-gray-300 p-6 hover:shadow-lg transition-all">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex-1 space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center flex-shrink-0">
-              <Archive className="w-6 h-6 text-gray-600" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-lg font-bold text-gray-900 truncate">{deal.businessName}</h3>
-                <span className="px-2 py-1 bg-gray-200 text-gray-700 rounded-lg text-xs font-bold">ARCHIVED</span>
-              </div>
-              <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
-                <Users className="w-4 h-4" />
-                {deal.contactPerson}
-              </p>
-            </div>
+    <div className="bg-white/70 dark:bg-[#102218]/70 backdrop-blur-xl border border-white/40 dark:border-[#13ec6d]/10 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
+      <div className="flex justify-between items-start mb-6">
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+            <Archive className="w-6 h-6 text-slate-500" />
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+          <div>
+            <h4 className="font-black text-lg text-slate-900 dark:text-white leading-tight">{deal.businessName}</h4>
+            <p className="text-xs font-bold text-slate-400">ARCHIVED</p>
+          </div>
+        </div>
+        <span className={`px-2 py-1 rounded text-[10px] uppercase font-black tracking-tighter border ${colorClass}`}>
+          {status?.label || deal.status}
+        </span>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+          {deal.contactPerson && (
             <span className="flex items-center gap-1">
-              <Phone className="w-4 h-4" />
+              <Users className="w-3.5 h-3.5" />
+              {deal.contactPerson}
+            </span>
+          )}
+          {deal.phoneNumber && (
+            <span className="flex items-center gap-1">
+              <Phone className="w-3.5 h-3.5" />
               {deal.phoneNumber}
             </span>
-            {deal.archivedByName && (
-              <span className="flex items-center gap-1">
-                <Archive className="w-4 h-4" />
-                Archived by {deal.archivedByName}
-              </span>
-            )}
-          </div>
-          {deal.sourceContactId && (
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-lg text-xs font-semibold flex items-center gap-1 border border-purple-200">
-                <Users className="w-3 h-3" />
-                From Contact Directory
-              </span>
-            </div>
           )}
-          {deal.notes && (
-            <p className="text-sm text-gray-600 bg-white rounded-lg p-3 border border-gray-300">
-              💬 {deal.notes}
-            </p>
+          {deal.archivedByName && (
+            <span className="flex items-center gap-1">
+              <Archive className="w-3.5 h-3.5" />
+              Archived by {deal.archivedByName}
+            </span>
           )}
         </div>
-        <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-4">
-          <div className="text-left sm:text-center lg:text-right">
-            <p className="text-sm text-gray-600 mb-1">Deal Value</p>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(deal.price || 0)}</p>
-          </div>
-          <div className={`px-4 py-2 rounded-xl font-semibold text-sm border flex items-center gap-2 ${colorClass}`}>
-            <StatusIcon className="w-4 h-4" strokeWidth={2.5} />
-            {status?.label || deal.status}
-          </div>
+
+        <div>
+          <p className="text-xs text-slate-500 font-bold uppercase">Deal Value</p>
+          <p className="text-2xl font-black text-slate-900 dark:text-white">{formatCurrency(deal.price || 0)}</p>
         </div>
+
+        {deal.sourceContactId && (
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-lg text-xs font-semibold flex items-center gap-1 border border-purple-200">
+              <Users className="w-3 h-3" />
+              From Contact Directory
+            </span>
+          </div>
+        )}
+
+        {deal.notes && (
+          <p className="text-sm text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-900/50 rounded-lg p-3 border border-white/40 dark:border-[#13ec6d]/10">
+            💬 {deal.notes}
+          </p>
+        )}
       </div>
-      <div className="mt-4 pt-4 border-t border-gray-300 flex flex-wrap gap-2">
-        <button onClick={onViewProfile} className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 rounded-lg font-medium transition-all">
+
+      <div className="mt-5 pt-4 border-t border-slate-200/70 dark:border-slate-800/60 flex flex-wrap gap-2">
+        <button onClick={onViewProfile} className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-all">
           <Eye className="w-4 h-4" />
           <span>View Profile</span>
         </button>
         {deal.editHistory && deal.editHistory.length > 0 && (
-          <button onClick={onViewHistory} className="flex items-center gap-2 px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg font-medium transition-all border border-purple-200">
+          <button onClick={onViewHistory} className="flex items-center gap-2 px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg font-medium transition-all">
             <Clock className="w-4 h-4" />
             <span>History ({deal.editHistory.length})</span>
           </button>
         )}
-        <button onClick={onRestore} className="flex items-center gap-2 px-4 py-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg font-medium transition-all border border-green-200">
+        <button onClick={onRestore} className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg font-medium transition-all">
           <ArchiveRestore className="w-4 h-4" />
           <span>Restore</span>
         </button>

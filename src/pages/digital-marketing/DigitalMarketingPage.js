@@ -25,7 +25,17 @@ import {
   Database,
   History,
   Mail,
-  Zap
+  Zap,
+  LayoutGrid,
+  Settings,
+  Shield,
+  Sliders,
+  Sparkles,
+  Search,
+  Plus,
+  Sun,
+  Moon,
+  CheckSquare
 } from 'lucide-react';
 
 const MODULES = [
@@ -430,36 +440,72 @@ const COLLECTION_BY_KEY = {
   'meeting-notes': 'dm_meeting_notes'
 };
 
+const MODULE_ICONS = {
+  onboarding: Users,
+  'campaign-briefs': FileText,
+  approvals: CheckCircle2,
+  'content-calendar': Calendar,
+  'asset-library': Database,
+  'performance-dashboard': BarChart3,
+  'utm-builder': LinkIcon,
+  reporting: Mail,
+  'kpi-scorecard': TrendingUp,
+  'client-portal': Users,
+  'change-requests': History,
+  'meeting-notes': MessageSquare
+};
+
 const FIELD_DEFS = {
   onboarding: [
-    { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
-    { name: 'projectName', label: 'Project', type: 'text', placeholder: 'Onboarding project' },
-    { name: 'owner', label: 'Owner', type: 'text', placeholder: 'Owner' },
-    { name: 'status', label: 'Stage', type: 'select', options: ['intake', 'assets', 'access', 'kickoff', 'complete'] },
-    { name: 'dueDate', label: 'Due Date', type: 'date' },
-    { name: 'checklist', label: 'Checklist', type: 'textarea', placeholder: 'One item per line' },
+    { name: 'clientName', label: 'Company Name', type: 'text', placeholder: 'Client/company name' },
+    { name: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g., SaaS, Retail' },
+    { name: 'contactPerson', label: 'Contact Person', type: 'text', placeholder: 'Primary contact' },
+    { name: 'email', label: 'Email', type: 'email', placeholder: 'name@company.com' },
+    { name: 'phone', label: 'Phone', type: 'text', placeholder: '+1 555 000 0000' },
+    { name: 'contractStartDate', label: 'Contract Start Date', type: 'date' },
+    { name: 'budget', label: 'Budget', type: 'number', placeholder: 'Monthly budget' },
+    { name: 'goals', label: 'Goals', type: 'textarea', placeholder: 'Primary goals' },
+    { name: 'targetAudience', label: 'Target Audience', type: 'textarea', placeholder: 'Who we are targeting' },
+    { name: 'platforms', label: 'Platforms', type: 'text', placeholder: 'Meta, Google, TikTok' },
+    { name: 'brandAssetsUrl', label: 'Brand Assets Link', type: 'url', placeholder: 'Drive/Dropbox link' },
+    { name: 'contractDocsUrl', label: 'Contract Documents', type: 'url', placeholder: 'Contract link' },
+    { name: 'owner', label: 'Account Manager', type: 'text', placeholder: 'Assigned owner' },
+    { name: 'status', label: 'Status', type: 'select', options: ['pending', 'active', 'completed'] },
+    { name: 'progress', label: 'Progress %', type: 'number', placeholder: '0 - 100' },
+    { name: 'month', label: 'Monthly Plan', type: 'text', placeholder: 'e.g., Sep 2024' },
+    { name: 'checklist', label: 'Onboarding Checklist', type: 'textarea', placeholder: 'One item per line' },
     { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Extra context' }
   ],
   'campaign-briefs': [
     { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
-    { name: 'campaignName', label: 'Campaign', type: 'text', placeholder: 'Campaign name' },
-    { name: 'objective', label: 'Goal', type: 'text', placeholder: 'Primary goal' },
-    { name: 'audience', label: 'Audience', type: 'text', placeholder: 'Target audience' },
+    { name: 'campaignName', label: 'Campaign Name', type: 'text', placeholder: 'Campaign name' },
+    { name: 'objective', label: 'Objective', type: 'text', placeholder: 'Primary objective' },
     { name: 'budget', label: 'Budget', type: 'number', placeholder: 'Budget' },
-    { name: 'channels', label: 'Channels', type: 'text', placeholder: 'Meta, Google, TikTok...' },
-    { name: 'kpis', label: 'KPIs', type: 'text', placeholder: 'CTR, CPL, CAC...' },
+    { name: 'duration', label: 'Duration', type: 'text', placeholder: 'e.g., 6 weeks' },
+    { name: 'audience', label: 'Target Audience', type: 'textarea', placeholder: 'Audience definition' },
+    { name: 'platforms', label: 'Platforms', type: 'text', placeholder: 'Meta, Google, TikTok...' },
+    { name: 'creativeConcept', label: 'Creative Concept', type: 'textarea', placeholder: 'Core creative direction' },
+    { name: 'kpiTargets', label: 'KPI Targets', type: 'text', placeholder: 'CTR, CPL, ROAS...' },
     { name: 'startDate', label: 'Start Date', type: 'date' },
     { name: 'endDate', label: 'End Date', type: 'date' },
-    { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Creative direction, constraints, etc.' }
+    { name: 'version', label: 'Version', type: 'text', placeholder: 'v1.0' },
+    { name: 'approvalStatus', label: 'Approval Status', type: 'select', options: ['draft', 'pending', 'approved', 'live', 'completed'] },
+    { name: 'status', label: 'Status Tag', type: 'select', options: ['draft', 'pending_approval', 'approved', 'live', 'completed'] },
+    { name: 'attachments', label: 'Creative Files Link', type: 'url', placeholder: 'Drive/Dropbox link' },
+    { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Constraints, notes, approvals' }
   ],
   approvals: [
     { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
-    { name: 'assetName', label: 'Asset', type: 'text', placeholder: 'Creative title' },
-    { name: 'assetType', label: 'Type', type: 'select', options: ['creative', 'copy', 'landing page', 'video', 'email'] },
+    { name: 'campaignName', label: 'Campaign', type: 'text', placeholder: 'Campaign name' },
+    { name: 'assetName', label: 'Asset Name', type: 'text', placeholder: 'Creative title' },
+    { name: 'assetType', label: 'Asset Type', type: 'select', options: ['creative', 'copy', 'landing page', 'video', 'email', 'ad set'] },
     { name: 'reviewer', label: 'Reviewer', type: 'text', placeholder: 'Reviewer' },
-    { name: 'status', label: 'Status', type: 'select', options: ['draft', 'in_review', 'approved', 'revisions'] },
+    { name: 'requestedBy', label: 'Requested By', type: 'text', placeholder: 'Requester' },
+    { name: 'status', label: 'Status', type: 'select', options: ['pending', 'in_review', 'approved', 'rejected', 'revisions'] },
     { name: 'dueDate', label: 'Due Date', type: 'date' },
-    { name: 'feedback', label: 'Feedback', type: 'textarea', placeholder: 'Client notes' }
+    { name: 'assetLink', label: 'Asset Link', type: 'url', placeholder: 'Preview link' },
+    { name: 'decisionNotes', label: 'Approval Comment', type: 'textarea', placeholder: 'Approve/reject comments' },
+    { name: 'feedback', label: 'Feedback Log', type: 'textarea', placeholder: 'Client feedback log' }
   ],
   'content-calendar': [
     { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
@@ -468,16 +514,26 @@ const FIELD_DEFS = {
     { name: 'channel', label: 'Channel', type: 'text', placeholder: 'Channel' },
     { name: 'publishDate', label: 'Publish Date', type: 'date' },
     { name: 'publishTime', label: 'Publish Time', type: 'time' },
+    { name: 'caption', label: 'Caption', type: 'textarea', placeholder: 'Post caption' },
+    { name: 'hashtags', label: 'Hashtags', type: 'text', placeholder: '#brand #campaign' },
+    { name: 'cta', label: 'CTA', type: 'text', placeholder: 'Call to action' },
+    { name: 'creativeUrl', label: 'Creative Preview', type: 'url', placeholder: 'Preview link' },
     { name: 'deliverable', label: 'Deliverable', type: 'text', placeholder: 'Asset or post' },
-    { name: 'status', label: 'Status', type: 'select', options: ['planned', 'in_review', 'scheduled', 'published'] },
+    { name: 'status', label: 'Status', type: 'select', options: ['draft', 'scheduled', 'posted', 'paused'] },
+    { name: 'recurring', label: 'Recurring', type: 'select', options: ['none', 'weekly', 'biweekly', 'monthly'] },
     { name: 'owner', label: 'Owner', type: 'text', placeholder: 'Owner' },
     { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Details, links, or notes' }
   ],
   'asset-library': [
     { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
-    { name: 'assetName', label: 'Asset', type: 'text', placeholder: 'Asset name' },
-    { name: 'assetType', label: 'Type', type: 'select', options: ['logo', 'brand guide', 'template', 'creative', 'video', 'copy'] },
+    { name: 'campaignName', label: 'Campaign', type: 'text', placeholder: 'Campaign name' },
+    { name: 'month', label: 'Month', type: 'text', placeholder: 'e.g., Sep 2024' },
+    { name: 'folderPath', label: 'Folder', type: 'text', placeholder: '/Client/Campaign/Month' },
+    { name: 'assetName', label: 'Asset Name', type: 'text', placeholder: 'Asset name' },
+    { name: 'assetType', label: 'Asset Type', type: 'select', options: ['logo', 'brand guide', 'template', 'creative', 'video', 'copy', 'pdf'] },
     { name: 'fileUrl', label: 'File URL', type: 'url', placeholder: 'https://...' },
+    { name: 'previewUrl', label: 'Preview URL', type: 'url', placeholder: 'https://...' },
+    { name: 'version', label: 'Version', type: 'text', placeholder: 'v1.0' },
     { name: 'tags', label: 'Tags', type: 'text', placeholder: 'Brand, campaign, channel' },
     { name: 'status', label: 'Status', type: 'select', options: ['approved', 'draft', 'archived'] },
     { name: 'owner', label: 'Owner', type: 'text', placeholder: 'Owner' },
@@ -485,15 +541,21 @@ const FIELD_DEFS = {
   ],
   'performance-dashboard': [
     { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
+    { name: 'campaignName', label: 'Campaign', type: 'text', placeholder: 'Campaign name' },
     { name: 'period', label: 'Period', type: 'text', placeholder: 'e.g., Sep 2024' },
-    { name: 'spend', label: 'Spend', type: 'number', placeholder: 'Spend' },
-    { name: 'roi', label: 'ROI', type: 'number', placeholder: 'ROI' },
-    { name: 'cpl', label: 'CPL', type: 'number', placeholder: 'CPL' },
-    { name: 'cac', label: 'CAC', type: 'number', placeholder: 'CAC' },
+    { name: 'impressions', label: 'Impressions', type: 'number', placeholder: 'Impressions' },
+    { name: 'reach', label: 'Reach', type: 'number', placeholder: 'Reach' },
     { name: 'ctr', label: 'CTR', type: 'number', placeholder: 'CTR' },
+    { name: 'cpc', label: 'CPC', type: 'number', placeholder: 'CPC' },
+    { name: 'cpa', label: 'CPA', type: 'number', placeholder: 'CPA' },
+    { name: 'roas', label: 'ROAS', type: 'number', placeholder: 'ROAS' },
+    { name: 'conversions', label: 'Conversions', type: 'number', placeholder: 'Conversions' },
+    { name: 'spend', label: 'Spend', type: 'number', placeholder: 'Spend' },
+    { name: 'revenue', label: 'Revenue', type: 'number', placeholder: 'Revenue' },
     { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Insights' }
   ],
   'utm-builder': [
+    { name: 'presetName', label: 'Preset Name', type: 'text', placeholder: 'Naming preset' },
     { name: 'campaignName', label: 'Campaign', type: 'text', placeholder: 'Campaign name' },
     { name: 'source', label: 'Source', type: 'text', placeholder: 'facebook, google' },
     { name: 'medium', label: 'Medium', type: 'text', placeholder: 'cpc, email' },
@@ -501,22 +563,33 @@ const FIELD_DEFS = {
     { name: 'term', label: 'Term', type: 'text', placeholder: 'keyword' },
     { name: 'baseUrl', label: 'Base URL', type: 'url', placeholder: 'https://...' },
     { name: 'utmUrl', label: 'Generated URL', type: 'text', readOnly: true },
+    { name: 'shortUrl', label: 'Short URL', type: 'url', placeholder: 'https://bit.ly/...' },
     { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Notes' }
   ],
   reporting: [
     { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
+    { name: 'campaignName', label: 'Campaign', type: 'text', placeholder: 'Campaign name' },
     { name: 'reportTitle', label: 'Report Title', type: 'text', placeholder: 'Monthly report' },
     { name: 'periodStart', label: 'Period Start', type: 'date' },
     { name: 'periodEnd', label: 'Period End', type: 'date' },
     { name: 'status', label: 'Status', type: 'select', options: ['draft', 'sent'] },
+    { name: 'whiteLabel', label: 'White-label', type: 'select', options: ['yes', 'no'] },
     { name: 'reportLink', label: 'Report Link', type: 'url', placeholder: 'https://...' },
+    { name: 'emailTo', label: 'Email To Client', type: 'text', placeholder: 'client@email.com' },
+    { name: 'commentary', label: 'Commentary', type: 'textarea', placeholder: 'Summary and insights' },
     { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Highlights' }
   ],
   'kpi-scorecard': [
     { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
+    { name: 'period', label: 'Period', type: 'text', placeholder: 'e.g., Sep 2024' },
     { name: 'kpiName', label: 'KPI', type: 'text', placeholder: 'Lead volume' },
     { name: 'target', label: 'Target', type: 'number', placeholder: 'Target' },
     { name: 'actual', label: 'Actual', type: 'number', placeholder: 'Actual' },
+    { name: 'traffic', label: 'Traffic', type: 'number', placeholder: 'Traffic' },
+    { name: 'leads', label: 'Leads', type: 'number', placeholder: 'Leads' },
+    { name: 'revenue', label: 'Revenue', type: 'number', placeholder: 'Revenue' },
+    { name: 'growth', label: 'Growth %', type: 'number', placeholder: 'Growth' },
+    { name: 'status', label: 'Status', type: 'select', options: ['green', 'yellow', 'red'] },
     { name: 'trend', label: 'Trend', type: 'select', options: ['up', 'flat', 'down'] },
     { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Notes' }
   ],
@@ -525,24 +598,33 @@ const FIELD_DEFS = {
     { name: 'deliverable', label: 'Deliverable', type: 'text', placeholder: 'Deliverable' },
     { name: 'status', label: 'Status', type: 'select', options: ['pending', 'in_progress', 'approved', 'delivered'] },
     { name: 'dueDate', label: 'Due Date', type: 'date' },
-    { name: 'link', label: 'Link', type: 'url', placeholder: 'https://...' },
+    { name: 'reportLink', label: 'Report Link', type: 'url', placeholder: 'https://...' },
+    { name: 'approvalLink', label: 'Approval Link', type: 'url', placeholder: 'https://...' },
+    { name: 'calendarLink', label: 'Calendar Link', type: 'url', placeholder: 'https://...' },
     { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Notes' }
   ],
   'change-requests': [
     { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
     { name: 'requestTitle', label: 'Request', type: 'text', placeholder: 'Change request' },
+    { name: 'priority', label: 'Priority', type: 'select', options: ['low', 'medium', 'high', 'urgent'] },
+    { name: 'assignedTo', label: 'Assigned To', type: 'text', placeholder: 'Owner' },
+    { name: 'status', label: 'Status', type: 'select', options: ['open', 'in_progress', 'completed', 'rejected'] },
+    { name: 'deadline', label: 'Deadline', type: 'date' },
     { name: 'scopeChange', label: 'Scope Change', type: 'textarea', placeholder: 'What changed?' },
     { name: 'impactCost', label: 'Impact Cost', type: 'number', placeholder: 'Extra cost' },
     { name: 'impactTimeline', label: 'Timeline Impact', type: 'text', placeholder: 'e.g., +1 week' },
-    { name: 'status', label: 'Status', type: 'select', options: ['review', 'approved', 'rejected'] },
-    { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Notes' }
+    { name: 'attachments', label: 'Attachments', type: 'url', placeholder: 'Link to files' },
+    { name: 'comments', label: 'Comment Thread', type: 'textarea', placeholder: 'Notes and comments' }
   ],
   'meeting-notes': [
     { name: 'clientName', label: 'Client', type: 'text', placeholder: 'Client name' },
     { name: 'meetingDate', label: 'Meeting Date', type: 'date' },
     { name: 'attendees', label: 'Attendees', type: 'text', placeholder: 'Names' },
+    { name: 'agenda', label: 'Agenda', type: 'textarea', placeholder: 'Agenda items' },
     { name: 'summary', label: 'Summary', type: 'textarea', placeholder: 'Key points' },
     { name: 'actionItems', label: 'Action Items', type: 'textarea', placeholder: 'One per line' },
+    { name: 'assignedTo', label: 'Assign Tasks To', type: 'text', placeholder: 'Owner' },
+    { name: 'linkedCampaign', label: 'Linked Campaign', type: 'text', placeholder: 'Campaign name' },
     { name: 'nextMeeting', label: 'Next Meeting', type: 'date' },
     { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Notes' }
   ]
@@ -566,59 +648,75 @@ const buildUtmUrl = (data) => {
   return `${base}${params.toString() ? joiner + params.toString() : ''}`;
 };
 
-const ModuleCard = ({ module }) => (
-  <Link
-    to={`/digital-marketing/${module.key}`}
-    className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-xl"
-  >
-    <div className="flex items-start justify-between gap-3">
-      <div>
-        <p className="text-xs uppercase tracking-widest text-slate-400">Digital Marketing</p>
-        <h3 className="mt-2 text-lg font-semibold text-slate-900">{module.title}</h3>
-        <p className="mt-1 text-sm text-slate-500">{module.subtitle}</p>
+const ModuleCard = ({ module }) => {
+  const Icon = MODULE_ICONS[module.key] || LayoutGrid;
+  return (
+    <Link
+      to={`/digital-marketing/${module.key}`}
+      className="group rounded-2xl border border-white/40 bg-white/80 p-5 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-slate-950/60"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#13ec6d]/20 text-[#0c6f42] dark:text-[#13ec6d]">
+            <Icon className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-widest text-slate-400">Digital Marketing</p>
+            <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{module.title}</h3>
+            <p className="mt-1 text-sm text-slate-500">{module.subtitle}</p>
+          </div>
+        </div>
+        <div className="h-9 w-9 rounded-xl bg-slate-900 text-white flex items-center justify-center group-hover:bg-[#13ec6d] group-hover:text-[#102218] transition-colors">
+          <ArrowRight className="h-4 w-4" />
+        </div>
       </div>
-      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 text-white flex items-center justify-center">
-        <ArrowRight className="h-5 w-5" />
+      <div className="mt-4 flex flex-wrap gap-2">
+        {module.tags.map(tag => (
+          <span key={tag} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-200">
+            {tag}
+          </span>
+        ))}
       </div>
-    </div>
-    <div className="mt-4 flex flex-wrap gap-2">
-      {module.tags.map(tag => (
-        <span key={tag} className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-          {tag}
-        </span>
-      ))}
-    </div>
-  </Link>
-);
+      <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-500">
+        {module.kpis.slice(0, 2).map(kpi => (
+          <div key={kpi.label} className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900/60">
+            <p className="uppercase tracking-widest text-[10px] text-slate-400">{kpi.label}</p>
+            <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{kpi.value}</p>
+          </div>
+        ))}
+      </div>
+    </Link>
+  );
+};
 
 const StatCard = ({ label, value }) => (
-  <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+  <div className="rounded-2xl border border-white/40 bg-white/80 px-5 py-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
     <p className="text-xs uppercase tracking-widest text-slate-400">{label}</p>
-    <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
+    <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{value}</p>
   </div>
 );
 
 const Section = ({ title, icon: Icon, children }) => (
-  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+  <div className="rounded-2xl border border-white/40 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
     <div className="flex items-center gap-3">
       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white">
         <Icon className="h-5 w-5" />
       </div>
-      <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h3>
     </div>
-    <div className="mt-4 text-sm text-slate-600">{children}</div>
+    <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">{children}</div>
   </div>
 );
 
 const IntegrationChip = ({ name }) => (
-  <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
-    <span className="h-2.5 w-2.5 rounded-full bg-teal-500" />
+  <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200">
+    <span className="h-2.5 w-2.5 rounded-full bg-[#13ec6d]" />
     {name}
   </div>
 );
 
 const FieldInput = ({ field, value, onChange }) => {
-  const baseClasses = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-100';
+  const baseClasses = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-[#13ec6d] focus:outline-none focus:ring-2 focus:ring-[#13ec6d]/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100';
   if (field.type === 'textarea') {
     return (
       <textarea
@@ -651,7 +749,7 @@ const FieldInput = ({ field, value, onChange }) => {
       onChange={(e) => onChange(field.name, e.target.value)}
       placeholder={field.placeholder || ''}
       readOnly={field.readOnly}
-      className={`${baseClasses} ${field.readOnly ? 'bg-slate-50 text-slate-500' : ''}`}
+      className={`${baseClasses} ${field.readOnly ? 'bg-slate-50 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400' : ''}`}
     />
   );
 };
@@ -666,6 +764,8 @@ export default function DigitalMarketingPage() {
   const [editingId, setEditingId] = useState(null);
   const [formState, setFormState] = useState({});
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [darkMode, setDarkMode] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fieldDefs = useMemo(() => {
     if (!module) return [];
@@ -680,7 +780,13 @@ export default function DigitalMarketingPage() {
     setEditingId(null);
     setFormOpen(false);
     setCalendarMonth(new Date());
+    setSidebarOpen(false);
   }, [module, fieldDefs]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    setDarkMode(document.documentElement.classList.contains('dark'));
+  }, []);
 
   useEffect(() => {
     if (!module || !collectionName) return;
@@ -802,326 +908,505 @@ export default function DigitalMarketingPage() {
     return cells;
   }, [calendarMonth, eventsByDate, isCalendar]);
 
-  if (!module) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-emerald-50">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-          <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm backdrop-blur">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-widest text-slate-400">Digital Marketing</p>
-                <h1 className="mt-2 text-3xl font-semibold text-slate-900">Agency Operations Studio</h1>
-                <p className="mt-2 text-sm text-slate-500 max-w-2xl">
-                  A structured set of tools for onboarding, campaign planning, approvals, reporting, and client success.
-                </p>
-              </div>
-              <div className="flex items-center gap-3 rounded-2xl bg-slate-900 px-4 py-3 text-white">
-                <Zap className="h-5 w-5" />
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-slate-300">Admin only</p>
-                  <p className="text-sm font-semibold">Full visibility</p>
-                </div>
-              </div>
-            </div>
-          </div>
+  const renderSidebarNav = (isMobile = false) => (
+    <div className={`flex h-full flex-col ${isMobile ? 'px-5 py-6' : 'px-6 py-6'}`}>
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#13ec6d] text-[#102218] shadow-[0_0_20px_rgba(19,236,109,0.3)]">
+          <Zap className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-widest text-slate-400">Digital Marketing</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">Agency OS</p>
+        </div>
+      </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            {MODULES.map(moduleItem => (
-              <ModuleCard key={moduleItem.key} module={moduleItem} />
-            ))}
+      <div className="mt-6">
+        <Link
+          to="/digital-marketing"
+          className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-all ${
+            !module ? 'bg-[#13ec6d]/20 text-[#0c6f42]' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900/60'
+          }`}
+        >
+          <LayoutGrid className="h-4 w-4" />
+          Overview
+        </Link>
+      </div>
+
+      <div className="mt-6 flex-1 space-y-1 overflow-y-auto pr-1">
+        <p className="px-3 text-[10px] uppercase tracking-widest text-slate-400">Modules</p>
+        {MODULES.map(item => {
+          const Icon = MODULE_ICONS[item.key] || LayoutGrid;
+          const isActive = module?.key === item.key;
+          return (
+            <Link
+              key={item.key}
+              to={`/digital-marketing/${item.key}`}
+              className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all ${
+                isActive
+                  ? 'bg-[#13ec6d]/20 text-[#0c6f42] dark:text-[#13ec6d]'
+                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900/60'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {item.title}
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-white/40 bg-white/80 p-4 text-sm text-slate-600 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/60 dark:text-slate-300">
+        <p className="text-xs uppercase tracking-widest text-slate-400">Admin Controls</p>
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <Settings className="h-4 w-4 text-slate-500" />
+            Module Manager
+          </div>
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-slate-500" />
+            Permissions
+          </div>
+          <div className="flex items-center gap-2">
+            <Sliders className="h-4 w-4 text-slate-500" />
+            Branding
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+
+  const headerTitle = module ? module.title : 'Agency Operations Studio';
+  const headerSubtitle = module
+    ? module.description
+    : 'Command center for onboarding, briefs, approvals, performance, and client delivery.';
+
+  const overviewStats = [
+    { label: 'Active Modules', value: MODULES.length },
+    { label: 'Live Clients', value: '38' },
+    { label: 'Monthly Reports', value: '28' }
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-emerald-50">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-        <div className="rounded-3xl border border-slate-200 bg-white/90 p-8 shadow-sm backdrop-blur">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-slate-400">Digital Marketing</p>
-              <h1 className="mt-2 text-3xl font-semibold text-slate-900">{module.title}</h1>
-              <p className="mt-2 text-sm text-slate-500 max-w-2xl">{module.description}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {module.tags.map(tag => (
-                  <span key={tag} className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center gap-3 rounded-2xl bg-slate-900 px-4 py-3 text-white">
-              <CheckCircle2 className="h-5 w-5" />
-              <div>
-                <p className="text-xs uppercase tracking-widest text-slate-300">Status</p>
-                <p className="text-sm font-semibold">Ready for setup</p>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className={darkMode ? 'dark' : ''}>
+      <div className="min-h-screen bg-[#f6f8f7] text-slate-900 dark:bg-[#0b1510] dark:text-slate-100">
+        <aside className="fixed left-0 top-0 hidden h-full w-72 border-r border-white/40 bg-white/80 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/70 lg:block">
+          {renderSidebarNav()}
+        </aside>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          {module.kpis.map(item => (
-            <StatCard key={item.label} label={item.label} value={item.value} />
-          ))}
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-slate-400">Editable Workspace</p>
-              <h3 className="mt-1 text-lg font-semibold text-slate-900">Add and manage records</h3>
-              <p className="text-sm text-slate-500">Track real client work, campaigns, assets, and approvals from here.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setFormOpen(prev => !prev)}
-                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
-              >
-                {formOpen ? 'Close form' : 'Add new'}
-              </button>
-              {editingId && (
-                <button
-                  onClick={handleReset}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
-                >
-                  Cancel edit
-                </button>
-              )}
-            </div>
-          </div>
-
-          {formOpen && (
-            <div className="mt-6 space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                {fieldDefs.map(field => (
-                  <div key={field.name} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
-                    <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                      {field.label}
-                    </label>
-                    <div className="mt-2">
-                      <FieldInput
-                        field={field}
-                        value={formState[field.name] || ''}
-                        onChange={handleFieldChange}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={handleSave}
-                  className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white"
-                >
-                  {editingId ? 'Update' : 'Save'}
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {isCalendar && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-widest text-slate-400">Client Calendar</p>
-                <h3 className="mt-1 text-lg font-semibold text-slate-900">Content calendar</h3>
-                <p className="text-sm text-slate-500">Schedule deliverables with platforms, owners, and status.</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600"
-                >
-                  Prev
-                </button>
-                <span className="text-sm font-semibold text-slate-700">{monthLabel}</span>
-                <button
-                  onClick={() => setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-5 grid grid-cols-7 gap-2 text-xs font-semibold text-slate-400">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="text-center">{day}</div>
-              ))}
-            </div>
-
-            <div className="mt-2 grid grid-cols-7 gap-2">
-              {calendarCells.map((cell, index) => (
-                <div
-                  key={`${cell.dateKey || 'empty'}-${index}`}
-                  className="min-h-[90px] rounded-xl border border-slate-100 bg-slate-50 p-2 text-xs text-slate-600"
-                >
-                  {cell.dayNumber && (
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-slate-700">{cell.dayNumber}</span>
-                      {cell.dateKey && (
-                        <button
-                          onClick={() => {
-                            setFormOpen(true);
-                            setFormState(prev => ({ ...prev, publishDate: cell.dateKey }));
-                          }}
-                          className="text-[10px] text-teal-600"
-                        >
-                          + Add
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  <div className="mt-2 space-y-1">
-                    {cell.events.slice(0, 2).map(event => (
-                      <div key={event.id} className="rounded-lg bg-white px-2 py-1 shadow-sm">
-                        <p className="font-semibold text-slate-700">{event.deliverable || event.campaignName}</p>
-                        <p className="text-[10px] text-slate-400">{event.platform || event.channel}</p>
-                      </div>
-                    ))}
-                    {cell.events.length > 2 && (
-                      <p className="text-[10px] text-slate-400">+{cell.events.length - 2} more</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)}>
+            <aside
+              className="h-full w-72 bg-white/90 shadow-xl backdrop-blur dark:bg-slate-950"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {renderSidebarNav(true)}
+            </aside>
           </div>
         )}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-slate-400">Records</p>
-              <h3 className="mt-1 text-lg font-semibold text-slate-900">Saved entries</h3>
+        <div className="lg:pl-72">
+          <header className="sticky top-0 z-30 border-b border-white/40 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-slate-950/70">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-slate-400">Digital Marketing</p>
+                  <h1 className="text-lg font-semibold text-slate-900 dark:text-white">{headerTitle}</h1>
+                  <p className="text-xs text-slate-500 dark:text-slate-300 max-w-2xl">{headerSubtitle}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative hidden md:block">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    placeholder="Search modules or records"
+                    className="rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2 text-sm text-slate-600 focus:border-[#13ec6d] focus:outline-none focus:ring-2 focus:ring-[#13ec6d]/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                  />
+                </div>
+                {module && (
+                  <button
+                    onClick={() => setFormOpen(prev => !prev)}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#13ec6d] px-4 py-2 text-sm font-semibold text-[#102218] shadow-[0_0_20px_rgba(19,236,109,0.2)]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {formOpen ? 'Close form' : 'Add entry'}
+                  </button>
+                )}
+                <button
+                  onClick={() => setDarkMode(prev => !prev)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
-            <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
-              {items.length}
-            </span>
-          </div>
+          </header>
 
-          {loadingItems ? (
-            <p className="mt-4 text-sm text-slate-500">Loading...</p>
-          ) : items.length === 0 ? (
-            <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
-              No entries yet. Use “Add new” to create one.
-            </div>
-          ) : (
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {items.map(item => {
-                const previewFields = fieldDefs.filter(field => field.type !== 'textarea' && field.name !== 'notes').slice(0, 4);
-                return (
-                  <div key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">{item.title || item.campaignName || item.assetName || item.reportTitle || item.requestTitle || item.deliverable || 'Untitled'}</p>
-                        <p className="text-xs text-slate-400">{item.clientName || 'No client set'}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => handleEdit(item)} className="text-xs font-semibold text-teal-600">Edit</button>
-                        <button onClick={() => handleDelete(item.id)} className="text-xs font-semibold text-rose-500">Delete</button>
+          <main className="mx-auto max-w-6xl px-6 py-8 space-y-8">
+            {!module && (
+              <>
+                <div className="rounded-3xl border border-white/40 bg-white/80 p-8 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
+                  <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-slate-400">Strategy View</p>
+                      <h2 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">Digital Marketing Control Room</h2>
+                      <p className="mt-2 text-sm text-slate-500 dark:text-slate-300 max-w-2xl">
+                        Manage onboarding, briefs, approvals, reporting, and client delivery in a single place. Everything is editable, auditable, and tied to a client.
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-slate-900 px-4 py-3 text-white">
+                      <p className="text-xs uppercase tracking-widest text-slate-300">Access</p>
+                      <p className="text-sm font-semibold">Admin Workspace</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  {overviewStats.map(stat => (
+                    <StatCard key={stat.label} label={stat.label} value={stat.value} />
+                  ))}
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  {MODULES.map(moduleItem => (
+                    <ModuleCard key={moduleItem.key} module={moduleItem} />
+                  ))}
+                </div>
+
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <Section title="Admin Control Panel" icon={Settings}>
+                    <ul className="space-y-2">
+                      <li className="flex items-center gap-2">
+                        <Sliders className="h-4 w-4 text-slate-500" />
+                        Customize sidebar items, branding, and KPI metrics.
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-slate-500" />
+                        Manage role-based access, team permissions, and client portal rules.
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Database className="h-4 w-4 text-slate-500" />
+                        Backup data and enable monthly archiving policies.
+                      </li>
+                    </ul>
+                  </Section>
+
+                  <Section title="Data Structure" icon={Database}>
+                    <ul className="space-y-2">
+                      <li className="flex items-center gap-2">
+                        <CheckSquare className="h-4 w-4 text-[#13ec6d]" />
+                        Campaigns link to clients, months, assets, and reports.
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckSquare className="h-4 w-4 text-[#13ec6d]" />
+                        Everything is filterable, editable, and audit-ready.
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckSquare className="h-4 w-4 text-[#13ec6d]" />
+                        API-ready structure for future integrations.
+                      </li>
+                    </ul>
+                  </Section>
+                </div>
+              </>
+            )}
+
+            {module && (
+              <>
+                <div className="rounded-3xl border border-white/40 bg-white/80 p-8 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-slate-400">Module Overview</p>
+                      <h2 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{module.title}</h2>
+                      <p className="mt-2 text-sm text-slate-500 dark:text-slate-300 max-w-2xl">{module.description}</p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {module.tags.map(tag => (
+                          <span key={tag} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                            {tag}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                    <div className="mt-3 space-y-1 text-xs text-slate-500">
-                      {previewFields.map(field => (
-                        <div key={field.name} className="flex items-center justify-between gap-2">
-                          <span className="uppercase tracking-widest text-[10px] text-slate-400">{field.label}</span>
-                          <span className="text-slate-600">{item[field.name] || '—'}</span>
+                    <div className="flex items-center gap-3 rounded-2xl bg-slate-900 px-4 py-3 text-white">
+                      <Sparkles className="h-5 w-5" />
+                      <div>
+                        <p className="text-xs uppercase tracking-widest text-slate-300">Status</p>
+                        <p className="text-sm font-semibold">Operational</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  {module.kpis.map(item => (
+                    <StatCard key={item.label} label={item.label} value={item.value} />
+                  ))}
+                </div>
+
+                <div className="rounded-2xl border border-white/40 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-slate-400">Editable Workspace</p>
+                      <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Add and manage records</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-300">Track real client work, campaigns, assets, and approvals from here.</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setFormOpen(prev => !prev)}
+                        className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                      >
+                        {formOpen ? 'Close form' : 'Add new'}
+                      </button>
+                      {editingId && (
+                        <button
+                          onClick={handleReset}
+                          className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 dark:border-slate-800 dark:text-slate-300"
+                        >
+                          Cancel edit
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {formOpen && (
+                    <div className="mt-6 space-y-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {fieldDefs.map(field => (
+                          <div key={field.name} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
+                            <label className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                              {field.label}
+                            </label>
+                            <div className="mt-2">
+                              <FieldInput
+                                field={field}
+                                value={formState[field.name] || ''}
+                                onChange={handleFieldChange}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={handleSave}
+                          className="rounded-xl bg-[#13ec6d] px-4 py-2 text-sm font-semibold text-[#102218]"
+                        >
+                          {editingId ? 'Update' : 'Save'}
+                        </button>
+                        <button
+                          onClick={handleReset}
+                          className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 dark:border-slate-800 dark:text-slate-300"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {isCalendar && (
+                  <div className="rounded-2xl border border-white/40 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-widest text-slate-400">Client Calendar</p>
+                        <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Content calendar</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-300">Schedule deliverables with platforms, owners, and status.</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+                          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-300"
+                        >
+                          Prev
+                        </button>
+                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{monthLabel}</span>
+                        <button
+                          onClick={() => setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+                          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-300"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-7 gap-2 text-xs font-semibold text-slate-400">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <div key={day} className="text-center">{day}</div>
+                      ))}
+                    </div>
+
+                    <div className="mt-2 grid grid-cols-7 gap-2">
+                      {calendarCells.map((cell, index) => (
+                        <div
+                          key={`${cell.dateKey || 'empty'}-${index}`}
+                          className="min-h-[90px] rounded-xl border border-slate-100 bg-slate-50 p-2 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300"
+                        >
+                          {cell.dayNumber && (
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-slate-700 dark:text-slate-200">{cell.dayNumber}</span>
+                              {cell.dateKey && (
+                                <button
+                                  onClick={() => {
+                                    setFormOpen(true);
+                                    setFormState(prev => ({ ...prev, publishDate: cell.dateKey }));
+                                  }}
+                                  className="text-[10px] text-[#13ec6d]"
+                                >
+                                  + Add
+                                </button>
+                              )}
+                            </div>
+                          )}
+                          <div className="mt-2 space-y-1">
+                            {cell.events.slice(0, 2).map(event => (
+                              <div key={event.id} className="rounded-lg bg-white px-2 py-1 shadow-sm dark:bg-slate-950">
+                                <p className="font-semibold text-slate-700 dark:text-slate-200">{event.deliverable || event.campaignName}</p>
+                                <p className="text-[10px] text-slate-400">{event.platform || event.channel}</p>
+                              </div>
+                            ))}
+                            {cell.events.length > 2 && (
+                              <p className="text-[10px] text-slate-400">+{cell.events.length - 2} more</p>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                )}
 
-        <div className="grid gap-5 lg:grid-cols-2">
-          <Section title="Workflow" icon={Calendar}>
-            <ol className="space-y-3">
-              {module.workflow.map((step, index) => (
-                <li key={step} className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-teal-500 text-xs font-semibold text-white">
-                    {index + 1}
-                  </span>
-                  <span>{step}</span>
-                </li>
-              ))}
-            </ol>
-          </Section>
+                <div className="rounded-2xl border border-white/40 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-slate-400">Records</p>
+                      <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Saved entries</h3>
+                    </div>
+                    <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
+                      {items.length}
+                    </span>
+                  </div>
 
-          <Section title="Checklist" icon={CheckCircle2}>
-            <ul className="space-y-2">
-              {module.checklist.map(item => (
-                <li key={item} className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </Section>
-        </div>
+                  {loadingItems ? (
+                    <p className="mt-4 text-sm text-slate-500">Loading...</p>
+                  ) : items.length === 0 ? (
+                    <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/60">
+                      No entries yet. Use “Add new” to create one.
+                    </div>
+                  ) : (
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
+                      {items.map(item => {
+                        const previewFields = fieldDefs.filter(field => field.type !== 'textarea' && field.name !== 'notes').slice(0, 4);
+                        const recordTitle = item.title || item.campaignName || item.assetName || item.reportTitle || item.requestTitle || item.deliverable || item.clientName || item.companyName || 'Untitled';
+                        const recordClient = item.clientName || item.companyName || 'No client set';
+                        return (
+                          <div key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-slate-800 dark:text-white">{recordTitle}</p>
+                                <p className="text-xs text-slate-400">{recordClient}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => handleEdit(item)} className="text-xs font-semibold text-[#13ec6d]">Edit</button>
+                                <button onClick={() => handleDelete(item.id)} className="text-xs font-semibold text-rose-500">Delete</button>
+                              </div>
+                            </div>
+                            <div className="mt-3 space-y-1 text-xs text-slate-500">
+                              {previewFields.map(field => (
+                                <div key={field.name} className="flex items-center justify-between gap-2">
+                                  <span className="uppercase tracking-widest text-[10px] text-slate-400">{field.label}</span>
+                                  <span className="text-slate-600 dark:text-slate-300">{item[field.name] || '—'}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
 
-        <div className="grid gap-5 lg:grid-cols-2">
-          <Section title="Automations" icon={Zap}>
-            <ul className="space-y-2">
-              {module.automations.map(item => (
-                <li key={item} className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-slate-900" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </Section>
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <Section title="Workflow" icon={Calendar}>
+                    <ol className="space-y-3">
+                      {module.workflow.map((step, index) => (
+                        <li key={step} className="flex items-start gap-3">
+                          <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#13ec6d] text-xs font-semibold text-[#102218]">
+                            {index + 1}
+                          </span>
+                          <span>{step}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </Section>
 
-          <Section title="Integrations" icon={LinkIcon}>
-            <div className="flex flex-wrap gap-2">
-              {module.integrations.map(item => (
-                <IntegrationChip key={item} name={item} />
-              ))}
-            </div>
-          </Section>
-        </div>
+                  <Section title="Checklist" icon={CheckCircle2}>
+                    <ul className="space-y-2">
+                      {module.checklist.map(item => (
+                        <li key={item} className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-[#13ec6d]" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </Section>
+                </div>
 
-        <Section title="Deliverables" icon={FileText}>
-          <div className="grid gap-3 md:grid-cols-2">
-            {module.checklist.slice(0, 4).map(item => (
-              <div key={item} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                {item}
-              </div>
-            ))}
-            <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500">
-              Add your custom deliverables here.
-            </div>
-          </div>
-        </Section>
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <Section title="Automations" icon={Zap}>
+                    <ul className="space-y-2">
+                      {module.automations.map(item => (
+                        <li key={item} className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-slate-900 dark:bg-slate-200" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </Section>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-slate-400">Next step</p>
-              <h3 className="mt-1 text-lg font-semibold text-slate-900">Customize this module for your team</h3>
-              <p className="text-sm text-slate-500">Adjust workflows, integrations, and templates to match your agency playbook.</p>
-            </div>
-            <Link
-              to="/digital-marketing"
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
-            >
-              Back to overview
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+                  <Section title="Integrations" icon={LinkIcon}>
+                    <div className="flex flex-wrap gap-2">
+                      {module.integrations.map(item => (
+                        <IntegrationChip key={item} name={item} />
+                      ))}
+                    </div>
+                  </Section>
+                </div>
+
+                <Section title="Deliverables" icon={FileText}>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {module.checklist.slice(0, 4).map(item => (
+                      <div key={item} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+                        {item}
+                      </div>
+                    ))}
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/40">
+                      Add your custom deliverables here.
+                    </div>
+                  </div>
+                </Section>
+
+                <div className="rounded-2xl border border-white/40 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/60">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-slate-400">Next step</p>
+                      <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Customize this module for your team</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-300">Adjust workflows, integrations, and templates to match your agency playbook.</p>
+                    </div>
+                    <Link
+                      to="/digital-marketing"
+                      className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                    >
+                      Back to overview
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </div>
+              </>
+            )}
+          </main>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
 import {
   collection,
@@ -440,6 +440,51 @@ export const FinancePage = () => {
     a.click();
   };
 
+  const profitMargin = financialData.totalIncome > 0 
+    ? ((financialData.availableMoney / financialData.totalIncome) * 100).toFixed(1)
+    : 0;
+
+  const recentTransactions = useMemo(() => {
+    const combined = [
+      ...incomes.map((income) => ({
+        id: income.id,
+        type: 'income',
+        title: income.source || 'Income',
+        subtitle: income.description || 'No description',
+        amount: income.amount,
+        date: income.date
+      })),
+      ...expenses.map((expense) => ({
+        id: expense.id,
+        type: 'expense',
+        title: expense.description || 'Expense',
+        subtitle: expense.category || 'Uncategorized',
+        amount: expense.amount,
+        date: expense.date
+      }))
+    ];
+
+    return combined
+      .filter((item) => item.date)
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 6);
+  }, [incomes, expenses]);
+
+  const topExpenseCategories = useMemo(() => {
+    const totals = expenses.reduce((acc, expense) => {
+      const key = expense.category || 'Uncategorized';
+      acc[key] = (acc[key] || 0) + (expense.amount || 0);
+      return acc;
+    }, {});
+
+    return Object.entries(totals)
+      .map(([category, amount]) => ({ category, amount }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 4);
+  }, [expenses]);
+
+  const maxExpenseCategory = topExpenseCategories[0]?.amount || 1;
+
   if (!hasFinanceAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 p-4">
@@ -454,154 +499,122 @@ export const FinancePage = () => {
     );
   }
 
-  const profitMargin = financialData.totalIncome > 0 
-    ? ((financialData.availableMoney / financialData.totalIncome) * 100).toFixed(1)
-    : 0;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-3 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[#f6f8f8] text-slate-800">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 text-white shadow-2xl overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 right-0 w-40 sm:w-64 h-40 sm:h-64 bg-white rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-60 sm:w-96 h-60 sm:h-96 bg-white rounded-full blur-3xl"></div>
-          </div>
-
-          <div className="relative z-10">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <Wallet className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-300" />
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">Finance Management</h1>
-                </div>
-                <p className="text-blue-100 text-sm lg:text-base">Monitor income, expenses, and financial health</p>
-              </div>
-              
+        <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+          <div>
+            <nav className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+              <span>Finance Suite</span>
+              <span className="text-xs">/</span>
+              <span className="text-slate-900 font-semibold">Dashboard</span>
+            </nav>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Finance Dashboard</h1>
+            <p className="text-slate-500 mt-1">Monitor revenue, expenses, and cash flow in one place.</p>
+            <div className="mt-4 flex flex-wrap gap-3">
               <button
                 onClick={fetchFinancialData}
-                className="self-start sm:self-auto px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl flex items-center gap-2 transition-all duration-200"
+                className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-lg font-semibold shadow-sm hover:bg-slate-800 transition"
               >
-                <RefreshCw className="w-5 h-5" />
-                <span className="font-semibold">Refresh</span>
+                <RefreshCw className="w-4 h-4" />
+                <span>Refresh</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('income')}
+                className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 text-slate-700 rounded-lg font-semibold shadow-sm hover:bg-slate-50 transition"
+              >
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                <span>View Income</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('expenses')}
+                className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 text-slate-700 rounded-lg font-semibold shadow-sm hover:bg-slate-50 transition"
+              >
+                <TrendingDown className="w-4 h-4 text-red-500" />
+                <span>View Expenses</span>
               </button>
             </div>
           </div>
-        </div>
+
+          <div className="bg-white/80 p-6 rounded-xl border border-slate-200 shadow-sm min-w-[280px] backdrop-blur">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-slate-500">Cash Balance</span>
+              <Wallet className="text-[#13ecb6]" size={18} />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-extrabold text-[#13ecb6] tracking-tight">
+                {formatCurrency(financialData.availableMoney)}
+              </span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">EGP</span>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-2 uppercase tracking-widest">Live Balance</p>
+          </div>
+        </header>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          
-          {/* Total Income */}
-          <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-500 opacity-0 group-hover:opacity-5 transition-opacity duration-300"></div>
-            
-            <div className="relative p-4 sm:p-6">
-              <div className="flex items-start justify-between mb-3 sm:mb-4">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-500 font-semibold uppercase tracking-wide mb-1">Total Income</p>
-                  <p className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-br from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                    {formatCurrency(financialData.totalIncome)}
-                  </p>
-                </div>
-                
-                <div className="p-2 sm:p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl sm:rounded-2xl shadow-lg transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                  <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-white" strokeWidth={2.5} />
-                </div>
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="relative overflow-hidden group p-6 bg-white/60 backdrop-blur-xl border border-white/60 rounded-xl shadow-sm hover:shadow-xl transition-all">
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#13ecb6]/10 rounded-full blur-2xl group-hover:bg-[#13ecb6]/20 transition-colors"></div>
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-[#13ecb6]/20 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-[#13ecb6]" />
               </div>
-
-              <div className="flex items-center gap-2 text-xs sm:text-sm">
-                <ArrowUpRight className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
-                <span className="text-green-600 font-semibold">{incomes.length} transactions</span>
-              </div>
-
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 to-emerald-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+              <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">
+                {incomes.length} txn
+              </span>
             </div>
+            <h3 className="text-slate-500 text-sm font-medium">Total Income</h3>
+            <p className="text-3xl font-bold mt-1">{formatCurrency(financialData.totalIncome)}</p>
+            <p className="text-[10px] text-slate-400 mt-4 uppercase tracking-wider">All sources</p>
           </div>
 
-          {/* Total Expenses */}
-          <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
-            <div className="absolute inset-0 bg-gradient-to-br from-red-500 to-pink-500 opacity-0 group-hover:opacity-5 transition-opacity duration-300"></div>
-            
-            <div className="relative p-4 sm:p-6">
-              <div className="flex items-start justify-between mb-3 sm:mb-4">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-500 font-semibold uppercase tracking-wide mb-1">Total Expenses</p>
-                  <p className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-br from-red-600 to-pink-600 bg-clip-text text-transparent">
-                    {formatCurrency(financialData.totalExpenses)}
-                  </p>
-                </div>
-                
-                <div className="p-2 sm:p-3 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl sm:rounded-2xl shadow-lg transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                  <TrendingDown className="w-5 h-5 sm:w-6 sm:h-6 text-white" strokeWidth={2.5} />
-                </div>
+          <div className="relative overflow-hidden group p-6 bg-white/60 backdrop-blur-xl border border-white/60 rounded-xl shadow-sm hover:shadow-xl transition-all">
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-red-400/10 rounded-full blur-2xl group-hover:bg-red-400/20 transition-colors"></div>
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-red-400/20 rounded-lg">
+                <TrendingDown className="w-5 h-5 text-red-500" />
               </div>
-
-              <div className="flex items-center gap-2 text-xs sm:text-sm">
-                <ArrowDownRight className="w-3 h-3 sm:w-4 sm:h-4 text-red-500" />
-                <span className="text-red-600 font-semibold">{expenses.length} transactions</span>
-              </div>
-
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-pink-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+              <span className="text-xs font-bold text-red-500 bg-red-500/10 px-2 py-1 rounded-full">
+                {expenses.length} txn
+              </span>
             </div>
+            <h3 className="text-slate-500 text-sm font-medium">Total Expenses</h3>
+            <p className="text-3xl font-bold mt-1">{formatCurrency(financialData.totalExpenses)}</p>
+            <p className="text-[10px] text-slate-400 mt-4 uppercase tracking-wider">Operating costs</p>
           </div>
 
-          {/* Available Money */}
-          <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-5 transition-opacity duration-300"></div>
-            
-            <div className="relative p-4 sm:p-6">
-              <div className="flex items-start justify-between mb-3 sm:mb-4">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-500 font-semibold uppercase tracking-wide mb-1">Available Money</p>
-                  <p className={`text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-br ${financialData.availableMoney >= 0 ? 'from-blue-600 to-indigo-600' : 'from-red-600 to-pink-600'} bg-clip-text text-transparent`}>
-                    {formatCurrency(financialData.availableMoney)}
-                  </p>
-                </div>
-                
-                <div className={`p-2 sm:p-3 bg-gradient-to-br ${financialData.availableMoney >= 0 ? 'from-blue-500 to-indigo-500' : 'from-red-500 to-pink-500'} rounded-xl sm:rounded-2xl shadow-lg transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
-                  <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-white" strokeWidth={2.5} />
-                </div>
+          <div className="relative overflow-hidden group p-6 bg-white/60 backdrop-blur-xl border border-white/60 rounded-xl shadow-sm hover:shadow-xl transition-all">
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-400/10 rounded-full blur-2xl group-hover:bg-emerald-400/20 transition-colors"></div>
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-emerald-400/20 rounded-lg">
+                <Wallet className="w-5 h-5 text-emerald-500" />
               </div>
-
-              <div className="flex items-center gap-2 text-xs sm:text-sm">
-                <DollarSign className={`w-3 h-3 sm:w-4 sm:h-4 ${financialData.availableMoney >= 0 ? 'text-blue-500' : 'text-red-500'}`} />
-                <span className={`${financialData.availableMoney >= 0 ? 'text-blue-600' : 'text-red-600'} font-semibold`}>Net Balance</span>
-              </div>
-
-              <div className={`absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r ${financialData.availableMoney >= 0 ? 'from-blue-500 to-indigo-500' : 'from-red-500 to-pink-500'} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`}></div>
+              <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">
+                Net
+              </span>
             </div>
+            <h3 className="text-slate-500 text-sm font-medium">Net Profit</h3>
+            <p className="text-3xl font-bold mt-1">{formatCurrency(financialData.availableMoney)}</p>
+            <p className="text-[10px] text-slate-400 mt-4 uppercase tracking-wider">After expenses</p>
           </div>
 
-          {/* Profit Margin */}
-          <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 opacity-0 group-hover:opacity-5 transition-opacity duration-300"></div>
-            
-            <div className="relative p-4 sm:p-6">
-              <div className="flex items-start justify-between mb-3 sm:mb-4">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-500 font-semibold uppercase tracking-wide mb-1">Profit Margin</p>
-                  <p className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-br from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                    {profitMargin}%
-                  </p>
-                </div>
-                
-                <div className="p-2 sm:p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl sm:rounded-2xl shadow-lg transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                  <PiggyBank className="w-5 h-5 sm:w-6 sm:h-6 text-white" strokeWidth={2.5} />
-                </div>
+          <div className="relative overflow-hidden group p-6 bg-white/60 backdrop-blur-xl border border-white/60 rounded-xl shadow-sm hover:shadow-xl transition-all">
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-slate-300/20 rounded-full blur-2xl group-hover:bg-slate-300/30 transition-colors"></div>
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-slate-200 rounded-lg">
+                <PiggyBank className="w-5 h-5 text-slate-600" />
               </div>
-
-              <div className="flex items-center gap-2 text-xs sm:text-sm">
-                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
-                <span className="text-purple-600 font-semibold">Health Score</span>
-              </div>
-
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+              <span className="text-xs font-bold text-slate-600 bg-slate-200 px-2 py-1 rounded-full">
+                Health
+              </span>
             </div>
+            <h3 className="text-slate-500 text-sm font-medium">Profit Margin</h3>
+            <p className="text-3xl font-bold mt-1">{profitMargin}%</p>
+            <p className="text-[10px] text-slate-400 mt-4 uppercase tracking-wider">Margin ratio</p>
           </div>
-
-        </div>
+        </section>
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-3 sm:gap-4">
@@ -613,10 +626,10 @@ export const FinancePage = () => {
               setShowTransferForm(false);
               setEditingIncome(null);
             }}
-            className="group relative bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl flex items-center gap-2 sm:gap-3 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-green-500/30 transform hover:scale-105 active:scale-95 text-sm sm:text-base"
+            className="group relative bg-[#13ecb6] hover:bg-[#0fd6a6] text-slate-900 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg flex items-center gap-2 sm:gap-3 transition-all duration-300 shadow-sm hover:shadow-md text-sm sm:text-base font-semibold"
           >
-            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg sm:rounded-xl">
-              <Plus className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.5} />
+            <div className="p-1.5 sm:p-2 bg-white/30 rounded-lg">
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.2} />
             </div>
             <span className="font-semibold">Add Income</span>
           </button>
@@ -628,10 +641,10 @@ export const FinancePage = () => {
               setShowTransferForm(false);
               setEditingExpense(null);
             }}
-            className="group relative bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl flex items-center gap-2 sm:gap-3 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-red-500/30 transform hover:scale-105 active:scale-95 text-sm sm:text-base"
+            className="group relative bg-white hover:bg-slate-50 text-slate-700 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg flex items-center gap-2 sm:gap-3 transition-all duration-300 border border-slate-200 shadow-sm hover:shadow-md text-sm sm:text-base font-semibold"
           >
-            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg sm:rounded-xl">
-              <Plus className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.5} />
+            <div className="p-1.5 sm:p-2 bg-red-50 rounded-lg">
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" strokeWidth={2.2} />
             </div>
             <span className="font-semibold">Add Expense</span>
           </button>
@@ -642,10 +655,10 @@ export const FinancePage = () => {
               setShowIncomeForm(false);
               setShowExpenseForm(false);
             }}
-            className="group relative bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl flex items-center gap-2 sm:gap-3 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-purple-500/30 transform hover:scale-105 active:scale-95 text-sm sm:text-base"
+            className="group relative bg-slate-900 hover:bg-slate-800 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg flex items-center gap-2 sm:gap-3 transition-all duration-300 shadow-sm hover:shadow-md text-sm sm:text-base font-semibold"
           >
-            <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg sm:rounded-xl">
-              <Send className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.5} />
+            <div className="p-1.5 sm:p-2 bg-white/10 rounded-lg">
+              <Send className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.2} />
             </div>
             <span className="font-semibold hidden sm:inline">Transfer to Owner</span>
             <span className="font-semibold sm:hidden">Transfer</span>
@@ -993,33 +1006,33 @@ export const FinancePage = () => {
         )}
 
         {/* Tabs */}
-        <div className="bg-white rounded-2xl shadow-lg p-1.5 sm:p-2 inline-flex gap-1 sm:gap-2">
+        <div className="bg-slate-100/80 border border-slate-200 rounded-lg p-1.5 sm:p-2 inline-flex gap-1 sm:gap-2">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all duration-200 text-sm sm:text-base ${
+            className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-md font-semibold transition-all duration-200 text-sm sm:text-base ${
               activeTab === 'overview'
-                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             Overview
           </button>
           <button
             onClick={() => setActiveTab('income')}
-            className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all duration-200 text-sm sm:text-base ${
+            className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-md font-semibold transition-all duration-200 text-sm sm:text-base ${
               activeTab === 'income'
-                ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             Income
           </button>
           <button
             onClick={() => setActiveTab('expenses')}
-            className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-semibold transition-all duration-200 text-sm sm:text-base ${
+            className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-md font-semibold transition-all duration-200 text-sm sm:text-base ${
               activeTab === 'expenses'
-                ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow-lg'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             Expenses
@@ -1354,83 +1367,160 @@ export const FinancePage = () => {
 
         {/* Overview Section */}
         {activeTab === 'overview' && (
-          <div className="space-y-4 sm:space-y-6 animate-fadeIn">
-            
-            {/* Recent Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              
-              {/* Recent Income */}
-              <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-100">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-green-600" />
-                    Recent Income
-                  </h3>
+          <div className="space-y-6 animate-fadeIn">
+            <section className="bg-white rounded-xl p-6 border border-slate-200">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div>
+                  <h2 className="text-lg font-bold">Revenue vs Expenses</h2>
+                  <p className="text-sm text-slate-500">Financial performance snapshot (last 6 months)</p>
+                </div>
+                <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+                  <button className="px-4 py-1.5 text-xs font-semibold rounded-md bg-white shadow-sm">Monthly</button>
+                  <button className="px-4 py-1.5 text-xs font-semibold rounded-md text-slate-500 hover:text-slate-800">Quarterly</button>
+                </div>
+              </div>
+
+              <div className="relative h-[320px] w-full flex items-end gap-1">
+                <div className="absolute inset-0 flex items-end">
+                  <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+                    <path d="M0 100 L0 60 Q20 40 40 55 T80 30 L100 20 L100 100 Z" fill="url(#gradient-revenue)" opacity="0.12"></path>
+                    <path d="M0 60 Q20 40 40 55 T80 30 L100 20" fill="none" stroke="#13ecb6" strokeWidth="2"></path>
+
+                    <path d="M0 100 L0 80 Q25 75 50 85 T90 70 L100 75 L100 100 Z" fill="url(#gradient-expenses)" opacity="0.12"></path>
+                    <path d="M0 80 Q25 75 50 85 T90 70 L100 75" fill="none" stroke="#94a3b8" strokeDasharray="4 4" strokeWidth="1.5"></path>
+
+                    <defs>
+                      <linearGradient id="gradient-revenue" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#13ecb6"></stop>
+                        <stop offset="100%" stopColor="#13ecb6" stopOpacity="0"></stop>
+                      </linearGradient>
+                      <linearGradient id="gradient-expenses" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#94a3b8"></stop>
+                        <stop offset="100%" stopColor="#94a3b8" stopOpacity="0"></stop>
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </div>
+
+                <div className="absolute bottom-[-24px] w-full flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">
+                  <span>Jan</span>
+                  <span>Feb</span>
+                  <span>Mar</span>
+                  <span>Apr</span>
+                  <span>May</span>
+                  <span>Jun</span>
+                </div>
+
+                <div className="absolute top-8 right-[25%] bg-white shadow-xl border border-slate-200 p-3 rounded-lg flex flex-col gap-1 pointer-events-none">
+                  <p className="text-[10px] text-slate-400 font-bold">MAY</p>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#13ecb6]"></span>
+                      <span className="text-xs font-bold">{formatCurrency(financialData.totalIncome)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                      <span className="text-xs font-bold">{formatCurrency(financialData.totalExpenses)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-10 flex items-center justify-center gap-8">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#13ecb6]"></span>
+                  <span className="text-xs font-medium text-slate-500">Gross Revenue</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-slate-400"></span>
+                  <span className="text-xs font-medium text-slate-500">Operating Expenses</span>
+                </div>
+              </div>
+            </section>
+
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-[#13ecb6]" />
+                    Recent Transactions
+                  </h2>
                   <button
                     onClick={() => setActiveTab('income')}
-                    className="text-sm text-green-600 hover:text-green-700 font-semibold"
+                    className="text-xs font-bold text-[#13ecb6] uppercase tracking-widest hover:underline"
                   >
-                    View All →
+                    View Income
                   </button>
                 </div>
-                
-                <div className="space-y-3">
-                  {incomes.slice(0, 5).map((income) => (
-                    <div key={income.id} className="flex items-center justify-between p-3 bg-green-50 rounded-xl hover:bg-green-100 transition-colors">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 text-sm truncate">{income.source}</p>
-                        <p className="text-xs text-gray-600 truncate">{income.description || 'No description'}</p>
+
+                <div className="space-y-4">
+                  {recentTransactions.map((txn) => {
+                    const isIncome = txn.type === 'income';
+                    return (
+                      <div key={`${txn.type}-${txn.id}`} className="bg-slate-50 border border-slate-100 rounded-lg p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isIncome ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-600'}`}>
+                            {isIncome ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                          </div>
+                          <div>
+                            <div className="font-bold text-sm text-slate-900">{txn.title}</div>
+                            <div className="text-xs text-slate-500">{txn.subtitle}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`font-extrabold text-sm ${isIncome ? 'text-emerald-600' : 'text-slate-700'}`}>
+                            {isIncome ? '+' : '-'}{formatCurrency(txn.amount)}
+                          </div>
+                          <div className="text-[10px] text-slate-400 uppercase">
+                            {new Date(txn.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-right ml-3">
-                        <p className="font-bold text-green-600 text-sm">{formatCurrency(income.amount)}</p>
-                        <p className="text-xs text-gray-500">{new Date(income.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {incomes.length === 0 && (
-                    <p className="text-center text-gray-500 py-8 text-sm">No income records yet</p>
+                    );
+                  })}
+
+                  {recentTransactions.length === 0 && (
+                    <div className="text-center text-slate-500 text-sm py-8">No transactions yet</div>
                   )}
                 </div>
               </div>
 
-              {/* Recent Expenses */}
-              <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-100">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
-                    <TrendingDown className="w-5 h-5 text-red-600" />
-                    Recent Expenses
-                  </h3>
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <PieChart className="w-5 h-5 text-slate-600" />
+                    Top Expense Categories
+                  </h2>
                   <button
                     onClick={() => setActiveTab('expenses')}
-                    className="text-sm text-red-600 hover:text-red-700 font-semibold"
+                    className="text-xs font-bold text-slate-600 uppercase tracking-widest hover:underline"
                   >
-                    View All →
+                    View Expenses
                   </button>
                 </div>
-                
-                <div className="space-y-3">
-                  {expenses.slice(0, 5).map((expense) => (
-                    <div key={expense.id} className="flex items-center justify-between p-3 bg-red-50 rounded-xl hover:bg-red-100 transition-colors">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 text-sm truncate">{expense.description}</p>
-                        <p className="text-xs text-gray-600 truncate">{expense.category || 'Uncategorized'}</p>
+
+                <div className="space-y-4">
+                  {topExpenseCategories.map((item) => (
+                    <div key={item.category} className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-semibold text-slate-700">{item.category}</span>
+                        <span className="font-bold text-slate-900">{formatCurrency(item.amount)}</span>
                       </div>
-                      <div className="text-right ml-3">
-                        <p className="font-bold text-red-600 text-sm">{formatCurrency(expense.amount)}</p>
-                        <p className="text-xs text-gray-500">{new Date(expense.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-slate-700"
+                          style={{ width: `${Math.max((item.amount / maxExpenseCategory) * 100, 6)}%` }}
+                        ></div>
                       </div>
                     </div>
                   ))}
-                  
-                  {expenses.length === 0 && (
-                    <p className="text-center text-gray-500 py-8 text-sm">No expense records yet</p>
+
+                  {topExpenseCategories.length === 0 && (
+                    <div className="text-center text-slate-500 text-sm py-8">No expense data yet</div>
                   )}
                 </div>
               </div>
-
-            </div>
-
+            </section>
           </div>
         )}
 

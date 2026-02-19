@@ -60,6 +60,7 @@ export const CommissionPage = () => {
   const [showForm, setShowForm] = useState(false);
 
   const [search, setSearch] = useState("");
+  const [viewFilter, setViewFilter] = useState("pending");
 
   const [payrollUser, setPayrollUser] = useState("");
 
@@ -328,9 +329,16 @@ export const CommissionPage = () => {
 
       if (isSales && c.userId !== currentUser.uid) return false;
 
+      const status = (c.status || "").toLowerCase();
+      const isPaid = status === "paid" || status === "completed";
+      const isUnpaid = status === "unpaid" || status === "pending" || !status;
+
+      if (viewFilter === "pending" && !isUnpaid) return false;
+      if (viewFilter === "paid" && !isPaid) return false;
+
       return true;
     });
-  }, [commissions, search, isSales, currentUser]);
+  }, [commissions, search, isSales, currentUser, viewFilter]);
 
   /* ---------------- STATS ---------------- */
 
@@ -411,7 +419,7 @@ export const CommissionPage = () => {
               <span className="text-4xl font-extrabold text-emerald-400 tracking-tight">
                 {formatCurrency(stats.totalPending)}
               </span>
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">USD</span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">EGP</span>
             </div>
           </div>
         </header>
@@ -574,9 +582,36 @@ export const CommissionPage = () => {
         <section className="bg-white/70 border border-slate-200 rounded-2xl p-4">
           <div className="flex flex-col lg:flex-row gap-4 justify-between items-center">
             <div className="flex items-center gap-1 p-1 bg-slate-200/60 rounded-lg">
-              <button className="px-6 py-2 text-sm font-bold rounded-md bg-white shadow-sm text-slate-900">Pending</button>
-              <button className="px-6 py-2 text-sm font-bold rounded-md text-slate-500">Paid History</button>
-              <button className="px-6 py-2 text-sm font-bold rounded-md text-slate-500">All Transactions</button>
+              <button
+                onClick={() => setViewFilter("pending")}
+                className={`px-6 py-2 text-sm font-bold rounded-md transition ${
+                  viewFilter === "pending"
+                    ? "bg-white shadow-sm text-slate-900"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Pending
+              </button>
+              <button
+                onClick={() => setViewFilter("paid")}
+                className={`px-6 py-2 text-sm font-bold rounded-md transition ${
+                  viewFilter === "paid"
+                    ? "bg-white shadow-sm text-slate-900"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Paid History
+              </button>
+              <button
+                onClick={() => setViewFilter("all")}
+                className={`px-6 py-2 text-sm font-bold rounded-md transition ${
+                  viewFilter === "all"
+                    ? "bg-white shadow-sm text-slate-900"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                All Transactions
+              </button>
             </div>
             <div className="flex items-center gap-4 w-full lg:w-auto">
               <div className="relative flex-grow lg:w-64">
