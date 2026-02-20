@@ -59,6 +59,11 @@ const PlaybooksPage = React.lazy(() => import('./pages/PlaybooksPage'));
 const HelpCenterPage = React.lazy(() => import('./pages/HelpCenterPage'));
 const SLADashboardPage = React.lazy(() => import('./pages/SLADashboardPage'));
 const DigitalMarketingPage = React.lazy(() => import('./pages/digital-marketing/DigitalMarketingPage'));
+const ClientMarketingProfilePage = React.lazy(() => import('./pages/ClientMarketingProfilePage'));
+const CampaignManagementPage = React.lazy(() => import('./pages/CampaignManagementPage'));
+const CreativeManagementPage = React.lazy(() => import('./pages/CreativeManagementPage'));
+const KPIDashboardPage = React.lazy(() => import('./pages/KPIDashboardPage'));
+const LeadManagementPage = React.lazy(() => import('./pages/LeadManagementPage'));
 
 // Loading fallback component - lightweight for fast rendering
 const LoadingFallback = React.memo(() => (
@@ -193,6 +198,66 @@ const AppContent = React.memo(() => {
             <ProtectedRoute requiredRoles={['admin']}>
               <Suspense fallback={<LoadingFallback />}>
                 <DigitalMarketingPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= MARKETING PROFILES ================= */}
+        <Route
+          path="/marketing/profiles"
+          element={
+            <ProtectedRoute requiredRoles={['admin', 'sales_manager']}>
+              <Suspense fallback={<LoadingFallback />}>
+                <ClientMarketingProfilePage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= CAMPAIGNS ================= */}
+        <Route
+          path="/marketing/campaigns"
+          element={
+            <ProtectedRoute requiredRoles={['admin', 'sales_manager']}>
+              <Suspense fallback={<LoadingFallback />}>
+                <CampaignManagementPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= CREATIVES ================= */}
+        <Route
+          path="/marketing/creatives"
+          element={
+            <ProtectedRoute requiredRoles={['admin', 'sales_manager']}>
+              <Suspense fallback={<LoadingFallback />}>
+                <CreativeManagementPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= KPI DASHBOARD ================= */}
+        <Route
+          path="/marketing/analytics"
+          element={
+            <ProtectedRoute requiredRoles={['admin', 'sales_manager', 'finance_manager']}>
+              <Suspense fallback={<LoadingFallback />}>
+                <KPIDashboardPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= LEADS ================= */}
+        <Route
+          path="/marketing/leads"
+          element={
+            <ProtectedRoute requiredRoles={['admin', 'sales_manager']}>
+              <Suspense fallback={<LoadingFallback />}>
+                <LeadManagementPage />
               </Suspense>
             </ProtectedRoute>
           }

@@ -33,7 +33,8 @@ import {
   Zap,
   LifeBuoy,
   AlertCircle,
-  ClipboardList
+  ClipboardList,
+  Image as ImageIcon
 } from 'lucide-react';
 
 export const Navigation = React.memo(({ userRole }) => {
@@ -123,18 +124,15 @@ export const Navigation = React.memo(({ userRole }) => {
     label: 'Digital Marketing',
     icon: Zap,
     children: [
-      { label: 'Onboarding', path: '/digital-marketing/onboarding', icon: Users },
-      { label: 'Campaign Briefs', path: '/digital-marketing/campaign-briefs', icon: FileText },
-      { label: 'Approvals', path: '/digital-marketing/approvals', icon: CheckSquare },
+      { label: 'Client Profiles', path: '/marketing/profiles', icon: Users },
+      { label: 'Campaigns', path: '/marketing/campaigns', icon: FileText },
+      { label: 'Creatives', path: '/marketing/creatives', icon: ImageIcon },
+      { label: 'Analytics', path: '/marketing/analytics', icon: BarChart3 },
+      { label: 'Leads', path: '/marketing/leads', icon: Users2 },
       { label: 'Content Calendar', path: '/digital-marketing/content-calendar', icon: Calendar },
       { label: 'Asset Library', path: '/digital-marketing/asset-library', icon: Database },
-      { label: 'Performance', path: '/digital-marketing/performance-dashboard', icon: BarChart3 },
-      { label: 'UTM Builder', path: '/digital-marketing/utm-builder', icon: LinkIcon },
       { label: 'Reporting', path: '/digital-marketing/reporting', icon: Mail },
-      { label: 'KPI Scorecard', path: '/digital-marketing/kpi-scorecard', icon: TrendingUp },
-      { label: 'Client Portal', path: '/digital-marketing/client-portal', icon: Users2 },
-      { label: 'Change Requests', path: '/digital-marketing/change-requests', icon: History },
-      { label: 'Meeting Notes', path: '/digital-marketing/meeting-notes', icon: MessageSquare }
+      { label: 'UTM Builder', path: '/digital-marketing/utm-builder', icon: LinkIcon }
     ]
   };
 
@@ -232,6 +230,7 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Reports', path: '/finance/reports', icon: BarChart3 }
         ]
       },
+      digitalMarketingGroup,
       emailTemplatesItem,
       infoGroup
     ],
@@ -255,6 +254,7 @@ export const Navigation = React.memo(({ userRole }) => {
           { label: 'Achievements', path: '/sales/achievements', icon: Trophy }
         ]
       },
+      digitalMarketingGroup,
       {
         label: 'Finance',
         icon: DollarSign,
