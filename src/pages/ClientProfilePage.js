@@ -782,34 +782,40 @@ export default function ClientProfilePage() {
   const statusColorClass = getStageColorClass(pipelineStages, deal.status);
 
   return (
-    <div className="space-y-6 p-6 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
       
-      {/* HEADER */}
-      <div className="flex flex-col gap-4">
+      {/* HEADER WITH ANIMATION */}
+      <div className="flex flex-col gap-4 animate-fade-in">
         <button
           onClick={() => navigate('/sales')}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors w-fit"
+          className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-all hover:-translate-x-1 w-fit font-medium"
         >
           <ArrowLeft className="w-5 h-5" />
-          <span className="font-medium">Back to Sales</span>
+          <span>Back to Sales</span>
         </button>
 
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-gradient-to-r from-white to-emerald-50/50 rounded-3xl p-6 border border-emerald-100/50 shadow-lg shadow-emerald-500/5 backdrop-blur-sm">
           <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <Building2 className="w-8 h-8 text-white" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
+              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-600/30">
+                <Building2 className="w-8 h-8 text-white" />
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">{deal.businessName || 'Unnamed Business'}</h1>
-              <p className="text-gray-600 mt-1 flex items-center gap-2">
-                <User className="w-4 h-4" />
+            <div className="flex-1">
+              <h1 className="text-3xl lg:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-emerald-600">
+                {deal.businessName || 'Unnamed Business'}
+              </h1>
+              <p className="text-gray-600 mt-2 flex items-center gap-2 font-medium">
+                <User className="w-4 h-4 text-emerald-600" />
                 {deal.contactPerson || 'No contact person'}
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <div className={`px-4 py-2 rounded-xl font-semibold text-sm border flex items-center gap-2 ${statusColorClass}`}>
+            <div className={`px-4 py-2 rounded-full font-semibold text-sm border flex items-center gap-2 shadow-md transition-all hover:shadow-lg ${statusColorClass}`}>
               <StatusIcon className="w-4 h-4" strokeWidth={2.5} />
               {status?.label || deal.status}
             </div>
@@ -818,55 +824,57 @@ export default function ClientProfilePage() {
       </div>
 
       {/* OVERVIEW CARDS */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-delay-1">
         
         {/* Client Information */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:border-emerald-200 transition-all duration-300 backdrop-blur-sm hover:-translate-y-1">
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-blue-600" />
+            <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-emerald-600" />
+            </div>
             Client Information
           </h3>
           
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <User className="w-5 h-5 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase">Contact Person</p>
-                <p className="text-sm font-medium text-gray-900">{deal.contactPerson || 'N/A'}</p>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-transparent">
+              <User className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Contact Person</p>
+                <p className="text-sm font-medium text-gray-900 mt-1">{deal.contactPerson || 'N/A'}</p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase">Phone</p>
-                <p className="text-sm font-medium text-gray-900">{deal.phoneNumber || 'N/A'}</p>
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br from-teal-50 to-transparent">
+              <Phone className="w-5 h-5 text-teal-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Phone</p>
+                <p className="text-sm font-medium text-gray-900 mt-1">{deal.phoneNumber || 'N/A'}</p>
               </div>
             </div>
 
             {deal.email && (
-              <div className="flex items-start gap-3">
-                <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase">Email</p>
-                  <p className="text-sm font-medium text-gray-900">{deal.email}</p>
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br from-cyan-50 to-transparent">
+                <Mail className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</p>
+                  <p className="text-sm font-medium text-gray-900 mt-1">{deal.email}</p>
                 </div>
               </div>
             )}
 
-            <div className="flex items-start gap-3">
-              <Users className="w-5 h-5 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase">Created By</p>
-                <p className="text-sm font-medium text-gray-900">{deal.createdByName || 'Unknown'}</p>
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br from-blue-50 to-transparent">
+              <Users className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Created By</p>
+                <p className="text-sm font-medium text-gray-900 mt-1">{deal.createdByName || 'Unknown'}</p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase">Created On</p>
-                <p className="text-sm font-medium text-gray-900">
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-transparent">
+              <Calendar className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Created On</p>
+                <p className="text-sm font-medium text-gray-900 mt-1">
                   {deal.createdAt ? formatDate(deal.createdAt) : 'N/A'}
                 </p>
               </div>
@@ -875,21 +883,23 @@ export default function ClientProfilePage() {
         </div>
 
         {/* Deal Information */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:border-emerald-200 transition-all duration-300 backdrop-blur-sm hover:-translate-y-1">
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-green-600" />
+            <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <Briefcase className="w-5 h-5 text-emerald-600" />
+            </div>
             Deal Information
           </h3>
           
           <div className="space-y-4">
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Deal Value</p>
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(deal.price || 0)}</p>
+            <div className="bg-gradient-to-br from-emerald-50 to-transparent rounded-xl p-4 border border-emerald-100/50">
+              <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Deal Value</p>
+              <p className="text-3xl font-bold text-emerald-600 mt-3">{formatCurrency(deal.price || 0)}</p>
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Status</p>
-              <div className={`inline-flex px-4 py-2 rounded-xl font-semibold text-sm border items-center gap-2 ${statusColorClass}`}>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Status</p>
+              <div className={`inline-flex px-4 py-2 rounded-full font-semibold text-sm border items-center gap-2 shadow-md transition-all ${statusColorClass}`}>
                 <StatusIcon className="w-4 h-4" strokeWidth={2.5} />
                 {status?.label || deal.status}
               </div>
@@ -897,10 +907,10 @@ export default function ClientProfilePage() {
 
             {deal.address && (
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-1">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                   <MapPin className="w-3 h-3" /> Address
                 </p>
-                <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <p className="text-sm text-gray-700 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-xl p-3 border border-gray-200">
                   {deal.address}
                 </p>
               </div>
@@ -908,10 +918,10 @@ export default function ClientProfilePage() {
 
             {deal.ownerName && (
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-1">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                   <Users className="w-3 h-3" /> Owner
                 </p>
-                <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <p className="text-sm text-gray-700 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-xl p-3 border border-gray-200">
                   {deal.ownerName}
                 </p>
               </div>
@@ -919,10 +929,10 @@ export default function ClientProfilePage() {
 
             {deal.teamName && (
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-1">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                   <Users className="w-3 h-3" /> Team
                 </p>
-                <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <p className="text-sm text-gray-700 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-xl p-3 border border-gray-200">
                   {deal.teamName}
                 </p>
               </div>
@@ -931,33 +941,41 @@ export default function ClientProfilePage() {
         </div>
 
         {/* Quick Stats */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:border-emerald-200 transition-all duration-300 backdrop-blur-sm hover:-translate-y-1">
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-purple-600" />
+            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-purple-600" />
+            </div>
             Activity Summary
           </h3>
           
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-100">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-br from-emerald-50 to-emerald-50/50 rounded-xl border border-emerald-100 hover:shadow-md transition-all">
               <div className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-purple-600" />
-                <span className="text-sm font-medium text-gray-700">Total Visits</span>
+                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-emerald-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-700">Total Visits</span>
               </div>
-              <span className="text-2xl font-bold text-purple-600">{visits.length}</span>
+              <span className="text-2xl font-bold text-emerald-600">{visits.length}</span>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-100">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-br from-orange-50 to-orange-50/50 rounded-xl border border-orange-100 hover:shadow-md transition-all">
               <div className="flex items-center gap-3">
-                <Bell className="w-5 h-5 text-orange-600" />
-                <span className="text-sm font-medium text-gray-700">Follow-Ups</span>
+                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-orange-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-700">Follow-Ups</span>
               </div>
               <span className="text-2xl font-bold text-orange-600">{followups.length}</span>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-br from-blue-50 to-blue-50/50 rounded-xl border border-blue-100 hover:shadow-md transition-all">
               <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 text-blue-600" />
-                <span className="text-sm font-medium text-gray-700">Pending</span>
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-700">Pending</span>
               </div>
               <span className="text-2xl font-bold text-blue-600">
                 {followups.filter(f => f.status === 'pending' || f.status === 'overdue').length}
@@ -968,45 +986,52 @@ export default function ClientProfilePage() {
       </div>
 
       {/* HEALTH SCORE */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-emerald-600" />
+      <div className="bg-gradient-to-br from-white to-emerald-50/50 rounded-3xl shadow-lg border border-emerald-100/50 p-8 backdrop-blur-sm hover:shadow-xl transition-all animate-fade-in-delay-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+              <ShieldAlert className="w-6 h-6 text-emerald-600" />
+            </div>
             Health Score
           </h3>
-          <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+          <span className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-md ${
             healthScore.status === 'Healthy'
-              ? 'bg-emerald-50 text-emerald-600'
+              ? 'bg-emerald-100 text-emerald-700'
               : healthScore.status === 'Watch'
-                ? 'bg-yellow-50 text-yellow-700'
-                : 'bg-red-50 text-red-600'
+                ? 'bg-yellow-100 text-yellow-700'
+                : 'bg-red-100 text-red-700'
           }`}>
             {healthScore.status}
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
-            <p className="text-xs font-semibold text-emerald-700 uppercase">Score</p>
-            <p className="text-3xl font-bold text-emerald-700 mt-2">{healthScore.score}</p>
-            <p className="text-xs text-emerald-600 mt-1">Out of 100</p>
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl p-6 hover:shadow-lg transition-all hover:-translate-y-1">
+            <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Health Score</p>
+            <div className="relative mt-4 mb-2">
+              <div className="h-12 bg-gradient-to-r from-emerald-200 to-teal-200 rounded-full flex items-center justify-center">
+                <p className="text-3xl font-black text-emerald-700">{healthScore.score}</p>
+              </div>
+              <div className="absolute inset-0 rounded-full opacity-0 hover:opacity-20 bg-emerald-400 blur-xl"></div>
+            </div>
+            <p className="text-xs text-emerald-600">Out of 100</p>
           </div>
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center justify-between">
+          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl p-6 flex items-center justify-between hover:shadow-lg transition-all hover:-translate-y-1">
             <div>
-              <p className="text-xs font-semibold text-blue-700 uppercase">Trend</p>
-              <p className="text-lg font-bold text-blue-700 mt-2">
-                {healthScore.trend === 'improving' ? 'Improving' : healthScore.trend === 'declining' ? 'Declining' : 'Stable'}
+              <p className="text-xs font-bold text-blue-700 uppercase tracking-wider">Trend</p>
+              <p className="text-lg font-bold text-blue-700 mt-3">
+                {healthScore.trend === 'improving' ? '📈 Improving' : healthScore.trend === 'declining' ? '📉 Declining' : '➡️ Stable'}
               </p>
             </div>
             {healthScore.trend === 'declining' ? (
-              <TrendingDown className="w-8 h-8 text-blue-600" />
+              <TrendingDown className="w-10 h-10 text-blue-600 opacity-20" />
             ) : (
-              <TrendingUp className="w-8 h-8 text-blue-600" />
+              <TrendingUp className="w-10 h-10 text-blue-600 opacity-20" />
             )}
           </div>
-          <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
-            <p className="text-xs font-semibold text-purple-700 uppercase">Last Activity</p>
-            <p className="text-lg font-bold text-purple-700 mt-2">
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-6 hover:shadow-lg transition-all hover:-translate-y-1">
+            <p className="text-xs font-bold text-purple-700 uppercase tracking-wider">Last Activity</p>
+            <p className="text-sm font-semibold text-purple-700 mt-3">
               {deal.lastActivityAt ? formatDateTime(deal.lastActivityAt) : 'N/A'}
             </p>
           </div>
@@ -1014,64 +1039,72 @@ export default function ClientProfilePage() {
       </div>
 
       {/* MEETING PREP */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-xl hover:border-emerald-200 transition-all animate-fade-in-delay-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-blue-600" />
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+              <ClipboardList className="w-5 h-5 text-blue-600" />
+            </div>
             Meeting Prep
           </h3>
-          <span className="text-xs font-semibold text-gray-500">
+          <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
             Last activity: {deal.lastActivityAt ? formatDateTime(deal.lastActivityAt) : 'N/A'}
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-            <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Next Follow-up</p>
+          <div className="bg-gradient-to-br from-blue-50 to-blue-50/50 rounded-2xl p-5 border-2 border-blue-100 hover:shadow-md transition-all hover:-translate-y-1">
+            <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Bell className="w-4 h-4" /> Next Follow-up
+            </p>
             {nextFollowup ? (
               <>
                 <p className="text-sm font-bold text-gray-900">{nextFollowup.nextAction || 'Follow-up'}</p>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-gray-600 mt-2 font-medium">
                   {formatDateTime(nextFollowup.reminderDate)}
                 </p>
               </>
             ) : (
-              <p className="text-sm text-gray-600">No follow-ups scheduled</p>
+              <p className="text-sm text-gray-600 italic">No follow-ups scheduled</p>
             )}
           </div>
 
-          <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
-            <p className="text-xs font-semibold text-purple-700 uppercase mb-2">Last Visit</p>
+          <div className="bg-gradient-to-br from-purple-50 to-purple-50/50 rounded-2xl p-5 border-2 border-purple-100 hover:shadow-md transition-all hover:-translate-y-1">
+            <p className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <MapPin className="w-4 h-4" /> Last Visit
+            </p>
             {lastVisit ? (
               <>
                 <p className="text-sm font-bold text-gray-900">{lastVisit.purpose || 'Client visit'}</p>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-gray-600 mt-2 font-medium">
                   {formatDateTime(lastVisit.visitDate)}
                 </p>
               </>
             ) : (
-              <p className="text-sm text-gray-600">No visits logged</p>
+              <p className="text-sm text-gray-600 italic">No visits logged</p>
             )}
           </div>
 
-          <div className="bg-green-50 rounded-xl p-4 border border-green-100">
-            <p className="text-xs font-semibold text-green-700 uppercase mb-2">Latest Update</p>
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50/50 rounded-2xl p-5 border-2 border-emerald-100 hover:shadow-md transition-all hover:-translate-y-1">
+            <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" /> Latest Update
+            </p>
             {lastUpdate ? (
               <>
                 <p className="text-sm font-bold text-gray-900 line-clamp-2">{lastUpdate.note}</p>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-gray-600 mt-2 font-medium">
                   {formatDateTime(lastUpdate.createdAt)}
                 </p>
               </>
             ) : (
-              <p className="text-sm text-gray-600">No updates yet</p>
+              <p className="text-sm text-gray-600 italic">No updates yet</p>
             )}
           </div>
         </div>
 
         {deal.notes && (
-          <div className="mt-4 bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Notes Snapshot</p>
+          <div className="mt-5 bg-gradient-to-br from-amber-50 to-amber-50/50 rounded-2xl p-5 border-2 border-amber-100">
+            <p className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-3">📌 Notes Snapshot</p>
             <p className="text-sm text-gray-700 line-clamp-3 whitespace-pre-wrap">{deal.notes}</p>
           </div>
         )}
@@ -1200,44 +1233,56 @@ export default function ClientProfilePage() {
       </div>
 
       {/* AI DEAL COACH */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <Target className="w-5 h-5 text-emerald-600" />
+      <div className="bg-gradient-to-br from-white via-emerald-50/30 to-white rounded-3xl shadow-lg border border-emerald-100/50 p-8 backdrop-blur-sm hover:shadow-xl transition-all animate-fade-in-delay-3">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+              <Target className="w-6 h-6 text-emerald-600" />
+            </div>
             AI Deal Coach
           </h3>
-          <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+          <span className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-md ${
             dealCoach.status === 'attention'
-              ? 'bg-red-50 text-red-600'
+              ? 'bg-red-100 text-red-700'
               : dealCoach.status === 'won'
-                ? 'bg-green-50 text-green-600'
+                ? 'bg-emerald-100 text-emerald-700'
                 : dealCoach.status === 'lost'
-                  ? 'bg-gray-100 text-gray-600'
-                  : 'bg-emerald-50 text-emerald-600'
+                  ? 'bg-gray-100 text-gray-700'
+                  : 'bg-emerald-100 text-emerald-700'
           }`}>
-            {dealCoach.status === 'attention' ? 'Needs Attention' : dealCoach.status === 'won' ? 'Won' : dealCoach.status === 'lost' ? 'Lost' : 'Healthy'}
+            {dealCoach.status === 'attention' ? '⚠️ Needs Attention' : dealCoach.status === 'won' ? '✓ Won' : dealCoach.status === 'lost' ? '✗ Lost' : '✓ Healthy'}
           </span>
         </div>
-        <p className="text-sm text-gray-700 mb-4">{dealCoach.summary}</p>
+        <p className="text-base text-gray-700 mb-6 leading-relaxed font-medium">{dealCoach.summary}</p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-red-50 border border-red-100 rounded-xl p-4">
-            <p className="text-xs font-semibold text-red-600 uppercase mb-2">Risks</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-gradient-to-br from-red-50 to-red-50/50 border-2 border-red-200 rounded-2xl p-6 hover:shadow-lg transition-all">
+            <p className="text-xs font-bold text-red-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" /> Risks
+            </p>
             {dealCoach.risks.length === 0 ? (
-              <p className="text-sm text-red-600/70">No major risks detected.</p>
+              <p className="text-sm text-red-700/80 font-medium">✓ No major risks detected.</p>
             ) : (
-              <ul className="text-sm text-red-700 space-y-2">
+              <ul className="text-sm text-red-700 space-y-2.5">
                 {dealCoach.risks.map((risk, idx) => (
-                  <li key={idx}>• {risk}</li>
+                  <li key={idx} className="flex gap-3 items-start">
+                    <span className="text-red-500 font-bold mt-0.5">•</span>
+                    <span>{risk}</span>
+                  </li>
                 ))}
               </ul>
             )}
           </div>
-          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
-            <p className="text-xs font-semibold text-emerald-600 uppercase mb-2">Next Best Actions</p>
-            <ul className="text-sm text-emerald-700 space-y-2">
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50/50 border-2 border-emerald-200 rounded-2xl p-6 hover:shadow-lg transition-all">
+            <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Zap className="w-4 h-4" /> Next Best Actions
+            </p>
+            <ul className="text-sm text-emerald-700 space-y-2.5">
               {dealCoach.nextSteps.map((step, idx) => (
-                <li key={idx}>• {step}</li>
+                <li key={idx} className="flex gap-3 items-start">
+                  <span className="text-emerald-600 font-bold mt-0.5">→</span>
+                  <span>{step}</span>
+                </li>
               ))}
             </ul>
           </div>
@@ -1245,47 +1290,54 @@ export default function ClientProfilePage() {
       </div>
 
       {/* OBJECTIONS & RISK */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-red-600" />
+      <div className="bg-gradient-to-br from-white to-red-50/30 rounded-3xl shadow-lg border border-red-100/50 p-8 backdrop-blur-sm hover:shadow-xl transition-all">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+              <ShieldAlert className="w-6 h-6 text-red-600" />
+            </div>
             Objections & Risk Tracker
           </h3>
-          <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+          <span className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-md ${
             riskLevel === 'high'
-              ? 'bg-red-50 text-red-600'
+              ? 'bg-red-100 text-red-700'
               : riskLevel === 'medium'
-                ? 'bg-yellow-50 text-yellow-700'
-                : 'bg-green-50 text-green-600'
+                ? 'bg-yellow-100 text-yellow-700'
+                : 'bg-emerald-100 text-emerald-700'
           }`}>
-            Risk: {riskLevel}
+            Risk: {riskLevel.toUpperCase()}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-semibold text-gray-700">Common Objections</p>
-              <span className="text-xs text-gray-500">{objections.length} logged</span>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+                Common Objections
+              </p>
+              <span className="text-xs font-bold text-red-600 bg-red-100 px-2.5 py-1 rounded-full">{objections.length}</span>
             </div>
             <div className="space-y-3">
               {objections.length === 0 ? (
-                <div className="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                  <p className="text-sm text-gray-500">No objections logged yet</p>
+                <div className="text-center py-8 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-xl border-2 border-dashed border-gray-300">
+                  <p className="text-sm text-gray-500 font-medium">No objections logged yet</p>
                 </div>
               ) : (
                 objections.map(item => (
-                  <div key={item.id} className="border border-gray-200 rounded-xl p-3 flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm text-gray-800">{item.text}</p>
-                      <p className="text-xs text-gray-500 mt-1">Added by {item.createdByName || 'Unknown'}</p>
+                  <div key={item.id} className="border-2 border-red-100 rounded-xl p-4 bg-gradient-to-br from-red-50/50 to-white hover:shadow-md transition-all group">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-900">{item.text}</p>
+                        <p className="text-xs text-gray-600 mt-2">By {item.createdByName || 'Unknown'}</p>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveObjection(item.id)}
+                        className="text-xs text-red-600 hover:text-red-700 font-bold opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        ✕
+                      </button>
                     </div>
-                    <button
-                      onClick={() => handleRemoveObjection(item.id)}
-                      className="text-xs text-red-500 hover:text-red-600"
-                    >
-                      Remove
-                    </button>
                   </div>
                 ))
               )}
@@ -1293,7 +1345,7 @@ export default function ClientProfilePage() {
 
             <div className="mt-4 flex gap-2">
               <input
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                 placeholder="Add objection..."
                 value={objectionText}
                 onChange={(e) => setObjectionText(e.target.value)}
@@ -1301,36 +1353,39 @@ export default function ClientProfilePage() {
               <button
                 onClick={handleAddObjection}
                 disabled={savingObjection}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 disabled:opacity-60"
+                className="px-5 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl text-sm font-bold hover:from-red-700 hover:to-red-800 shadow-lg shadow-red-600/30 hover:shadow-red-600/50 disabled:opacity-60 transition-all"
               >
-                {savingObjection ? 'Saving...' : 'Add'}
+                {savingObjection ? '...' : '+'}
               </button>
             </div>
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-gray-700 mb-3">Risk Level & Mitigation Plan</p>
-            <div className="space-y-3">
+            <p className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-yellow-600" />
+              Risk Level & Mitigation Plan
+            </p>
+            <div className="space-y-4">
               <select
                 value={riskLevel}
                 onChange={(e) => setRiskLevel(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-sm font-semibold focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all bg-white"
               >
-                <option value="low">Low Risk</option>
-                <option value="medium">Medium Risk</option>
-                <option value="high">High Risk</option>
+                <option value="low">🟢 Low Risk</option>
+                <option value="medium">🟡 Medium Risk</option>
+                <option value="high">🔴 High Risk</option>
               </select>
               <textarea
                 rows={4}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm resize-none"
-                placeholder="Mitigation plan..."
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
+                placeholder="Describe mitigation strategy..."
                 value={mitigationPlan}
                 onChange={(e) => setMitigationPlan(e.target.value)}
               />
               <button
                 onClick={handleSaveRisk}
                 disabled={savingRisk}
-                className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-gray-800 disabled:opacity-60"
+                className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-sm font-bold hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 disabled:opacity-60 transition-all"
               >
                 {savingRisk ? 'Saving...' : 'Save Risk Plan'}
               </button>
@@ -1340,41 +1395,57 @@ export default function ClientProfilePage() {
       </div>
 
       {/* QUOTE & CONTRACT */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-indigo-600" />
+      <div className="bg-gradient-to-br from-white to-indigo-50/30 rounded-3xl shadow-lg border border-indigo-100/50 p-8 backdrop-blur-sm hover:shadow-xl transition-all">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+              <FileText className="w-6 h-6 text-indigo-600" />
+            </div>
             Quote & Contract
           </h3>
           <button
             onClick={() => navigate('/quotes')}
-            className="text-xs font-semibold text-indigo-600 hover:underline"
+            className="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-4 py-2 rounded-full hover:bg-indigo-100 transition-all"
           >
-            Open Quote Maker
+            Open Quote Maker →
           </button>
         </div>
 
         {latestQuote ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-1 bg-indigo-50 border border-indigo-100 rounded-xl p-4">
-              <p className="text-xs font-semibold text-indigo-700 uppercase">Latest Quote</p>
-              <p className="text-lg font-bold text-indigo-900 mt-2">{latestQuote.title}</p>
-              <p className="text-xs text-indigo-700 mt-1">#{latestQuote.quoteNumber}</p>
-              <p className="text-sm text-indigo-900 mt-3">{formatCurrency(latestQuote.total || 0)}</p>
-              <p className="text-xs text-indigo-700 mt-1">Status: {quoteStatusLabel(latestQuote.status)}</p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 bg-gradient-to-br from-indigo-50 to-indigo-50/50 border-2 border-indigo-200 rounded-2xl p-6 hover:shadow-lg transition-all">
+              <p className="text-xs font-bold text-indigo-700 uppercase tracking-wider">Latest Quote</p>
+              <p className="text-xl font-bold text-indigo-900 mt-4">{latestQuote.title}</p>
+              <p className="text-xs text-indigo-700 mt-2">#{latestQuote.quoteNumber}</p>
+              <p className="text-2xl font-bold text-indigo-600 mt-4">{formatCurrency(latestQuote.total || 0)}</p>
+              <div className={`mt-3 inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                latestQuote.status === 'accepted'
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : latestQuote.status === 'sent'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-gray-100 text-gray-700'
+              }`}>
+                {quoteStatusLabel(latestQuote.status)}
+              </div>
             </div>
-            <div className="lg:col-span-2 border border-gray-200 rounded-xl p-4">
-              <p className="text-xs font-semibold text-gray-500 uppercase">Version History</p>
-              <div className="mt-3 space-y-2 max-h-48 overflow-y-auto pr-2">
+            <div className="lg:col-span-2 border-2 border-indigo-100 rounded-2xl p-6 bg-gradient-to-br from-white to-indigo-50/20">
+              <p className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-4">📋 Version History</p>
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-3">
                 {quotes.map(quote => (
-                  <div key={quote.id} className="border border-gray-200 rounded-lg p-3 flex items-center justify-between">
+                  <div key={quote.id} className="border-2 border-indigo-100 rounded-lg p-3 flex items-center justify-between hover:shadow-md transition-all bg-white">
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">{quote.title}</p>
+                      <p className="text-sm font-bold text-gray-900">{quote.title}</p>
                       <p className="text-xs text-gray-500">#{quote.quoteNumber}</p>
                     </div>
-                    <div className="text-right text-xs text-gray-500">
-                      <p>{quoteStatusLabel(quote.status)}</p>
-                      <p>{formatDateTime(quote.updatedAt || quote.createdAt)}</p>
+                    <div className="text-right text-xs text-gray-600 font-medium">
+                      <p className={`${
+                        quote.status === 'accepted'
+                          ? 'text-emerald-600'
+                          : quote.status === 'sent'
+                            ? 'text-blue-600'
+                            : 'text-gray-600'
+                      }`}>{quoteStatusLabel(quote.status)}</p>
+                      <p className="text-gray-500">{formatDateTime(quote.updatedAt || quote.createdAt)}</p>
                     </div>
                   </div>
                 ))}
@@ -1382,42 +1453,45 @@ export default function ClientProfilePage() {
             </div>
           </div>
         ) : (
-          <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-            <FileText className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-600">No quotes found for this deal.</p>
+          <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-2xl border-2 border-dashed border-gray-300">
+            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-sm font-semibold text-gray-600">No quotes found for this deal.</p>
+            <p className="text-xs text-gray-500 mt-1">Create one to get started</p>
           </div>
         )}
       </div>
 
       {/* CLIENT UPDATES */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-indigo-600" />
+      <div className="bg-gradient-to-br from-white to-blue-50/30 rounded-3xl shadow-lg border border-blue-100/50 p-8 backdrop-blur-sm hover:shadow-xl transition-all">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+              <MessageSquare className="w-6 h-6 text-blue-600" />
+            </div>
             Client Updates
           </h3>
-          <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-semibold">
+          <span className="px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold shadow-md">
             {clientUpdates.length} updates
           </span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
           <div className="lg:col-span-2">
             <textarea
               value={updateText}
               onChange={(e) => setUpdateText(e.target.value)}
               placeholder="Add a quick update about the client status, requirements, or next steps..."
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none text-sm font-medium transition-all"
             />
           </div>
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase">Status Tag</label>
+              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Status Tag</label>
               <select
                 value={updateStatus}
                 onChange={(e) => setUpdateStatus(e.target.value)}
-                className="w-full mt-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                className="w-full mt-2 px-4 py-3 border-2 border-gray-300 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-semibold transition-all bg-white"
               >
                 {pipelineStages.map(stage => (
                   <option key={stage.value} value={stage.value}>
@@ -1425,39 +1499,39 @@ export default function ClientProfilePage() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">Tag only (does not change pipeline stage)</p>
+              <p className="text-xs text-gray-500 mt-1">Tag only (does not change stage)</p>
             </div>
             <button
               onClick={handleAddUpdate}
               disabled={savingUpdate}
-              className="w-full px-4 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-bold hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {savingUpdate ? 'Saving...' : 'Add Update'}
             </button>
           </div>
         </div>
 
-        <div className="mt-6 space-y-3">
+        <div className="space-y-3">
           {clientUpdates.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-              <MessageSquare className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-600">No client updates yet</p>
+            <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-2xl border-2 border-dashed border-gray-300">
+              <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-sm font-semibold text-gray-600">No client updates yet</p>
               <p className="text-xs text-gray-500 mt-1">Add updates to keep the team aligned</p>
             </div>
           ) : (
             clientUpdates.map(update => (
-              <div key={update.id} className="border border-gray-200 rounded-xl p-4">
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <span className="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-semibold">
+              <div key={update.id} className="border-2 border-blue-100 rounded-2xl p-4 bg-gradient-to-br from-blue-50/50 to-white hover:shadow-md transition-all">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <span className="px-3 py-1 bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 rounded-full text-xs font-bold">
                     {update.status ? getStageLabel(update.status) : 'Update'}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 font-medium">
                     {formatDateTime(update.createdAt)}
                   </span>
                 </div>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{update.note}</p>
+                <p className="text-sm text-gray-800 font-medium whitespace-pre-wrap">{update.note}</p>
                 {update.authorName && (
-                  <p className="text-xs text-gray-500 mt-2">By {update.authorName}</p>
+                  <p className="text-xs text-gray-500 mt-3 font-medium">By {update.authorName}</p>
                 )}
               </div>
             ))
@@ -1582,17 +1656,19 @@ export default function ClientProfilePage() {
       </div>
 
       {/* NOTES SECTION */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-indigo-600" />
+      <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-3xl shadow-lg border border-purple-100/50 p-8 backdrop-blur-sm hover:shadow-xl transition-all">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+              <FileText className="w-6 h-6 text-purple-600" />
+            </div>
             Client Notes
           </h3>
           
           {!isEditingNotes && (
             <button
               onClick={() => setIsEditingNotes(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-full hover:from-purple-700 hover:to-purple-800 shadow-lg shadow-purple-600/30 hover:shadow-purple-600/50 transition-all font-bold text-sm"
             >
               <Edit className="w-4 h-4" />
               Edit Notes
@@ -1607,14 +1683,14 @@ export default function ClientProfilePage() {
               onChange={(e) => setNotesText(e.target.value)}
               placeholder="Add notes about this client..."
               rows={6}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm"
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none text-sm font-medium transition-all"
             />
             
             <div className="flex items-center gap-3">
               <button
                 onClick={handleSaveNotes}
                 disabled={savingNotes}
-                className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-full hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {savingNotes ? (
                   <>
@@ -1632,7 +1708,7 @@ export default function ClientProfilePage() {
               <button
                 onClick={handleCancelEdit}
                 disabled={savingNotes}
-                className="flex items-center gap-2 px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <X className="w-4 h-4" />
                 Cancel
@@ -1642,14 +1718,14 @@ export default function ClientProfilePage() {
         ) : (
           <div>
             {deal.notes ? (
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{deal.notes}</p>
+              <div className="bg-gradient-to-br from-purple-50 to-purple-50/50 rounded-2xl p-6 border-2 border-purple-100">
+                <p className="text-base text-gray-800 font-medium whitespace-pre-wrap leading-relaxed">{deal.notes}</p>
               </div>
             ) : (
-              <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600 font-medium">No notes added yet</p>
-                <p className="text-sm text-gray-500 mt-1">Click "Edit Notes" to add information about this client</p>
+              <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-gray-50/50 rounded-2xl border-2 border-dashed border-gray-300">
+                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-700 font-semibold">No notes added yet</p>
+                <p className="text-sm text-gray-500 mt-2">Click "Edit Notes" to add information about this client</p>
               </div>
             )}
           </div>
@@ -1660,27 +1736,29 @@ export default function ClientProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Visits Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-3xl shadow-lg border border-purple-100/50 p-8 backdrop-blur-sm hover:shadow-xl transition-all">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-purple-600" />
+            <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                <MapPin className="w-6 h-6 text-purple-600" />
+              </div>
               Client Visits
             </h3>
-            <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-bold">
+            <span className="px-4 py-1.5 bg-purple-100 text-purple-700 rounded-full text-xs font-bold shadow-md">
               {visits.length} total
             </span>
           </div>
 
           {visits.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MapPin className="w-8 h-8 text-gray-400" />
               </div>
-              <p className="text-gray-600 font-medium">No visits recorded yet</p>
+              <p className="text-gray-600 font-semibold">No visits recorded yet</p>
               <p className="text-sm text-gray-500 mt-1">Visit history will appear here</p>
             </div>
           ) : (
-            <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
               {visits.map(visit => (
                 <VisitItem key={visit.id} visit={visit} />
               ))}
@@ -1689,27 +1767,29 @@ export default function ClientProfilePage() {
         </div>
 
         {/* Follow-Ups Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-gradient-to-br from-white to-orange-50/30 rounded-3xl shadow-lg border border-orange-100/50 p-8 backdrop-blur-sm hover:shadow-xl transition-all">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Bell className="w-5 h-5 text-orange-600" />
+            <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+              <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                <Bell className="w-6 h-6 text-orange-600" />
+              </div>
               Follow-Ups
             </h3>
-            <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-sm font-bold">
+            <span className="px-4 py-1.5 bg-orange-100 text-orange-700 rounded-full text-xs font-bold shadow-md">
               {followups.length} total
             </span>
           </div>
 
           {followups.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Bell className="w-8 h-8 text-gray-400" />
               </div>
-              <p className="text-gray-600 font-medium">No follow-ups scheduled</p>
+              <p className="text-gray-600 font-semibold">No follow-ups scheduled</p>
               <p className="text-sm text-gray-500 mt-1">Follow-up tasks will appear here</p>
             </div>
           ) : (
-            <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
               {followups.map(followup => (
                 <FollowUpItem key={followup.id} followup={followup} />
               ))}
@@ -1719,20 +1799,21 @@ export default function ClientProfilePage() {
       </div>
 
       {/* FUTURE: Payments Section Placeholder */}
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-300 p-8">
+      <div className="bg-gradient-to-br from-slate-100 to-emerald-50 rounded-3xl border-2 border-dashed border-emerald-300 p-12 shadow-sm hover:shadow-lg transition-all">
         <div className="text-center">
-          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-            <DollarSign className="w-8 h-8 text-gray-400" />
+          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
+            <DollarSign className="w-8 h-8 text-emerald-600" />
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-2">Payment History</h3>
-          <p className="text-gray-600 text-sm">
-            This section will display payment records and invoices.
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">💰 Payment History</h3>
+          <p className="text-gray-600 text-base font-medium max-w-md mx-auto">
+            This section will display payment records and invoices with real-time tracking.
             <br />
-            <span className="text-xs text-gray-500">(Coming soon)</span>
+            <span className="text-xs text-gray-500 font-semibold mt-2 inline-block">(Coming soon)</span>
           </p>
         </div>
       </div>
 
+      </div>
     </div>
   );
 }
@@ -1741,57 +1822,56 @@ export default function ClientProfilePage() {
 
 function VisitItem({ visit }) {
   return (
-    <div className="bg-purple-50 rounded-xl p-4 border border-purple-100 hover:shadow-md transition-all">
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-start gap-2">
-          <Calendar className="w-4 h-4 text-purple-600 mt-0.5" />
+    <div className="bg-gradient-to-br from-purple-50 to-purple-50/50 rounded-2xl p-4 border-2 border-purple-100 hover:shadow-lg hover:border-purple-200 transition-all group">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Calendar className="w-5 h-5 text-purple-600" />
+          </div>
           <div>
             <p className="text-sm font-bold text-gray-900">
               {visit.visitDate ? formatDate(visit.visitDate) : 'No date'}
             </p>
             {visit.address && (
-              <p className="text-xs text-gray-600 mt-0.5 flex items-center gap-1">
+              <p className="text-xs text-gray-600 mt-1 flex items-center gap-1 font-medium">
                 <MapPin className="w-3 h-3" />
                 {visit.address}
               </p>
             )}
           </div>
         </div>
-        <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-          <MapPin className="w-4 h-4 text-purple-600" />
-        </div>
       </div>
 
       <div className="mt-3 space-y-2">
         {visit.purpose && (
-          <div className="bg-white rounded-lg p-2 border border-purple-200">
-            <p className="text-xs font-semibold text-purple-700 mb-1 flex items-center gap-1">
+          <div className="bg-white rounded-lg p-3 border border-purple-200 hover:shadow-sm transition-all">
+            <p className="text-xs font-bold text-purple-700 mb-1 flex items-center gap-1">
               <Target className="w-3 h-3" /> PURPOSE
             </p>
-            <p className="text-xs text-gray-700">{visit.purpose}</p>
+            <p className="text-xs text-gray-700 font-medium">{visit.purpose}</p>
           </div>
         )}
 
         {visit.result && (
-          <div className="bg-white rounded-lg p-2 border border-purple-200">
-            <p className="text-xs font-semibold text-purple-700 mb-1 flex items-center gap-1">
+          <div className="bg-white rounded-lg p-3 border border-purple-200 hover:shadow-sm transition-all">
+            <p className="text-xs font-bold text-purple-700 mb-1 flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3" /> RESULT
             </p>
-            <p className="text-xs text-gray-700">{visit.result}</p>
+            <p className="text-xs text-gray-700 font-medium">{visit.result}</p>
           </div>
         )}
 
         {visit.nextStep && (
-          <div className="bg-white rounded-lg p-2 border border-purple-200">
-            <p className="text-xs font-semibold text-purple-700 mb-1 flex items-center gap-1">
+          <div className="bg-white rounded-lg p-3 border border-purple-200 hover:shadow-sm transition-all">
+            <p className="text-xs font-bold text-purple-700 mb-1 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" /> NEXT STEP
             </p>
-            <p className="text-xs text-gray-700">{visit.nextStep}</p>
+            <p className="text-xs text-gray-700 font-medium">{visit.nextStep}</p>
           </div>
         )}
       </div>
 
-      <div className="mt-3 pt-3 border-t border-purple-200 flex items-center gap-2 text-xs text-gray-600">
+      <div className="mt-3 pt-3 border-t border-purple-200 flex items-center gap-2 text-xs text-gray-600 font-medium">
         <User className="w-3 h-3" />
         <span>{visit.salesRepName || 'Unknown'}</span>
       </div>
@@ -1806,74 +1886,67 @@ function FollowUpItem({ followup }) {
   const isDone = followup.status === 'done';
 
   return (
-    <div className={`rounded-xl p-4 border hover:shadow-md transition-all ${
+    <div className={`rounded-2xl p-4 border-2 hover:shadow-lg transition-all group ${
       isOverdueItem 
-        ? 'bg-red-50 border-red-200' 
+        ? 'bg-gradient-to-br from-red-50 to-red-50/50 border-red-200 hover:border-red-300' 
         : isDone 
-          ? 'bg-green-50 border-green-200'
-          : 'bg-orange-50 border-orange-100'
+          ? 'bg-gradient-to-br from-emerald-50 to-emerald-50/50 border-emerald-200 hover:border-emerald-300'
+          : 'bg-gradient-to-br from-orange-50 to-orange-50/50 border-orange-200 hover:border-orange-300'
     }`}>
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-start gap-2">
-          <Calendar className={`w-4 h-4 mt-0.5 ${isOverdueItem ? 'text-red-600' : isDone ? 'text-green-600' : 'text-orange-600'}`} />
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-start gap-3">
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isOverdueItem ? 'bg-red-100' : isDone ? 'bg-emerald-100' : 'bg-orange-100'}`}>
+            {isDone ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            ) : isOverdueItem ? (
+              <Clock className="w-5 h-5 text-red-600" />
+            ) : (
+              <Bell className="w-5 h-5 text-orange-600" />
+            )}
+          </div>
           <div>
             <p className="text-sm font-bold text-gray-900">
               {followup.reminderDate ? formatDate(followup.reminderDate) : 'No date'}
             </p>
             {followup.nextAction && (
-              <p className="text-xs text-gray-600 mt-0.5">
+              <p className="text-xs text-gray-600 mt-1 font-medium">
                 {followup.nextAction}
               </p>
             )}
           </div>
         </div>
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-          isOverdueItem 
-            ? 'bg-red-100' 
-            : isDone 
-              ? 'bg-green-100'
-              : 'bg-orange-100'
-        }`}>
-          {isDone ? (
-            <CheckCircle2 className="w-4 h-4 text-green-600" />
-          ) : isOverdueItem ? (
-            <Clock className="w-4 h-4 text-red-600" />
-          ) : (
-            <Bell className="w-4 h-4 text-orange-600" />
-          )}
-        </div>
       </div>
 
       {followup.notes && (
-        <div className={`mt-3 rounded-lg p-2 border ${
+        <div className={`mt-3 rounded-lg p-3 border bg-white ${
           isOverdueItem 
-            ? 'bg-white border-red-200' 
+            ? 'border-red-200' 
             : isDone 
-              ? 'bg-white border-green-200'
-              : 'bg-white border-orange-200'
+              ? 'border-emerald-200'
+              : 'border-orange-200'
         }`}>
-          <p className={`text-xs font-semibold mb-1 flex items-center gap-1 ${
-            isOverdueItem ? 'text-red-700' : isDone ? 'text-green-700' : 'text-orange-700'
+          <p className={`text-xs font-bold mb-1 flex items-center gap-1 ${
+            isOverdueItem ? 'text-red-700' : isDone ? 'text-emerald-700' : 'text-orange-700'
           }`}>
             <FileText className="w-3 h-3" /> NOTES
           </p>
-          <p className="text-xs text-gray-700">{followup.notes}</p>
+          <p className="text-xs text-gray-700 font-medium">{followup.notes}</p>
         </div>
       )}
 
       <div className={`mt-3 pt-3 border-t flex items-center justify-between ${
-        isOverdueItem ? 'border-red-200' : isDone ? 'border-green-200' : 'border-orange-200'
+        isOverdueItem ? 'border-red-200' : isDone ? 'border-emerald-200' : 'border-orange-200'
       }`}>
-        <div className="flex items-center gap-2 text-xs text-gray-600">
+        <div className="flex items-center gap-2 text-xs text-gray-600 font-medium">
           <User className="w-3 h-3" />
           <span>{followup.assignedToName || 'Unknown'}</span>
         </div>
-        <span className={`px-2 py-1 rounded text-xs font-bold ${
+        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
           isOverdueItem 
             ? 'bg-red-100 text-red-700' 
             : isDone 
-              ? 'bg-green-100 text-green-700'
-              : 'bg-yellow-100 text-yellow-700'
+              ? 'bg-emerald-100 text-emerald-700'
+              : 'bg-orange-100 text-orange-700'
         }`}>
           {followup.status ? followup.status.toUpperCase() : 'PENDING'}
         </span>
