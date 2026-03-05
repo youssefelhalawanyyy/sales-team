@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { db } from '../../firebase';
+import { useElectron } from '../../contexts/ElectronContext';
 import {
   addDoc,
   collection,
@@ -756,6 +757,7 @@ const FieldInput = ({ field, value, onChange }) => {
 
 export default function DigitalMarketingPage() {
   const { pageKey } = useParams();
+  const { isElectron } = useElectron();
 
   const module = useMemo(() => MODULES.find(item => item.key === pageKey), [pageKey]);
   const [items, setItems] = useState([]);
@@ -784,9 +786,13 @@ export default function DigitalMarketingPage() {
   }, [module, fieldDefs]);
 
   useEffect(() => {
+    if (isElectron) {
+      setDarkMode(false);
+      return;
+    }
     if (typeof document === 'undefined') return;
     setDarkMode(document.documentElement.classList.contains('dark'));
-  }, []);
+  }, [isElectron]);
 
   useEffect(() => {
     if (!module || !collectionName) return;
@@ -986,13 +992,15 @@ export default function DigitalMarketingPage() {
   ];
 
   return (
-    <div className={darkMode ? 'dark' : ''}>
-      <div className="min-h-screen bg-[#f6f8f7] text-slate-900 dark:bg-[#0b1510] dark:text-slate-100">
-        <aside className="fixed left-0 top-0 hidden h-full w-72 border-r border-white/40 bg-white/80 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/70 lg:block">
-          {renderSidebarNav()}
-        </aside>
+    <div className={!isElectron && darkMode ? 'dark' : ''}>
+      <div className={`min-h-screen text-slate-900 ${isElectron ? 'bg-transparent' : 'bg-[#f6f8f7] dark:bg-[#0b1510] dark:text-slate-100'}`}>
+        {!isElectron && (
+          <aside className="fixed left-0 top-0 hidden h-full w-72 border-r border-white/40 bg-white/80 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/70 lg:block">
+            {renderSidebarNav()}
+          </aside>
+        )}
 
-        {sidebarOpen && (
+        {!isElectron && sidebarOpen && (
           <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)}>
             <aside
               className="h-full w-72 bg-white/90 shadow-xl backdrop-blur dark:bg-slate-950"
@@ -1003,16 +1011,18 @@ export default function DigitalMarketingPage() {
           </div>
         )}
 
-        <div className="lg:pl-72">
-          <header className="sticky top-0 z-30 border-b border-white/40 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-slate-950/70">
-            <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+        <div className={isElectron ? '' : 'lg:pl-72'}>
+          <header className={`${isElectron ? 'mb-6 rounded-2xl border border-slate-200 bg-white/90 px-6 py-4 shadow-sm' : 'sticky top-0 z-30 border-b border-white/40 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-slate-950/70'}`}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setSidebarOpen(true)}
-                  className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </button>
+                {!isElectron && (
+                  <button
+                    onClick={() => setSidebarOpen(true)}
+                    className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm"
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </button>
+                )}
                 <div>
                   <p className="text-[10px] uppercase tracking-widest text-slate-400">Digital Marketing</p>
                   <h1 className="text-lg font-semibold text-slate-900 dark:text-white">{headerTitle}</h1>
@@ -1036,17 +1046,19 @@ export default function DigitalMarketingPage() {
                     {formOpen ? 'Close form' : 'Add entry'}
                   </button>
                 )}
-                <button
-                  onClick={() => setDarkMode(prev => !prev)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </button>
+                {!isElectron && (
+                  <button
+                    onClick={() => setDarkMode(prev => !prev)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                  >
+                    {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  </button>
+                )}
               </div>
             </div>
           </header>
 
-          <main className="mx-auto max-w-6xl px-6 py-8 space-y-8">
+          <main className={`mx-auto ${isElectron ? 'max-w-full px-0 py-0' : 'max-w-6xl px-6 py-8'} space-y-8`}>
             {!module && (
               <>
                 <div className="rounded-3xl border border-white/40 bg-white/80 p-8 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-950/60">

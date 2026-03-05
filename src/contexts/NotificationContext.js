@@ -1,4 +1,4 @@
-import React, { createContext, useState, useCallback, useContext, useEffect } from 'react';
+import React, { createContext, useState, useCallback, useContext, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, onSnapshot, query, where, orderBy, limit } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
@@ -9,6 +9,10 @@ export const NotificationProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const desktopNotifiedIdsRef = useRef(new Set());
+  const initialSnapshotRef = useRef(true);
+
+  const isElectronRuntime = typeof window !== 'undefined' && Boolean(window.electron?.isElectron?.());
 
   // Real-time notifications listener
   useEffect(() => {
@@ -16,6 +20,10 @@ export const NotificationProvider = ({ children }) => {
       console.log('❌ NotificationProvider: No currentUser.uid, skipping listener');
       return;
     }
+
+    // Reset desktop-notification cache when user changes
+    desktopNotifiedIdsRef.current = new Set();
+    initialSnapshotRef.current = true;
 
     console.log('🔔 NotificationProvider: Setting up listener for user:', currentUser.uid);
 
@@ -89,6 +97,50 @@ export const NotificationProvider = ({ children }) => {
       }
     };
   }, [currentUser?.uid]);
+
+  // Request desktop notification permission for Electron only
+  useEffect(() => {
+    if (!isElectronRuntime || typeof Notification === 'undefined') return;
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+  }, [isElectronRuntime]);
+
+  // Show laptop notifications when new unread notifications arrive (Electron app only)
+  useEffect(() => {
+    if (!isElectronRuntime || typeof Notification === 'undefined') return;
+    if (Notification.permission !== 'granted') return;
+    if (!currentUser?.uid) return;
+
+    // Ignore initial batch to avoid replaying old notifications on app start
+    if (initialSnapshotRef.current) {
+      notifications.forEach((notif) => desktopNotifiedIdsRef.current.add(notif.id));
+      initialSnapshotRef.current = false;
+      return;
+    }
+
+    notifications.forEach((notif) => {
+      if (notif.read) return;
+      if (desktopNotifiedIdsRef.current.has(notif.id)) return;
+
+      desktopNotifiedIdsRef.current.add(notif.id);
+
+      try {
+        const popup = new Notification(notif.title || 'New Notification', {
+          body: notif.message || 'You have a new update.',
+          tag: notif.id,
+          renotify: false
+        });
+        popup.onclick = () => {
+          if (typeof window !== 'undefined') {
+            window.focus();
+          }
+        };
+      } catch (error) {
+        console.error('❌ Desktop notification failed:', error);
+      }
+    });
+  }, [notifications, isElectronRuntime, currentUser?.uid]);
 
   const markAsRead = useCallback(async (notificationId) => {
     const { updateDoc, doc } = await import('firebase/firestore');

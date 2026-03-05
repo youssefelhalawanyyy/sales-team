@@ -6,6 +6,9 @@ export const NotificationsPanel = React.memo(() => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
+  const [dropdownStyle, setDropdownStyle] = useState({});
+  const isElectronRuntime = typeof window !== 'undefined' && Boolean(window.electron?.isElectron?.());
 
   useEffect(() => {
     console.log('🔔 NotificationsPanel: Received', notifications.length, 'notifications');
@@ -21,6 +24,42 @@ export const NotificationsPanel = React.memo(() => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!open || !isElectronRuntime) return;
+    const updatePosition = () => {
+      const button = buttonRef.current;
+      if (!button) return;
+      const rect = button.getBoundingClientRect();
+      const width = 384;
+      const rightPadding = 16;
+      const left = Math.max(rightPadding, Math.min(rect.right - width, window.innerWidth - width - rightPadding));
+      setDropdownStyle({
+        position: 'fixed',
+        top: `${rect.bottom + 8}px`,
+        left: `${left}px`,
+        width: `${width}px`
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [open, isElectronRuntime]);
+
+  useEffect(() => {
+    const onEscape = (event) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('keydown', onEscape);
+    return () => document.removeEventListener('keydown', onEscape);
   }, []);
 
   const getNotificationIcon = (type) => {
@@ -57,9 +96,10 @@ export const NotificationsPanel = React.memo(() => {
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative z-[120]" ref={dropdownRef}>
       {/* Bell Icon Button */}
       <button
+        ref={buttonRef}
         onClick={() => setOpen(!open)}
         className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         title="Notifications (Ctrl+Shift+N)"
@@ -74,7 +114,10 @@ export const NotificationsPanel = React.memo(() => {
 
       {/* Dropdown Panel */}
       {open && (
-        <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl z-50 animate-slideDown overflow-hidden">
+        <div
+          className={`${isElectronRuntime ? '' : 'absolute right-0 mt-2 w-96'} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl z-[9999] animate-slideDown overflow-hidden`}
+          style={isElectronRuntime ? dropdownStyle : undefined}
+        >
           {/* Header */}
           <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
             <div className="flex items-center justify-between">

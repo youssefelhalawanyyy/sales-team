@@ -70,7 +70,8 @@ const EXPENSE_CATEGORIES = [
 const OWNERS = [
   { name: 'Youssef', id: 'youssef' },
   { name: 'Baraa', id: 'baraa' },
-  { name: 'Rady', id: 'rady' }
+  { name: 'Rady', id: 'rady' },
+  { name: 'Nadine', id: 'nadine' }
 ];
 
 export const FinancePage = () => {

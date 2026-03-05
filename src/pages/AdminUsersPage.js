@@ -13,6 +13,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
+import { useElectron } from '../contexts/ElectronContext';
 import {
   Users, UserPlus, Search, Filter, Mail, Lock,
   X, Check, RotateCcw, Edit2, Activity,
@@ -35,6 +36,7 @@ const AVATAR_COLORS = ['#0d9488','#7c3aed','#d97706','#db2777','#0891b2','#05966
 
 export default function AdminUsersPage() {
   const { currentUser } = useAuth();
+  const { isElectron } = useElectron();
   const [users, setUsers]           = useState([]);
   const [loading, setLoading]       = useState(false);
   const [showForm, setShowForm]     = useState(false);
@@ -114,7 +116,7 @@ export default function AdminUsersPage() {
 
   /* ═══════════════════════════════════════════ */
   return (
-    <div className="aup-root">
+    <div className={`aup-root ${isElectron ? 'is-electron' : ''}`}>
       {/* ─── Header ─── */}
       <div className="aup-header">
         <div className="aup-header-left">
@@ -252,6 +254,13 @@ export default function AdminUsersPage() {
           display: flex;
           flex-direction: column;
           gap: 24px;
+          animation: aupFadeIn .35s ease-out both;
+        }
+
+        .aup-root.is-electron {
+          min-height: auto;
+          background: transparent;
+          padding: 8px 0 22px;
         }
 
         /* ─── Header ─── */
@@ -422,6 +431,7 @@ export default function AdminUsersPage() {
           animation:modalIn .25s cubic-bezier(.22,1,.36,1);
         }
         @keyframes modalIn { from{opacity:0;transform:translateY(18px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes aupFadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
         .aup-modal-head { display:flex; align-items:center; justify-content:space-between; padding:24px 28px 0; }
         .aup-modal-title-row { display:flex; align-items:center; gap:12px; }
         .aup-modal-icon {

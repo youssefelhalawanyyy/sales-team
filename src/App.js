@@ -1,6 +1,7 @@
 import React, { Suspense, useEffect } from 'react';
 import {
-  BrowserRouter as Router,
+  BrowserRouter,
+  HashRouter,
   Routes,
   Route,
   Navigate
@@ -10,8 +11,10 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TasksProvider } from './contexts/TasksContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { SettingsProvider } from './contexts/SettingsContext';
+import { ElectronProvider, useElectron } from './contexts/ElectronContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navigation } from './components/Navigation';
+import AppWrapper from './components/AppWrapper';
 import OfflineSyncBar from './components/OfflineSyncBar';
 import QuickAddFab from './components/QuickAddFab';
 import './App.css';
@@ -82,6 +85,7 @@ const LoadingFallback = React.memo(() => (
 const AppContent = React.memo(() => {
 
   const { currentUser, userRole, loading } = useAuth();
+  const { isElectron } = useElectron();
 
   // Initialize push notifications
   useEffect(() => {
@@ -101,8 +105,8 @@ const AppContent = React.memo(() => {
     <>
 
       {/* Navigation */}
-      {currentUser && <Navigation userRole={userRole} />}
-      {currentUser && <OfflineSyncBar />}
+      {currentUser && !isElectron && <Navigation userRole={userRole} />}
+      {currentUser && !isElectron && <OfflineSyncBar />}
 
       <Routes>
 
@@ -841,18 +845,27 @@ const AppContent = React.memo(() => {
 ============================= */
 
 function App() {
+  // Electron packaged apps are loaded with file:// URLs, so HashRouter
+  // avoids path resolution issues that can cause a blank screen.
+  const isElectronRuntime = typeof window !== 'undefined' && Boolean(window.electron?.isElectron?.());
+  const RouterComponent = isElectronRuntime ? HashRouter : BrowserRouter;
+
   return (
-    <Router>
-      <AuthProvider>
-        <SettingsProvider>
-          <NotificationProvider>
-            <TasksProvider>
-              <AppContent />
-            </TasksProvider>
-          </NotificationProvider>
-        </SettingsProvider>
-      </AuthProvider>
-    </Router>
+    <RouterComponent>
+      <ElectronProvider>
+        <AuthProvider>
+          <SettingsProvider>
+            <NotificationProvider>
+              <TasksProvider>
+                <AppWrapper>
+                  <AppContent />
+                </AppWrapper>
+              </TasksProvider>
+            </NotificationProvider>
+          </SettingsProvider>
+        </AuthProvider>
+      </ElectronProvider>
+    </RouterComponent>
   );
 }
 

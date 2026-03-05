@@ -35,7 +35,8 @@ import { formatCurrency } from '../utils/currency';
 const OWNERS = [
   { name: 'Youssef', id: 'youssef', gradient: 'from-blue-500 to-cyan-500', bgGradient: 'from-blue-50 to-cyan-50' },
   { name: 'Baraa', id: 'baraa', gradient: 'from-green-500 to-emerald-500', bgGradient: 'from-green-50 to-emerald-50' },
-  { name: 'Rady', id: 'rady', gradient: 'from-purple-500 to-pink-500', bgGradient: 'from-purple-50 to-pink-50' }
+  { name: 'Rady', id: 'rady', gradient: 'from-purple-500 to-pink-500', bgGradient: 'from-purple-50 to-pink-50' },
+  { name: 'Nadine', id: 'nadine', gradient: 'from-amber-500 to-orange-500', bgGradient: 'from-amber-50 to-orange-50' }
 ];
 
 export const OwnerSettlementsPage = () => {
