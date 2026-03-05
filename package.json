@@ -5,7 +5,7 @@
   "engines": {
     "node": "18.x"
   },
-  "homepage": "./",
+  "homepage": "/",
   "main": "public/electron/main.js",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -37,7 +37,7 @@
     "eject": "react-scripts eject",
     "electron": "electron .",
     "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && npm run electron\"",
-    "electron-build": "npm run build && electron-builder"
+    "electron-build": "PUBLIC_URL=. react-scripts build && electron-builder"
   },
   "eslintConfig": {
     "extends": [
